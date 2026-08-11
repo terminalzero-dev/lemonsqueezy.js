@@ -36,6 +36,26 @@ _Avoid_: Second implementation, legacy SDK, already-deprecated API
 The process-wide Client configured by `lemonSqueezySetup` and used only by compatibility-facade functions. A later setup replaces this default without changing explicitly created Client instances.
 _Avoid_: Global Client, shared configuration for every Client
 
+**Explicit Client**:
+An isolated SDK instance returned by `createClient`, with its own immutable configuration and discoverable resource namespaces. It never reads from or writes to the Default Client; credential rotation creates a new Explicit Client.
+_Avoid_: Global Client, singleton Client, class instance
+
+**API credential**:
+The optional Lemon Squeezy API key captured by an Explicit Client and sent as a Bearer credential for authenticated resource operations. It is distinct from a License Key supplied as business input to the public License API.
+_Avoid_: License key, client key
+
+**Resource namespace**:
+A stable group of operations for one Lemon Squeezy API resource exposed on an Explicit Client, such as `client.orders.list`. Namespaces organize the public interface while sharing one request implementation core.
+_Avoid_: Service, manager, second implementation
+
+**Explicit Client response**:
+The parsed Lemon Squeezy API body returned directly by an Explicit Client resource operation. Failures reject with a typed SDK error; this response is not wrapped in the Compatibility envelope.
+_Avoid_: Compatibility envelope, raw fetch response, result union
+
+**LemonSqueezyError**:
+The typed rejection emitted by Explicit Client operations for SDK-recognized failures and identified by `isLemonSqueezyError`. It is distinct from the `error` field carried by a Compatibility envelope.
+_Avoid_: Error envelope, facade error field
+
 **Compatibility envelope**:
 The facade's Promise result with `statusCode`, `data`, and `error` fields for successful, API, transport, and parsing outcomes. It preserves the v4 result shape while using corrected HTTP status, empty-body, and error-data semantics.
 _Avoid_: Raw response, bug-compatible response
