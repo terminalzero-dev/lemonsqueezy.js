@@ -104,6 +104,30 @@ _Avoid_: Minimum Supported runtime, production runtime, package manager
 The single npm-compatible `.tgz` produced for a release candidate, identified by its SHA-256 digest and reused unchanged by package smoke, Test Mode integration, and registry publishing.
 _Avoid_: Rebuilt tarball, source checkout, dist directory
 
+**Release Candidate**:
+A specific package version, source commit, Canonical Package Artifact digest, and completed gate record proposed for publication as one indivisible unit. Changing any of those inputs creates a new Release Candidate.
+_Avoid_: Branch head, dist directory, latest successful build
+
+**Bootstrap publish**:
+The one-time interactive publication of `5.0.0-beta.1` required to create the previously nonexistent Terminal Zero package before npm Trusted Publishing can be configured. It uses a verified Release Candidate and is not a reusable release path.
+_Avoid_: Normal release, token-based CI publish, provenance exception for later versions
+
+**Last Known Good version**:
+The most recent immutable package version whose artifact identity, required gates, registry integrity, provenance requirements, and supported-consumer behavior are all verified. It is the only valid rollback target for an affected dist-tag.
+_Avoid_: Previous version, highest version, cached artifact
+
+**Single-maintainer release authority**:
+The accepted governance model in which one designated maintainer may approve and execute a release through a protected workload identity without a long-lived personal npm publishing secret. Loss or compromise of that maintainer account remains an explicit operational risk handled through account recovery rather than a mandatory second approver.
+_Avoid_: Two-person release rule, shared npm token, unattended publication
+
+**Stable readiness evidence**:
+The combined contract-completion, operational-soak, and independent-adoption evidence required before moving the Terminal Zero package from beta to stable. Calendar age, downloads, and stars are contextual signals rather than substitutes for any evidence class.
+_Avoid_: Time-based promotion, popularity threshold, maintainer intuition alone
+
+**Stable Readiness issue**:
+The public, auditable promotion record that identifies the final Release Candidate and demonstrates every Stable readiness evidence threshold before `5.0.0` is published. The single release maintainer may approve it but may not silently waive or retroactively redefine a threshold.
+_Avoid_: Release announcement, private checklist, approval by intuition
+
 **Compatibility facade**:
 The v5 root surface that preserves supported v4 runtime and type names, call shapes, and JSON:API data shapes while sharing the same underlying SDK behavior as the new client API. It is semver-protected throughout v5 and is not deprecated until a later major-version removal plan is explicitly approved.
 _Avoid_: Second implementation, legacy SDK, already-deprecated API
