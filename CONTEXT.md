@@ -56,6 +56,22 @@ _Avoid_: Authenticated API, API-key authentication
 A stable group of operations for one Lemon Squeezy API resource exposed on an Explicit Client, such as `client.orders.list`. Namespaces organize the public interface while sharing one request implementation core.
 _Avoid_: Service, manager, second implementation
 
+**Contract Catalog**:
+The Terminal Zero fork's reviewed record of Lemon Squeezy resource types, operations, relationships, known values, wire mappings, and supporting evidence. It is the repository's truth source for SDK projections, not an official Lemon Squeezy schema.
+_Avoid_: Official schema, scraped documentation, generated SDK
+
+**Canonical v5 type model**:
+The public type vocabulary designed for Explicit Client resources, inputs, responses, relationships, errors, and events. It may correct or widen the v4 compatibility baseline while Compatibility facade type names remain separately protected.
+_Avoid_: v4 type snapshot, compatibility aliases
+
+**Wire-native response**:
+An Explicit Client response that preserves Lemon Squeezy's JSON:API structure and `snake_case` field names without converting it into a camelCase domain object.
+_Avoid_: Domain model, normalized response, compatibility envelope
+
+**Opaque user data**:
+Caller-owned nested data, such as checkout custom data, whose keys and values are outside the Lemon Squeezy SDK's schema. The SDK preserves it without naming assumptions or key transformation.
+_Avoid_: SDK attributes, generated fields
+
 **Explicit Client response**:
 The parsed Lemon Squeezy API body returned directly by an Explicit Client resource operation. Failures reject with a typed SDK error; this response is not wrapped in the Compatibility envelope.
 _Avoid_: Compatibility envelope, raw fetch response, result union
