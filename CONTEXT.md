@@ -44,6 +44,14 @@ _Avoid_: Global Client, singleton Client, class instance
 The optional Lemon Squeezy API key captured by an Explicit Client and sent as a Bearer credential for authenticated resource operations. It is distinct from a License Key supplied as business input to the public License API.
 _Avoid_: License key, client key
 
+**Authenticated API**:
+The Lemon Squeezy resource API whose requests use JSON:API media types and an API credential. Its transport contract is distinct from the public License API.
+_Avoid_: License API, generic REST API
+
+**License API**:
+The public Lemon Squeezy protocol for activating, validating, and deactivating License Keys without an API credential. Its form-encoded requests and business-negative success responses are distinct from the Authenticated API.
+_Avoid_: Authenticated API, API-key authentication
+
 **Resource namespace**:
 A stable group of operations for one Lemon Squeezy API resource exposed on an Explicit Client, such as `client.orders.list`. Namespaces organize the public interface while sharing one request implementation core.
 _Avoid_: Service, manager, second implementation
