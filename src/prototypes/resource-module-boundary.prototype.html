@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE — Namespace Module 边界</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #152238;
+        --muted: #657084;
+        --line: #d8deea;
+        --paper: #f5f7fb;
+        --card: #fff;
+        --accent: #3157d5;
+        --accent-soft: #e9eeff;
+        --good: #067647;
+        --good-soft: #ecfdf3;
+        --warn: #b54708;
+        --warn-soft: #fff6ed;
+        --bad: #b42318;
+        --bad-soft: #fef3f2;
+        --code: #111a2e;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        width: min(1240px, calc(100% - 32px));
+        margin: 38px auto 64px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+        font-size: clamp(30px, 4vw, 46px);
+        letter-spacing: -0.04em;
+      }
+
+      h2 {
+        margin-bottom: 14px;
+        font-size: 20px;
+      }
+
+      h3 {
+        margin-bottom: 7px;
+        font-size: 15px;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      .eyebrow {
+        margin-bottom: 7px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 920px;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .prototype-note {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 6px;
+        color: var(--warn);
+        background: var(--warn-soft);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .panel {
+        padding: 21px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        box-shadow: 0 10px 30px rgb(29 41 57 / 5%);
+      }
+
+      .top-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(350px, 0.95fr);
+        gap: 20px;
+        margin-top: 26px;
+      }
+
+      .lab-grid {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .tabs,
+      .scenario-list,
+      .steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button {
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        color: var(--ink);
+        background: var(--card);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      button:hover,
+      button.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      button.recommended::after {
+        content: "推荐";
+        margin-left: 6px;
+        padding: 2px 5px;
+        border-radius: 5px;
+        color: #fff;
+        background: var(--accent);
+        font-size: 10px;
+      }
+
+      button.done {
+        border-color: #75caa5;
+        color: var(--good);
+        background: var(--good-soft);
+      }
+
+      .strategy-copy {
+        min-height: 118px;
+        margin: 16px 0;
+        padding: 14px;
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        background: var(--accent-soft);
+      }
+
+      .strategy-copy p {
+        margin-bottom: 6px;
+      }
+
+      .hint,
+      .tradeoff {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      pre {
+        margin: 0;
+        padding: 15px;
+        overflow: auto;
+        border-radius: 11px;
+        color: #e7eaff;
+        background: var(--code);
+        font:
+          12px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        white-space: pre-wrap;
+      }
+
+      #strategy-code {
+        min-height: 275px;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .metric {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fbfcfe;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 18px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 8px;
+      }
+
+      .module {
+        padding: 11px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fbfcfe;
+      }
+
+      .module.changed {
+        border-color: #75caa5;
+        background: var(--good-soft);
+      }
+
+      .module.duplicated {
+        border-color: #f7b27a;
+        background: var(--warn-soft);
+      }
+
+      .module.public {
+        border-color: #a8b9f2;
+        background: var(--accent-soft);
+      }
+
+      .module small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 16px;
+      }
+
+      .verdict {
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 10px;
+        background: var(--good-soft);
+        color: var(--good);
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .verdict.warn {
+        color: var(--warn);
+        background: var(--warn-soft);
+      }
+
+      .verdict.bad {
+        color: var(--bad);
+        background: var(--bad-soft);
+      }
+
+      .guided {
+        margin-top: 20px;
+      }
+
+      .guided-copy {
+        min-height: 54px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 900px) {
+        .top-grid,
+        .lab-grid,
+        .result-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .metric-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Logic prototype · throwaway</p>
+      <h1>Namespace Module 的 seam 放在哪里？</h1>
+      <p class="lede">
+        这个原型回答一个问题：当 21 个 namespace、61 个方法遇到 endpoint
+        漂移或协议特例时，哪种内部 Module 形状能把改动留在一个资源目录，同时让
+        Explicit Client 与 Compatibility facade 永远走同一实现？
+      </p>
+      <span class="prototype-note"
+        >PROTOTYPE — 仅用于确认边界，不是生产代码</span
+      >
+
+      <section class="top-grid">
+        <article class="panel">
+          <h2>三种内部设计</h2>
+          <div class="tabs" id="strategy-tabs"></div>
+          <div class="strategy-copy" id="strategy-copy"></div>
+          <pre id="strategy-code"></pre>
+        </article>
+
+        <article class="panel">
+          <h2>固定外部契约</h2>
+          <div class="stack">
+            <div class="module public">
+              <strong>Explicit Client</strong>
+              <small
+                ><code>client.orders.refund()</code> · 21 namespaces / 61
+                methods</small
+              >
+            </div>
+            <div class="module public">
+              <strong>Compatibility facade</strong>
+              <small>59 个资源函数，只投射旧参数和 envelope</small>
+            </div>
+            <div class="module">
+              <strong>Namespace Module</strong>
+              <small
+                >DTO、operation contract、wire compiler、namespace
+                adapter、evidence</small
+              >
+            </div>
+            <div class="module">
+              <strong>Resource Runtime → HTTP Core</strong>
+              <small>唯一内部执行 seam；生产与测试各有 Adapter</small>
+            </div>
+          </div>
+          <p class="verdict">
+            外部调用形态不参与本次比较。变化只发生在内部 seam
+            和资源知识的摆放方式。
+          </p>
+        </article>
+      </section>
+
+      <section class="lab-grid">
+        <aside class="panel">
+          <h2>自由试验</h2>
+          <p class="hint">
+            选择一个真实维护任务，观察每种设计需要触碰的 Module。
+          </p>
+          <div class="scenario-list" id="scenario-list"></div>
+
+          <div class="guided">
+            <h3>引导场景</h3>
+            <div class="tabs" id="walkthrough-tabs"></div>
+            <p class="guided-copy" id="walkthrough-copy"></p>
+            <div class="steps" id="walkthrough-steps"></div>
+          </div>
+        </aside>
+
+        <article class="panel">
+          <h2 id="result-title">当前状态</h2>
+          <div class="metric-grid" id="metrics"></div>
+          <div class="result-grid" style="margin-top: 16px">
+            <section>
+              <h3>需要触碰的 Module</h3>
+              <div class="stack" id="changed-modules"></div>
+            </section>
+            <section>
+              <h3>调用与测试路径</h3>
+              <pre id="execution-path"></pre>
+              <div class="verdict" id="verdict"></div>
+            </section>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      /**
+       * Portable prototype logic. It has no DOM dependency: given a design and
+       * a maintenance scenario, it returns the complete observable evaluation.
+       */
+      const ModuleLab = (() => {
+        const strategies = {
+          binder: {
+            label: "自动绑定 Contract",
+            description:
+              "一个 invoke() 加通用 binder，从 operation contracts 自动生成全部 namespace 方法。Interface 最小，机械覆盖最强。",
+            tradeoff:
+              "泛型 binder、stack trace 和 TypeScript diagnostics 更间接；为 61 个固定方法引入了不必要的运行时装配魔法。",
+            code: `const client = bindNamespaces(runtime, catalog);\n\ninterface ResourceRuntime {\n  invoke(operation, args): Promise<CoreSuccess>;\n}\n\n// namespace methods 全部由 catalog 自动生成`,
+            base: { trace: 2, duplication: 0, magic: 3, coverage: 4 },
+          },
+          capsule: {
+            label: "显式 Capsule",
+            recommended: true,
+            description:
+              "每个 Namespace Module co-locate 可执行 operation contract、types 与显式 namespace adapter；单一 Resource Runtime 负责 invoke。",
+            tradeoff:
+              "每个 method 仍需一行显式 adapter，但换来直接补全、清晰堆栈和可审查的 composition root。",
+            code: `const refund = defineOperation({\n  compile: compileRefundOrder,\n  success: jsonApiSingle("orders"),\n});\n\nfunction createOrders(runtime) {\n  return {\n    refund: (id, input, options) =>\n      explicit(runtime, refund, [id, input], options),\n  };\n}`,
+            base: { trace: 4, duplication: 0, magic: 1, coverage: 4 },
+          },
+          direct: {
+            label: "直接 Namespace Factory",
+            description:
+              "每个 namespace 用普通方法直接构造 CoreRequest；Contract Catalog 只是旁边的只读事实表，不驱动执行。",
+            tradeoff:
+              "调试最直白，但 method/path/response kind 会同时存在于 passive catalog 与 runtime method，漂移需要一致性测试兜底。",
+            code: `const ordersContract = {\n  refund: { method: "POST", path: "/orders/:id/refund" },\n};\n\nfunction createOrders(http) {\n  return {\n    refund: (id, input) => http.request({\n      method: "POST",\n      path: \`/orders/\${id}/refund\`,\n      body: buildRefund(input),\n    }),\n  };\n}`,
+            base: { trace: 4, duplication: 2, magic: 0, coverage: 2 },
+          },
+        };
+
+        const scenarios = {
+          affiliate: {
+            label: "新增 Affiliate",
+            title: "加入 affiliates.get/list",
+            modules: [
+              [
+                "resources/affiliates",
+                "types、2 个 contracts、namespace adapter、evidence",
+                "changed",
+              ],
+              [
+                "client composition",
+                "显式加入 affiliates namespace",
+                "changed",
+              ],
+              ["compatibility facade", "无 v4 函数，不需要新增", ""],
+              ["HTTP Core", "协议行为没有变化", ""],
+            ],
+            path: "client.affiliates.list()\n→ affiliates.list contract\n→ Resource Runtime.invoke()\n→ HTTP Core",
+            verdict:
+              "新增资源知识留在一个目录；composition root 的一行改动是有意的公共覆盖审查点。",
+            complexity: 2,
+          },
+          refund: {
+            label: "全额退款",
+            title: "让 refund.amount 可省略",
+            modules: [
+              [
+                "resources/orders/types",
+                "RefundOrderInput.amount 改为 optional",
+                "changed",
+              ],
+              [
+                "resources/orders/contract",
+                "undefined 时不发送 amount",
+                "changed",
+              ],
+              [
+                "orders namespace",
+                "adapter 签名随类型收紧，无 endpoint 重写",
+                "changed",
+              ],
+              [
+                "compatibility facade",
+                "旧 amount 参数投射到相同 contract",
+                "changed",
+              ],
+              ["HTTP Core", "不需要知道全额退款语义", ""],
+            ],
+            path: "client.orders.refund(id)\n→ compileRefundOrder([id, undefined])\n→ attributes {}\n→ Resource Runtime.invoke()\n→ HTTP Core",
+            verdict:
+              "业务缺省语义属于 Orders Module，不应成为通用 JSON serializer 的猜测。",
+            complexity: 3,
+          },
+          empty: {
+            label: "Webhook 204",
+            title: "DELETE 成功但没有 body",
+            modules: [
+              [
+                "resources/webhooks/contract",
+                "success.kind = empty(204)",
+                "changed",
+              ],
+              ["Resource Runtime", "按 operation success kind 分流", ""],
+              ["HTTP Core", "204 不执行 JSON parser", ""],
+              ["Explicit adapter", "返回 void", ""],
+              ["Compatibility adapter", "投射 data:null + statusCode:204", ""],
+            ],
+            path: "client.webhooks.delete(id)\n→ empty(204) contract\n→ HTTP Core { statusCode: 204, body: undefined }\n→ Explicit: void / facade: envelope",
+            verdict:
+              "HTTP method 不推断 response；operation contract 明确 empty，两个公共表面只做投射。",
+            complexity: 2,
+          },
+          deleteBody: {
+            label: "Cancel 返回 body",
+            title: "DELETE 成功并返回 Subscription",
+            modules: [
+              [
+                "resources/subscriptions/contract",
+                "DELETE + jsonapi-single(subscriptions)",
+                "changed",
+              ],
+              ["Resource Runtime", "依 success kind 解析 JSON", ""],
+              ["HTTP Core", "不从 DELETE 猜 empty", ""],
+            ],
+            path: "client.subscriptions.cancel(id)\n→ jsonapi-single contract\n→ HTTP Core parses body\n→ SubscriptionResponse",
+            verdict:
+              "method 与 response shape 正交，避免把所有 DELETE 都错误处理成 void。",
+            complexity: 1,
+          },
+          meta: {
+            label: "Current usage",
+            title: "GET 返回 meta-only document",
+            modules: [
+              [
+                "resources/subscriptionItems/contract",
+                "success.kind = meta-only",
+                "changed",
+              ],
+              ["Canonical types", "公开真实 meta body", "changed"],
+              ["HTTP Core", "只负责 JSON 解析", ""],
+            ],
+            path: "client.subscriptionItems.currentUsage(id)\n→ meta-only contract\n→ shallow meta check\n→ CurrentUsageResponse",
+            verdict:
+              "不为统一资源抽象伪造 data；特例留在拥有它的 Namespace Module。",
+            complexity: 2,
+          },
+          license: {
+            label: "License valid:false",
+            title: "License form + 业务否定成功",
+            modules: [
+              [
+                "resources/license/contract",
+                "form fields + license-json success",
+                "changed",
+              ],
+              ["Resource Runtime", "按 protocol 路由", ""],
+              ["HTTP Core", "无 Bearer；200 body 保持成功", ""],
+              ["Authenticated resources", "完全不受影响", ""],
+            ],
+            path: "client.license.validate(input)\n→ license form contract\n→ HTTP 200 { valid:false }\n→ ValidateLicenseResponse (success)",
+            verdict:
+              "License 是同一 Client 的独立协议 namespace，不被强塞进 JSON:API resource shape。",
+            complexity: 3,
+          },
+          relationship: {
+            label: "新增 relationship",
+            title: "Customer 增加 affiliates relationship",
+            modules: [
+              [
+                "resources/customers/types",
+                "CustomerRelationships 增加 affiliates",
+                "changed",
+              ],
+              [
+                "resources/customers/contract",
+                "relationship/include evidence",
+                "changed",
+              ],
+              ["runtime request", "未知 response 字段本来就保留", ""],
+              ["HTTP Core", "不逐字段校验", ""],
+            ],
+            path: "API response\n→ shallow JSON:API validation\n→ unknown fields preserved\n→ updated Canonical declaration enables narrowing",
+            verdict:
+              "response 漂移不阻断运行时；类型与 evidence 在 Customer Module 内一同更新。",
+            complexity: 2,
+          },
+        };
+
+        function evaluate(strategyId, scenarioId) {
+          const strategy = strategies[strategyId];
+          const scenario = scenarios[scenarioId];
+          const duplicatePenalty = strategy.base.duplication;
+          const modules = scenario.modules.map(([name, detail, state]) => [
+            name,
+            detail,
+            state ||
+              (duplicatePenalty > 0 && name.includes("contract")
+                ? "duplicated"
+                : ""),
+          ]);
+
+          const changed = modules.filter(
+            ([, , state]) => state === "changed"
+          ).length;
+          const score =
+            strategy.base.trace +
+            strategy.base.coverage -
+            strategy.base.magic -
+            strategy.base.duplication;
+
+          return {
+            strategy,
+            scenario,
+            modules,
+            metrics: {
+              资源内改动: `${changed} 处`,
+              事实重复:
+                duplicatePenalty === 0 ? "无" : `${duplicatePenalty} 类`,
+              调试直达: `${strategy.base.trace}/4`,
+              综合适配: `${Math.max(1, score)}/8`,
+            },
+            verdictClass: score >= 6 ? "" : score >= 3 ? "warn" : "bad",
+          };
+        }
+
+        return { strategies, scenarios, evaluate };
+      })();
+
+      const walkthroughs = {
+        drift: {
+          label: "官方 API 漂移",
+          copy: "依次加入新资源和新 relationship，观察资源知识是否保持 Locality。",
+          steps: ["affiliate", "relationship"],
+        },
+        protocol: {
+          label: "协议特例",
+          copy: "比较同为 DELETE 的两种响应，再验证 meta-only 与 License plain JSON。",
+          steps: ["empty", "deleteBody", "meta", "license"],
+        },
+        write: {
+          label: "写操作缺省",
+          copy: "验证全额退款不会被通用 serializer 注入默认 amount。",
+          steps: ["refund"],
+        },
+      };
+
+      let strategyId = "capsule";
+      let scenarioId = "affiliate";
+      let walkthroughId = "drift";
+      let completedSteps = new Set();
+
+      function renderStrategyTabs() {
+        const root = document.querySelector("#strategy-tabs");
+        root.innerHTML = "";
+        for (const [id, strategy] of Object.entries(ModuleLab.strategies)) {
+          const button = document.createElement("button");
+          button.textContent = strategy.label;
+          button.className = [
+            id === strategyId ? "active" : "",
+            strategy.recommended ? "recommended" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          button.onclick = () => {
+            strategyId = id;
+            render();
+          };
+          root.append(button);
+        }
+      }
+
+      function renderScenarioButtons() {
+        const root = document.querySelector("#scenario-list");
+        root.innerHTML = "";
+        for (const [id, scenario] of Object.entries(ModuleLab.scenarios)) {
+          const button = document.createElement("button");
+          button.textContent = scenario.label;
+          button.className = id === scenarioId ? "active" : "";
+          button.onclick = () => {
+            scenarioId = id;
+            renderResult();
+            renderScenarioButtons();
+          };
+          root.append(button);
+        }
+      }
+
+      function renderWalkthroughs() {
+        const tabs = document.querySelector("#walkthrough-tabs");
+        tabs.innerHTML = "";
+        for (const [id, walkthrough] of Object.entries(walkthroughs)) {
+          const button = document.createElement("button");
+          button.textContent = walkthrough.label;
+          button.className = id === walkthroughId ? "active" : "";
+          button.onclick = () => {
+            walkthroughId = id;
+            completedSteps = new Set();
+            renderWalkthroughs();
+          };
+          tabs.append(button);
+        }
+
+        const walkthrough = walkthroughs[walkthroughId];
+        document.querySelector("#walkthrough-copy").textContent =
+          walkthrough.copy;
+        const steps = document.querySelector("#walkthrough-steps");
+        steps.innerHTML = "";
+        walkthrough.steps.forEach((scenario, index) => {
+          const button = document.createElement("button");
+          button.textContent = `${index + 1}. ${ModuleLab.scenarios[scenario].label}`;
+          button.className = completedSteps.has(index) ? "done" : "";
+          button.onclick = () => {
+            scenarioId = scenario;
+            completedSteps.add(index);
+            renderResult();
+            renderScenarioButtons();
+            renderWalkthroughs();
+          };
+          steps.append(button);
+        });
+      }
+
+      function renderResult() {
+        const result = ModuleLab.evaluate(strategyId, scenarioId);
+        document.querySelector("#result-title").textContent =
+          result.scenario.title;
+
+        const metrics = document.querySelector("#metrics");
+        metrics.innerHTML = "";
+        for (const [label, value] of Object.entries(result.metrics)) {
+          const item = document.createElement("div");
+          item.className = "metric";
+          item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+          metrics.append(item);
+        }
+
+        const modules = document.querySelector("#changed-modules");
+        modules.innerHTML = "";
+        result.modules.forEach(([name, detail, state]) => {
+          const item = document.createElement("div");
+          item.className = `module ${state}`;
+          item.innerHTML = `<strong>${name}</strong><small>${detail}</small>`;
+          modules.append(item);
+        });
+
+        document.querySelector("#execution-path").textContent =
+          result.scenario.path;
+        const verdict = document.querySelector("#verdict");
+        verdict.className = `verdict ${result.verdictClass}`;
+        verdict.textContent = result.scenario.verdict;
+      }
+
+      function render() {
+        const strategy = ModuleLab.strategies[strategyId];
+        renderStrategyTabs();
+        document.querySelector("#strategy-copy").innerHTML = `
+          <p><strong>${strategy.description}</strong></p>
+          <p class="tradeoff">取舍：${strategy.tradeoff}</p>
+        `;
+        document.querySelector("#strategy-code").textContent = strategy.code;
+        renderScenarioButtons();
+        renderWalkthroughs();
+        renderResult();
+      }
+
+      render();
+    </script>
+  </body>
+</html>
