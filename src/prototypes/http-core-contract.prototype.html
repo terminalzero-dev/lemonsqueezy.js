@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE — HTTP Core 契约</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17233c;
+        --muted: #667085;
+        --line: #d9dfeb;
+        --paper: #f5f7fb;
+        --card: #fff;
+        --accent: #3157d5;
+        --accent-soft: #e9eeff;
+        --good: #067647;
+        --good-soft: #ecfdf3;
+        --bad: #b42318;
+        --bad-soft: #fef3f2;
+        --warn: #b54708;
+        --code: #111a2e;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        width: min(1240px, calc(100% - 32px));
+        margin: 38px auto 64px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+        font-size: clamp(30px, 4vw, 46px);
+        letter-spacing: -0.04em;
+      }
+
+      h2 {
+        margin-bottom: 14px;
+        font-size: 20px;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 15px;
+      }
+
+      .eyebrow {
+        margin-bottom: 7px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 900px;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .prototype-note {
+        display: inline-block;
+        margin-top: 2px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        color: var(--warn);
+        background: #fff6ed;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .panel {
+        padding: 21px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        box-shadow: 0 10px 30px rgb(29 41 57 / 5%);
+      }
+
+      .top-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+        gap: 20px;
+        margin-top: 26px;
+      }
+
+      .lab-grid {
+        display: grid;
+        grid-template-columns: 270px minmax(0, 1fr);
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .tabs,
+      .actions,
+      .steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button {
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        color: var(--ink);
+        background: var(--card);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      button:hover,
+      button.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      button.recommended::after {
+        content: "推荐";
+        margin-left: 6px;
+        padding: 2px 5px;
+        border-radius: 5px;
+        color: white;
+        background: var(--accent);
+        font-size: 10px;
+      }
+
+      button.done {
+        border-color: #75caa5;
+        color: var(--good);
+        background: var(--good-soft);
+      }
+
+      .design-summary {
+        min-height: 104px;
+        margin: 16px 0;
+        padding: 14px;
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        background: var(--accent-soft);
+      }
+
+      .design-summary p {
+        margin-bottom: 6px;
+      }
+
+      .tradeoff,
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      pre {
+        margin: 0;
+        padding: 15px;
+        overflow: auto;
+        border-radius: 11px;
+        color: #e7eaff;
+        background: var(--code);
+        font:
+          12px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        white-space: pre-wrap;
+      }
+
+      #design-code {
+        min-height: 267px;
+      }
+
+      .fixed-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .fixed-list li {
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .fixed-list strong {
+        display: block;
+        color: var(--ink);
+      }
+
+      .scenario-list {
+        display: grid;
+        gap: 7px;
+      }
+
+      .scenario-list button {
+        width: 100%;
+        text-align: left;
+      }
+
+      .workbench {
+        min-width: 0;
+      }
+
+      .workbench-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .badge {
+        flex: 0 0 auto;
+        padding: 4px 8px;
+        border-radius: 999px;
+        color: var(--good);
+        background: var(--good-soft);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .badge.error {
+        color: var(--bad);
+        background: var(--bad-soft);
+      }
+
+      .state-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .state-card {
+        min-width: 0;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+      }
+
+      .state-card span {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .state-card pre {
+        max-height: 225px;
+        min-height: 145px;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .metric {
+        padding: 10px;
+        border-radius: 9px;
+        background: #f8f9fc;
+        text-align: center;
+      }
+
+      .metric strong,
+      .metric span {
+        display: block;
+      }
+
+      .metric strong {
+        font-size: 20px;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .guided {
+        margin-top: 20px;
+      }
+
+      .steps button {
+        flex: 1 1 210px;
+        text-align: left;
+      }
+
+      .rule-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .rule {
+        padding: 13px;
+        border-top: 3px solid var(--accent);
+        border-radius: 8px;
+        background: white;
+        font-size: 12px;
+      }
+
+      .rule strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      @media (max-width: 900px) {
+        .top-grid,
+        .lab-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .scenario-list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .rule-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 600px) {
+        .state-grid,
+        .fixed-list,
+        .rule-strip {
+          grid-template-columns: 1fr;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Wayfinder / HTTP Core Contract</p>
+      <h1>先固定语义，再写传输层</h1>
+      <p class="lede">
+        这个一次性原型只回答两个问题：哪些配置值得成为稳定公共契约，以及每种
+        HTTP 结果怎样映射到 Explicit Client、兼容 facade 与
+        <code>onError</code>。
+      </p>
+      <span class="prototype-note">THROWAWAY PROTOTYPE · 不进入生产构建</span>
+
+      <section class="top-grid">
+        <article class="panel">
+          <h2>三种配置边界</h2>
+          <div class="tabs" id="design-tabs"></div>
+          <div class="design-summary" id="design-summary"></div>
+          <pre id="design-code"></pre>
+        </article>
+
+        <aside class="panel">
+          <h2>不随方案变化的核心规则</h2>
+          <ul class="fixed-list">
+            <li><strong>两个协议</strong>JSON:API 与 License API 分开编码</li>
+            <li><strong>一次尝试</strong>beta 不自动重试</li>
+            <li><strong>真实状态码</strong>解析失败也不丢失 HTTP status</li>
+            <li>
+              <strong>无原始对象</strong>公共错误不暴露 Request / Response
+            </li>
+            <li><strong>204 / 205</strong>不调用 JSON parser</li>
+            <li>
+              <strong>业务否定</strong><code>valid: false</code> 仍可成功返回
+            </li>
+            <li>
+              <strong>观察者隔离</strong><code>onError</code> 仅属于兼容层
+            </li>
+            <li>
+              <strong>路径封闭</strong>资源方法提供 endpoint，不接受任意 URL
+            </li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="lab-grid">
+        <aside class="panel">
+          <h2>自由试验</h2>
+          <p class="hint">切换场景，观察同一底层结果如何投射到三种外部表面。</p>
+          <div class="scenario-list" id="scenario-list"></div>
+        </aside>
+
+        <article class="panel workbench">
+          <div class="workbench-head">
+            <div>
+              <p class="eyebrow">Current observation</p>
+              <h2 id="scenario-title"></h2>
+              <p class="hint" id="scenario-description"></p>
+            </div>
+            <span class="badge" id="outcome-badge"></span>
+          </div>
+
+          <div class="state-grid">
+            <div class="state-card">
+              <span>Internal wire request / event</span>
+              <pre id="wire-output"></pre>
+            </div>
+            <div class="state-card">
+              <span>Explicit Client</span>
+              <pre id="explicit-output"></pre>
+            </div>
+            <div class="state-card">
+              <span>Compatibility facade</span>
+              <pre id="compat-output"></pre>
+            </div>
+            <div class="state-card">
+              <span>Public LemonSqueezyError fields</span>
+              <pre id="error-output"></pre>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <strong id="attempt-count">0</strong><span>网络尝试</span>
+            </div>
+            <div class="metric">
+              <strong id="observer-count">0</strong><span>onError 次数</span>
+            </div>
+            <div class="metric">
+              <strong id="status-code">—</strong><span>保留状态码</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel guided">
+        <h2>引导检查</h2>
+        <p class="hint">
+          按顺序走四步；每一步都会载入最容易产生错误兼容承诺的场景。
+        </p>
+        <div class="steps" id="guided-steps"></div>
+      </section>
+
+      <section class="rule-strip">
+        <div class="rule">
+          <strong>查询参数</strong>省略 undefined/null/空集合；保留 false、0
+          与空字符串。
+        </div>
+        <div class="rule">
+          <strong>JSON:API body</strong>只转换 SDK 定义字段；用户所有的 opaque
+          map 保留原键。
+        </div>
+        <div class="rule">
+          <strong>License body</strong>使用 form encoding，无 Bearer；HTTP 2xx
+          决定传输成功。
+        </div>
+        <div class="rule">
+          <strong>敏感边界</strong>错误可含状态、响应体与
+          cause，但不含凭据、请求体或原始对象。
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const designs = {
+        minimal: {
+          label: "A · 极简",
+          summary:
+            "只接受调用方 signal；SDK 不提供超时默认值。公共面最小，但用户必须自己组合超时。",
+          tradeoff:
+            "优点：最少契约。代价：常见的超时安全线完全由每个调用方承担。",
+          code: `type ClientOptions = {
+  apiKey?: string
+}
+
+type RequestOptions = {
+  signal?: AbortSignal
+}
+
+// fetch、baseURL、headers、retry、hooks、logger：internal`,
+        },
+        flexible: {
+          label: "B · 可插拔",
+          summary:
+            "公开 transport、地址、headers、重试、hooks 与 logger；几乎所有行为都能被替换。",
+          tradeoff:
+            "优点：可塑性最高。代价：安全边界、跨运行时一致性与 semver 面积显著扩大。",
+          code: `type ClientOptions = {
+  apiKey?: string
+  baseURL?: string
+  fetch?: typeof globalThis.fetch
+  headers?: HeadersInit
+  timeoutMs?: number
+  retry?: RetryOptions
+  hooks?: Hooks
+  logger?: Logger
+}
+
+type RequestOptions = Partial<ClientOptions> & {
+  signal?: AbortSignal
+}`,
+        },
+        recommended: {
+          label: "C · 受控",
+          summary:
+            "SDK 提供 30 秒安全默认值，并允许单次覆盖；调用方 signal 与 SDK timeout 明确区分。",
+          tradeoff:
+            "推荐：只冻结真实用户需求，把 transport 与策略变化留在深模块内部。",
+          code: `type ClientOptions = {
+  apiKey?: string
+  timeoutMs?: number // default: 30_000; positive finite
+}
+
+type RequestOptions = {
+  signal?: AbortSignal
+  timeoutMs?: number // one-call override
+}
+
+// internal-only:
+// fetch, baseURL, headers, retry, hooks, logger,
+// middleware, raw request, testing seam`,
+        },
+      };
+
+      const scenarios = [
+        {
+          id: "ok-json",
+          label: "200 JSON",
+          title: "正常 JSON:API 成功",
+          description:
+            "成功表面直接得到解析后的 API body；facade 额外包装兼容 envelope。",
+          event: {
+            type: "response",
+            status: 200,
+            contentType: "application/vnd.api+json",
+            body: { data: { type: "orders", id: "42" } },
+          },
+        },
+        {
+          id: "no-content",
+          label: "204 / 205 空响应",
+          title: "成功但没有响应体",
+          description:
+            "核心不调用 JSON parser，因此不会把 204 误报成网络或解析错误。",
+          event: { type: "response", status: 204, contentType: "", body: "" },
+        },
+        {
+          id: "jsonapi-error",
+          label: "422 JSON:API",
+          title: "结构化 API 失败",
+          description:
+            "状态码、JSON:API errors 与完整响应体都保留；Explicit Client reject。",
+          event: {
+            type: "response",
+            status: 422,
+            contentType: "application/vnd.api+json",
+            body: {
+              errors: [
+                {
+                  status: "422",
+                  title: "Invalid input",
+                  detail: "Email is invalid",
+                },
+              ],
+            },
+          },
+        },
+        {
+          id: "text-error",
+          label: "500 文本",
+          title: "非 JSON 的 HTTP 失败",
+          description:
+            "它仍然是 HTTP 错误，而不是 parse error；真实 500 不会丢失。",
+          event: {
+            type: "response",
+            status: 500,
+            contentType: "text/plain",
+            body: "upstream unavailable",
+          },
+        },
+        {
+          id: "bad-success",
+          label: "200 损坏 JSON",
+          title: "成功状态但响应不符合预期",
+          description:
+            "归类为 invalid_response，并保留 200 与可安全观察的原始文本。",
+          event: {
+            type: "malformed",
+            status: 200,
+            contentType: "application/json",
+            body: "{broken",
+          },
+        },
+        {
+          id: "network",
+          label: "网络错误",
+          title: "尚未收到 HTTP 响应",
+          description:
+            "没有伪造 status；cause 可用于诊断，但不会泄露请求凭据。",
+          event: { type: "network", cause: "TypeError: fetch failed" },
+        },
+        {
+          id: "abort",
+          label: "调用方取消",
+          title: "调用方 signal 主动取消",
+          description:
+            "caller abort 与 SDK timeout 分开编码，使上层能决定是否静默处理。",
+          event: { type: "abort", cause: "AbortError" },
+        },
+        {
+          id: "timeout",
+          label: "30s 超时",
+          title: "SDK 超时安全线触发",
+          description: "只尝试一次；beta 不把超时隐式变成第二次写请求。",
+          event: { type: "timeout", timeoutMs: 30000, cause: "TimeoutError" },
+        },
+        {
+          id: "missing-key",
+          label: "缺 API key",
+          title: "请求前配置失败",
+          description:
+            "不发起网络请求；compat 返回 envelope，并只通知 onError 一次。",
+          event: {
+            type: "configuration",
+            message: "API key is required for this operation",
+          },
+        },
+        {
+          id: "validation",
+          label: "参数无效",
+          title: "资源方法输入校验失败",
+          description:
+            "资源边界直接 reject；它不是 HTTP Core 观察到的请求错误，也不调用 facade onError。",
+          event: {
+            type: "validation",
+            message: "orderId must be a string or number",
+          },
+        },
+        {
+          id: "license-false",
+          label: "License false",
+          title: "License API 的业务否定",
+          description:
+            "HTTP 200 下 valid:false 是可读业务响应，不是 SDK 传输错误。",
+          protocol: "license",
+          event: {
+            type: "response",
+            status: 200,
+            contentType: "application/json",
+            body: { valid: false, error: "license_key_not_found" },
+          },
+        },
+        {
+          id: "serialization",
+          label: "序列化边界",
+          title: "显式 falsy 与用户自定义键",
+          description:
+            "省略未提供值，保留 false/0/空字符串；checkout custom 的键不做 snake_case。",
+          event: { type: "serialization" },
+        },
+      ];
+
+      const guided = [
+        { label: "1 · 204 不解析", scenario: "no-content" },
+        { label: "2 · 500 不是 parse error", scenario: "text-error" },
+        { label: "3 · 取消 ≠ 超时", scenario: "timeout" },
+        { label: "4 · opaque custom 保留键", scenario: "serialization" },
+      ];
+
+      const state = {
+        design: "recommended",
+        scenario: "ok-json",
+        completedSteps: new Set(),
+      };
+
+      const asJSON = (value) => JSON.stringify(value, null, 2);
+
+      const publicError = ({
+        code,
+        message,
+        statusCode = null,
+        responseBody = null,
+        apiErrors,
+        cause,
+      }) => ({
+        name: "LemonSqueezyError",
+        code,
+        message,
+        statusCode,
+        responseBody,
+        ...(apiErrors ? { apiErrors } : {}),
+        ...(cause ? { cause } : {}),
+      });
+
+      const HttpCoreModel = {
+        wireRequest(scenario) {
+          if (scenario.event.type === "serialization") {
+            return {
+              protocol: "jsonapi",
+              method: "POST",
+              path: "/v1/checkouts",
+              query:
+                "filter[store_id]=7&test_mode=false&page[number]=0&search=",
+              body: {
+                data: {
+                  type: "checkouts",
+                  attributes: {
+                    product_options: { enabled_variants: [1, 2] },
+                    checkout_data: {
+                      custom: { customerID: "A-9", CampaignSource: "docs" },
+                    },
+                    test_mode: false,
+                  },
+                },
+              },
+              omitted: ["query.include", "attributes.expires_at"],
+            };
+          }
+
+          if (["configuration", "validation"].includes(scenario.event.type)) {
+            return { phase: "preflight", networkRequestCreated: false };
+          }
+
+          return {
+            protocol: scenario.protocol || "jsonapi",
+            method: scenario.protocol === "license" ? "POST" : "GET",
+            path:
+              scenario.protocol === "license"
+                ? "/v1/licenses/validate"
+                : "/v1/orders/42",
+            contentType:
+              scenario.protocol === "license"
+                ? "application/x-www-form-urlencoded"
+                : "application/vnd.api+json",
+            authorization:
+              scenario.protocol === "license" ? "none" : "Bearer [redacted]",
+            event: scenario.event,
+          };
+        },
+
+        classify(scenario) {
+          const event = scenario.event;
+
+          if (event.type === "serialization") {
+            return {
+              ok: true,
+              statusCode: null,
+              data: "wire request compiled; no request sent",
+              attempts: 0,
+              observerCount: 0,
+            };
+          }
+
+          if (event.type === "validation") {
+            return {
+              ok: false,
+              statusCode: null,
+              attempts: 0,
+              observerCount: 0,
+              error: publicError({
+                code: "validation",
+                message: event.message,
+              }),
+            };
+          }
+
+          if (event.type === "configuration") {
+            return {
+              ok: false,
+              statusCode: null,
+              attempts: 0,
+              observerCount: 1,
+              error: publicError({
+                code: "configuration",
+                message: event.message,
+              }),
+            };
+          }
+
+          if (event.type === "network") {
+            return {
+              ok: false,
+              statusCode: null,
+              attempts: 1,
+              observerCount: 1,
+              error: publicError({
+                code: "network",
+                message: "Network request failed",
+                cause: event.cause,
+              }),
+            };
+          }
+
+          if (event.type === "abort") {
+            return {
+              ok: false,
+              statusCode: null,
+              attempts: 1,
+              observerCount: 1,
+              error: publicError({
+                code: "aborted",
+                message: "Request was cancelled by the caller",
+                cause: event.cause,
+              }),
+            };
+          }
+
+          if (event.type === "timeout") {
+            return {
+              ok: false,
+              statusCode: null,
+              attempts: 1,
+              observerCount: 1,
+              error: publicError({
+                code: "timeout",
+                message: `Request timed out after ${event.timeoutMs}ms`,
+                cause: event.cause,
+              }),
+            };
+          }
+
+          if (event.type === "malformed") {
+            return {
+              ok: false,
+              statusCode: event.status,
+              attempts: 1,
+              observerCount: 1,
+              error: publicError({
+                code: "invalid_response",
+                message: "Response body is not valid JSON",
+                statusCode: event.status,
+                responseBody: event.body,
+                cause: "SyntaxError",
+              }),
+            };
+          }
+
+          if (event.status === 204 || event.status === 205) {
+            return {
+              ok: true,
+              statusCode: event.status,
+              data: undefined,
+              attempts: 1,
+              observerCount: 0,
+            };
+          }
+
+          if (event.status >= 200 && event.status < 300) {
+            return {
+              ok: true,
+              statusCode: event.status,
+              data: event.body,
+              attempts: 1,
+              observerCount: 0,
+            };
+          }
+
+          const apiErrors = Array.isArray(event.body?.errors)
+            ? event.body.errors
+            : undefined;
+          return {
+            ok: false,
+            statusCode: event.status,
+            attempts: 1,
+            observerCount: 1,
+            error: publicError({
+              code: "http",
+              message: `HTTP request failed with status ${event.status}`,
+              statusCode: event.status,
+              responseBody: event.body,
+              apiErrors,
+            }),
+          };
+        },
+
+        projectExplicit(result) {
+          return result.ok
+            ? result.statusCode === 204 || result.statusCode === 205
+              ? { settlement: "resolve", value: "undefined (void)" }
+              : { settlement: "resolve", value: result.data }
+            : { settlement: "reject", error: result.error };
+        },
+
+        projectCompatibility(result) {
+          return result.ok
+            ? {
+                statusCode: result.statusCode,
+                data:
+                  result.statusCode === 204 || result.statusCode === 205
+                    ? null
+                    : result.data,
+                error: null,
+              }
+            : {
+                statusCode: result.statusCode,
+                data: null,
+                error: result.error,
+              };
+        },
+      };
+
+      function renderDesigns() {
+        const tabs = document.querySelector("#design-tabs");
+        tabs.innerHTML = Object.entries(designs)
+          .map(
+            ([id, design]) =>
+              `<button data-design="${id}" class="${id === state.design ? "active" : ""} ${id === "recommended" ? "recommended" : ""}">${design.label}</button>`
+          )
+          .join("");
+
+        const design = designs[state.design];
+        document.querySelector("#design-summary").innerHTML =
+          `<p><strong>${design.summary}</strong></p><p class="tradeoff">${design.tradeoff}</p>`;
+        document.querySelector("#design-code").textContent = design.code;
+      }
+
+      function renderScenarios() {
+        document.querySelector("#scenario-list").innerHTML = scenarios
+          .map(
+            (scenario) =>
+              `<button data-scenario="${scenario.id}" class="${scenario.id === state.scenario ? "active" : ""}">${scenario.label}</button>`
+          )
+          .join("");
+      }
+
+      function renderWorkbench() {
+        const scenario = scenarios.find(
+          (candidate) => candidate.id === state.scenario
+        );
+        const result = HttpCoreModel.classify(scenario);
+        const badge = document.querySelector("#outcome-badge");
+
+        document.querySelector("#scenario-title").textContent = scenario.title;
+        document.querySelector("#scenario-description").textContent =
+          scenario.description;
+        document.querySelector("#wire-output").textContent = asJSON(
+          HttpCoreModel.wireRequest(scenario)
+        );
+        document.querySelector("#explicit-output").textContent = asJSON(
+          HttpCoreModel.projectExplicit(result)
+        );
+        document.querySelector("#compat-output").textContent = asJSON(
+          HttpCoreModel.projectCompatibility(result)
+        );
+        document.querySelector("#error-output").textContent = result.error
+          ? asJSON(result.error)
+          : "null";
+        document.querySelector("#attempt-count").textContent = result.attempts;
+        document.querySelector("#observer-count").textContent =
+          result.observerCount;
+        document.querySelector("#status-code").textContent =
+          result.statusCode ?? "—";
+
+        badge.textContent = result.ok ? "RESOLVE" : "REJECT";
+        badge.classList.toggle("error", !result.ok);
+      }
+
+      function renderGuide() {
+        document.querySelector("#guided-steps").innerHTML = guided
+          .map(
+            (step, index) =>
+              `<button data-step="${index}" class="${state.completedSteps.has(index) ? "done" : ""}">${state.completedSteps.has(index) ? "✓ " : ""}${step.label}</button>`
+          )
+          .join("");
+      }
+
+      function render() {
+        renderDesigns();
+        renderScenarios();
+        renderWorkbench();
+        renderGuide();
+      }
+
+      document.addEventListener("click", (event) => {
+        const designButton = event.target.closest("[data-design]");
+        if (designButton) {
+          state.design = designButton.dataset.design;
+          render();
+          return;
+        }
+
+        const scenarioButton = event.target.closest("[data-scenario]");
+        if (scenarioButton) {
+          state.scenario = scenarioButton.dataset.scenario;
+          render();
+          return;
+        }
+
+        const stepButton = event.target.closest("[data-step]");
+        if (stepButton) {
+          const index = Number(stepButton.dataset.step);
+          state.completedSteps.add(index);
+          state.scenario = guided[index].scenario;
+          render();
+        }
+      });
+
+      render();
+    </script>
+  </body>
+</html>

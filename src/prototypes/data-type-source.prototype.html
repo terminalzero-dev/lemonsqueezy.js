@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE — 数据类型模型与真相源</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #152238;
+        --muted: #657084;
+        --line: #d8deea;
+        --paper: #f5f7fb;
+        --card: #fff;
+        --accent: #3157d5;
+        --accent-soft: #e9eeff;
+        --good: #067647;
+        --good-soft: #ecfdf3;
+        --warn: #b54708;
+        --warn-soft: #fff6ed;
+        --bad: #b42318;
+        --bad-soft: #fef3f2;
+        --code: #111a2e;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        width: min(1240px, calc(100% - 32px));
+        margin: 38px auto 64px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+        font-size: clamp(30px, 4vw, 46px);
+        letter-spacing: -0.04em;
+      }
+
+      h2 {
+        margin-bottom: 14px;
+        font-size: 20px;
+      }
+
+      h3 {
+        margin-bottom: 7px;
+        font-size: 15px;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      .eyebrow {
+        margin-bottom: 7px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 920px;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .prototype-note {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 6px;
+        color: var(--warn);
+        background: var(--warn-soft);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .panel {
+        padding: 21px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        box-shadow: 0 10px 30px rgb(29 41 57 / 5%);
+      }
+
+      .top-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(350px, 0.95fr);
+        gap: 20px;
+        margin-top: 26px;
+      }
+
+      .lab-grid {
+        display: grid;
+        grid-template-columns: 270px minmax(0, 1fr);
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .tabs,
+      .scenario-list,
+      .steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button {
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        color: var(--ink);
+        background: var(--card);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      button:hover,
+      button.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      button.recommended::after {
+        content: "推荐";
+        margin-left: 6px;
+        padding: 2px 5px;
+        border-radius: 5px;
+        color: #fff;
+        background: var(--accent);
+        font-size: 10px;
+      }
+
+      button.done {
+        border-color: #75caa5;
+        color: var(--good);
+        background: var(--good-soft);
+      }
+
+      .strategy-copy {
+        min-height: 110px;
+        margin: 16px 0;
+        padding: 14px;
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        background: var(--accent-soft);
+      }
+
+      .strategy-copy p {
+        margin-bottom: 6px;
+      }
+
+      .hint,
+      .tradeoff {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      pre {
+        margin: 0;
+        padding: 15px;
+        overflow: auto;
+        border-radius: 11px;
+        color: #e7eaff;
+        background: var(--code);
+        font:
+          12px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        white-space: pre-wrap;
+      }
+
+      #strategy-code {
+        min-height: 250px;
+      }
+
+      .source-stack {
+        display: grid;
+        gap: 9px;
+      }
+
+      .source {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 10px;
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .source b {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 8px;
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .source p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .source strong {
+        display: block;
+        color: var(--ink);
+      }
+
+      .scenario-list {
+        display: grid;
+      }
+
+      .scenario-list button {
+        width: 100%;
+        text-align: left;
+      }
+
+      .workbench-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .badge {
+        flex: 0 0 auto;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .badge.good {
+        color: var(--good);
+        background: var(--good-soft);
+      }
+
+      .badge.warn {
+        color: var(--warn);
+        background: var(--warn-soft);
+      }
+
+      .badge.bad {
+        color: var(--bad);
+        background: var(--bad-soft);
+      }
+
+      .state-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .state-card {
+        min-width: 0;
+        min-height: 130px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+      }
+
+      .state-card span {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .state-card strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .state-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .guided,
+      .policy-strip {
+        margin-top: 20px;
+      }
+
+      .steps button {
+        flex: 1 1 200px;
+        text-align: left;
+      }
+
+      .policy-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .policy {
+        padding: 13px;
+        border-top: 3px solid var(--accent);
+        border-radius: 8px;
+        background: var(--card);
+        font-size: 12px;
+      }
+
+      .policy strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      @media (max-width: 900px) {
+        .top-grid,
+        .lab-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .scenario-list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .policy-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 600px) {
+        .state-grid,
+        .policy-strip,
+        .scenario-list {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Wayfinder / Data Model & Source of Truth</p>
+      <h1>当官方没有 schema，什么才算真相？</h1>
+      <p class="lede">
+        这个一次性原型模拟 API 发生兼容性变化时，手写、网页全生成和混合 Contract
+        Catalog 三种方案分别怎样影响运行时、TypeScript 调用者与维护流程。
+      </p>
+      <span class="prototype-note">THROWAWAY PROTOTYPE · 不进入生产构建</span>
+
+      <section class="top-grid">
+        <article class="panel">
+          <h2>三种真相源策略</h2>
+          <div class="tabs" id="strategy-tabs"></div>
+          <div class="strategy-copy" id="strategy-copy"></div>
+          <pre id="strategy-code"></pre>
+        </article>
+
+        <aside class="panel">
+          <h2>证据到产物</h2>
+          <div class="source-stack">
+            <div class="source">
+              <b>1</b>
+              <p>
+                <strong>官方 docs + changelog</strong>true external
+                evidence；没有公开 machine schema。
+              </p>
+            </div>
+            <div class="source">
+              <b>2</b>
+              <p>
+                <strong>人工审核与冲突记录</strong>判断
+                required、nullability、业务约束与 opaque data。
+              </p>
+            </div>
+            <div class="source">
+              <b>3</b>
+              <p>
+                <strong>仓库 Contract Catalog</strong>版本化的 endpoint、wire
+                mapping、relations、enums 和 provenance。
+              </p>
+            </div>
+            <div class="source">
+              <b>4</b>
+              <p>
+                <strong>共享派生</strong>resource runtime、公共 types、compat
+                aliases 与 drift fixtures 共用。
+              </p>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="lab-grid">
+        <aside class="panel">
+          <h2>自由试验</h2>
+          <p class="hint">选择一次上游变化，观察当前策略的行为。</p>
+          <div class="scenario-list" id="scenario-list"></div>
+        </aside>
+
+        <article class="panel">
+          <div class="workbench-head">
+            <div>
+              <p class="eyebrow">Current observation</p>
+              <h2 id="scenario-title"></h2>
+              <p class="hint" id="scenario-description"></p>
+            </div>
+            <span class="badge" id="risk-badge"></span>
+          </div>
+          <div class="state-grid">
+            <div class="state-card">
+              <span>Runtime</span>
+              <strong id="runtime-title"></strong>
+              <p id="runtime-copy"></p>
+            </div>
+            <div class="state-card">
+              <span>TypeScript caller</span>
+              <strong id="type-title"></strong>
+              <p id="type-copy"></p>
+            </div>
+            <div class="state-card">
+              <span>Maintainer action</span>
+              <strong id="maintainer-title"></strong>
+              <p id="maintainer-copy"></p>
+            </div>
+            <div class="state-card">
+              <span>Invariant</span>
+              <strong id="invariant-title"></strong>
+              <p id="invariant-copy"></p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel guided">
+        <h2>引导检查</h2>
+        <p class="hint">
+          按顺序体验最容易把“向后兼容 API 变化”变成 SDK 故障的四个场景。
+        </p>
+        <div class="steps" id="guided-steps"></div>
+      </section>
+
+      <section class="policy-strip">
+        <div class="policy">
+          <strong>请求是闭世界</strong>camelCase DTO 与 enum
+          严格；未知或拼错字段不发送。
+        </div>
+        <div class="policy">
+          <strong>响应是开世界</strong>运行时保留未知字段；公开已知字段无宽泛
+          index signature。
+        </div>
+        <div class="policy">
+          <strong>入站事件有 fallback</strong>已知事件可判别；新增事件作为
+          Unknown event 安全接收。
+        </div>
+        <div class="policy">
+          <strong>冲突不猜</strong
+          >文档、示例与观测不一致时记录证据状态，人工裁决后再发布。
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const strategies = {
+        handwritten: {
+          label: "A · 全手写",
+          summary:
+            "每个 resource 的 TypeScript 类型、endpoint 与 serializer 分开手写。",
+          tradeoff:
+            "启动最轻，但相同事实散落多处；v4 已出现 enum、命名、runtime/d.ts 与新增 API 漂移。",
+          code: `// resource type
+export interface OrderAttributes { ... }
+
+// runtime path + serializer（另一处）
+export async function listOrders(params) { ... }
+
+// root exports（再一处）
+export type { Order, ListOrdersParams }
+
+// docs/changelog 由维护者记忆同步`,
+        },
+        scraped: {
+          label: "B · 网页全生成",
+          summary:
+            "抓取官方 HTML、prose 和 examples，直接生成 types 与 runtime。",
+          tradeoff:
+            "表面自动化最高，但输入不是契约；页面结构、过时示例和 prose 冲突会未经判断进入发布包。",
+          code: `official HTML pages
+  ↓ scraper
+inferred required/nullability/enums
+  ↓ generator
+runtime + public declarations
+
+// 当前缺失：official OpenAPI / JSON Schema
+// 风险：把示例缺字段误判为 optional，
+//       把 prose 冲突直接变成代码`,
+        },
+        hybrid: {
+          label: "C · 混合 Catalog",
+          summary:
+            "官方资料是证据；经人工审核的仓库 Contract Catalog 才是版本化真相源。",
+          tradeoff:
+            "推荐：机械事实只写一次并派生复用，复杂业务语义继续用 TypeScript 人工表达。",
+          code: `orders.contract.ts
+  defineResource({
+    type: "orders",
+    relations: { store: "one", affiliate: "one?" },
+    operations: { list: { method: "GET", ... } },
+    evidence: [docsUrl, changelogUrl],
+  })
+
+orders.types.ts
+  // hand-authored semantic attributes + input DTOs
+
+derived: runtime registry, enum/event catalogs,
+         export fixtures, compat aliases, drift checks`,
+        },
+      };
+
+      const scenarios = [
+        {
+          id: "response-field",
+          label: "新增响应字段",
+          title: "Order 新增 affiliate_id",
+          description:
+            "Lemon Squeezy 把新增 response property 视为 /v1 的兼容变化。",
+          kind: "response-addition",
+        },
+        {
+          id: "enum-member",
+          label: "新增 enum 值",
+          title: "Invoice status 新增 partial_refund",
+          description: "运行时可能先出现新值，SDK 类型发布随后才跟上。",
+          kind: "enum-addition",
+        },
+        {
+          id: "request-typo",
+          label: "请求值拼错",
+          title: "调用方提交未知 request enum",
+          description: "向前兼容不能以允许无效写入为代价。",
+          kind: "request-typo",
+        },
+        {
+          id: "opaque-custom",
+          label: "用户 custom 键",
+          title: "checkoutData.custom.customerID",
+          description:
+            "这部分数据由用户所有，SDK 不知道也不应改写它的 schema。",
+          kind: "opaque",
+        },
+        {
+          id: "docs-conflict",
+          label: "文档互相冲突",
+          title: "Subscription URL 的 prose 与 sample 不同",
+          description: "当前对象页文字与 JSON 示例对 URL 键名给出不同答案。",
+          kind: "conflict",
+        },
+        {
+          id: "webhook-event",
+          label: "新增 Webhook",
+          title: "收到尚未发布类型的新事件",
+          description:
+            "Webhook event 是高漂移入站面；丢弃整个请求会放大上游兼容变化。",
+          kind: "event-addition",
+        },
+        {
+          id: "relationship",
+          label: "新增关系",
+          title: "Customer 新增 affiliates relationship",
+          description:
+            "relation 名、cardinality、include 与 resource type 必须保持同步。",
+          kind: "relationship-addition",
+        },
+      ];
+
+      const walkthroughs = [
+        { label: "1 · 新字段不使 runtime 失败", scenario: "response-field" },
+        { label: "2 · response enum 保持开放", scenario: "enum-member" },
+        { label: "3 · request enum 仍严格", scenario: "request-typo" },
+        { label: "4 · 冲突进入人工审核", scenario: "docs-conflict" },
+      ];
+
+      const state = {
+        strategy: "hybrid",
+        scenario: "response-field",
+        completed: new Set(),
+      };
+
+      const ContractPolicy = {
+        evaluate(strategy, scenario) {
+          const matrices = {
+            handwritten: {
+              "response-addition": {
+                risk: "warn",
+                runtime: [
+                  "通常保留",
+                  "fetch JSON 原样返回，但没有统一规则保证未来 parser 也 passthrough。",
+                ],
+                types: ["不可见", "字段到下一次人工同步前无法从类型访问。"],
+                maintainer: [
+                  "多点修改",
+                  "attributes、relations、serializer、exports 与测试可能分别更新。",
+                ],
+                invariant: [
+                  "依靠约定",
+                  "没有机器检查证明 runtime、declaration 与文档清单一致。",
+                ],
+              },
+              "enum-addition": {
+                risk: "bad",
+                runtime: [
+                  "值穿透",
+                  "运行时得到新字符串，但封闭 union 已经与事实不符。",
+                ],
+                types: [
+                  "静态失真",
+                  "消费者被告知该值不可能出现，穷举逻辑可能漏掉它。",
+                ],
+                maintainer: [
+                  "人工发现",
+                  "等待 issue、changelog 巡检或真实响应暴露差异。",
+                ],
+                invariant: [
+                  "无统一策略",
+                  "request 与 response enum 容易复用同一个封闭 union。",
+                ],
+              },
+              "request-typo": {
+                risk: "good",
+                runtime: [
+                  "资源校验",
+                  "只要 DTO 保持严格，拼错值会在发送前失败。",
+                ],
+                types: [
+                  "拒绝",
+                  "封闭 request union 提供自动补全并阻止未知值。",
+                ],
+                maintainer: ["局部维护", "每个 request DTO 人工维护合法集合。"],
+                invariant: ["可表达", "请求严格性是手写 TypeScript 的强项。"],
+              },
+              opaque: {
+                risk: "warn",
+                runtime: [
+                  "取决于 serializer",
+                  "全局 camel→snake 曾会误处理嵌套数组或自定义对象。",
+                ],
+                types: [
+                  "Record 可表达",
+                  "类型能表示 custom，但无法保证 runtime 原样保留。",
+                ],
+                maintainer: [
+                  "重复例外",
+                  "每个 serializer 必须记住 opaque seam。",
+                ],
+                invariant: ["容易漂移", "类型与序列化规则位于不同 Module。"],
+              },
+              conflict: {
+                risk: "bad",
+                runtime: [
+                  "任选其一",
+                  "维护者可能根据 sample 或 prose 修改，没有统一证据状态。",
+                ],
+                types: [
+                  "看似确定",
+                  "单一手写字段会隐藏官方资料本身的不确定性。",
+                ],
+                maintainer: ["临时判断", "判断理由难以与类型一起追踪。"],
+                invariant: ["不可审计", "未来维护者不知道为何选择这个键名。"],
+              },
+              "event-addition": {
+                risk: "bad",
+                runtime: [
+                  "body 可解析",
+                  "但若 receiver 只接受封闭 Events，业务层可能拒绝新事件。",
+                ],
+                types: ["无 fallback", "新 event_name 不在 union 中。"],
+                maintainer: [
+                  "快速补丁",
+                  "必须更新 event union 与 payload mapping。",
+                ],
+                invariant: [
+                  "闭世界错配",
+                  "官方明确把新增 Webhook event 视为兼容变化。",
+                ],
+              },
+              "relationship-addition": {
+                risk: "warn",
+                runtime: [
+                  "关系仍在 body",
+                  "JSON 保留，但 include 与 relationship registry 可能不认识。",
+                ],
+                types: [
+                  "多处缺失",
+                  "resource type、relationship key 与 include union 需同步。",
+                ],
+                maintainer: [
+                  "多点修改",
+                  "全局 registry 与 resource Data 类型分别维护。",
+                ],
+                invariant: ["Locality 低", "一个上游事实散落到多份文件。"],
+              },
+            },
+            scraped: {
+              "response-addition": {
+                risk: "warn",
+                runtime: [
+                  "下次抓取加入",
+                  "前提是页面标记稳定且 scraper 正确识别字段。",
+                ],
+                types: ["自动更新", "也可能因 sample 不完整而错误删除旧字段。"],
+                maintainer: [
+                  "修 scraper",
+                  "页面结构改变会让所有 resource 同时受影响。",
+                ],
+                invariant: [
+                  "输入不可靠",
+                  "自动生成不能提高非形式化输入的真实性。",
+                ],
+              },
+              "enum-addition": {
+                risk: "warn",
+                runtime: [
+                  "生成后接受",
+                  "发布前窗口仍存在；prose 解析也可能漏掉值。",
+                ],
+                types: ["封闭 union 更新", "消费者仍把服务端 enum 当闭世界。"],
+                maintainer: [
+                  "监控生成 diff",
+                  "需要判断新增值是真实变化还是解析噪声。",
+                ],
+                invariant: [
+                  "缺人工语义",
+                  "无法自动区分 request 与 response 的开放性。",
+                ],
+              },
+              "request-typo": {
+                risk: "warn",
+                runtime: [
+                  "依赖推断",
+                  "若 scraper 从 prose 正确识别 enum 才能拒绝。",
+                ],
+                types: [
+                  "可能严格",
+                  "文档格式变化可能突然把 union 放宽为 string。",
+                ],
+                maintainer: ["审查 diff", "生成结果仍需要人工验证。"],
+                invariant: ["伪自动化", "省掉建模动作，却没有省掉判断责任。"],
+              },
+              opaque: {
+                risk: "bad",
+                runtime: [
+                  "容易误推断",
+                  "example 中出现的 custom 键可能被当作 SDK-owned schema。",
+                ],
+                types: ["过拟合示例", "用户自定义数据可能被错误收窄。"],
+                maintainer: [
+                  "编写 override",
+                  "最终仍需人工标注 opaque subtree。",
+                ],
+                invariant: ["Ownership 丢失", "网页无法表达谁拥有嵌套键。"],
+              },
+              conflict: {
+                risk: "bad",
+                runtime: [
+                  "非确定选择",
+                  "scraper 可能按 selector 顺序选择 prose 或 sample。",
+                ],
+                types: ["生成错误确定性", "冲突被掩盖成一个看似权威的声明。"],
+                maintainer: [
+                  "override 救火",
+                  "必须建立例外层，最终演变成隐式 Catalog。",
+                ],
+                invariant: ["证据不可解释", "输出无法说明为何相信某个来源。"],
+              },
+              "event-addition": {
+                risk: "warn",
+                runtime: [
+                  "下次抓取识别",
+                  "事件表结构稳定时可更新 known list。",
+                ],
+                types: ["发布窗口仍封闭", "尚未生成前的新事件没有 fallback。"],
+                maintainer: [
+                  "验证 payload mapping",
+                  "event name 可抓，payload 语义仍需人工关联。",
+                ],
+                invariant: ["只解决一半", "表格不提供完整 payload schema。"],
+              },
+              "relationship-addition": {
+                risk: "bad",
+                runtime: [
+                  "cardinality 易猜错",
+                  "sample 常只有 links，无法可靠推断 one/many/null。",
+                ],
+                types: [
+                  "可能生成错误 relation",
+                  "对象页 prose 与 sample 需联合解释。",
+                ],
+                maintainer: [
+                  "人工 override",
+                  "relation 是非形式文档最脆弱的部分。",
+                ],
+                invariant: [
+                  "不可验证",
+                  "没有官方 relation schema 与 scraper 对照。",
+                ],
+              },
+            },
+            hybrid: {
+              "response-addition": {
+                risk: "good",
+                runtime: [
+                  "立即保留",
+                  "响应只做顶层结构校验，未知 attributes 原样 passthrough。",
+                ],
+                types: [
+                  "已知字段显式",
+                  "不加宽泛 index signature；审核后 Catalog 与类型一起更新。",
+                ],
+                maintainer: [
+                  "一次审核",
+                  "在对应 resource contract/type 模块加入字段与 evidence。",
+                ],
+                invariant: [
+                  "新增不致命",
+                  "API 的兼容字段新增不会变成 SDK runtime breaking。",
+                ],
+              },
+              "enum-addition": {
+                risk: "good",
+                runtime: [
+                  "安全保留",
+                  "response enum 使用 known literals + open string。",
+                ],
+                types: [
+                  "真实且可发现",
+                  "IDE 提示已知值，同时承认服务端未来可能返回其他字符串。",
+                ],
+                maintainer: [
+                  "补 known catalog",
+                  "changelog/drift job 提醒，审核后改善 autocomplete。",
+                ],
+                invariant: [
+                  "读写分离",
+                  "response enum 开放，request enum 封闭。",
+                ],
+              },
+              "request-typo": {
+                risk: "good",
+                runtime: [
+                  "请求前拒绝",
+                  "resource operation 只编译 Catalog 声明的 SDK-owned 字段和值。",
+                ],
+                types: [
+                  "封闭 union",
+                  "调用方获得精确自动补全，未知值产生编译错误。",
+                ],
+                maintainer: [
+                  "显式升级",
+                  "只有官方确认请求接受新值后才扩展 input。",
+                ],
+                invariant: [
+                  "不发送猜测",
+                  "forward compatibility 不放宽写入契约。",
+                ],
+              },
+              opaque: {
+                risk: "good",
+                runtime: [
+                  "原样保留",
+                  "Catalog 把 custom 标为 user-owned opaque subtree。",
+                ],
+                types: [
+                  "Record<string, unknown>",
+                  "SDK 不对用户键名、值或 casing 作声明。",
+                ],
+                maintainer: [
+                  "一次 ownership 标注",
+                  "serializer 从同一 contract 得到不转换规则。",
+                ],
+                invariant: [
+                  "所有权清晰",
+                  "SDK-owned 字段才执行 wire mapping。",
+                ],
+              },
+              conflict: {
+                risk: "good",
+                runtime: [
+                  "不自动改变",
+                  "未经裁决的 scrape diff 不进入发布 runtime。",
+                ],
+                types: [
+                  "不制造确定性",
+                  "保留已证实形状；冲突字段进入 evidence review。",
+                ],
+                maintainer: [
+                  "记录 provisional",
+                  "链接 prose、sample、v4 与 Test Mode 观测，明确待验证。",
+                ],
+                invariant: [
+                  "证据可审计",
+                  "没有人工 approval 就不能改变 Contract Catalog。",
+                ],
+              },
+              "event-addition": {
+                risk: "good",
+                runtime: [
+                  "Unknown fallback",
+                  "receiver 可验证签名并保留未知 event_name 与 resource body。",
+                ],
+                types: [
+                  "已知可判别",
+                  "known events 精确映射 payload；unknown event 是显式 fallback。",
+                ],
+                maintainer: [
+                  "升级 known mapping",
+                  "事件表 drift 提醒后审核 event → resource 关系。",
+                ],
+                invariant: [
+                  "入站开世界",
+                  "新增兼容事件不会迫使 SDK 丢弃合法 webhook。",
+                ],
+              },
+              "relationship-addition": {
+                risk: "good",
+                runtime: ["body 先保留", "新增 relation 不导致解析失败。"],
+                types: [
+                  "Catalog 派生",
+                  "relation 名、one/many、include 与 resource identifier 一起更新。",
+                ],
+                maintainer: [
+                  "单点变更",
+                  "审核一个 resource contract 后共享给 runtime 与 types。",
+                ],
+                invariant: [
+                  "Locality 高",
+                  "同一个上游事实不会散落到全局 registry 与多个 adapter。",
+                ],
+              },
+            },
+          };
+
+          return matrices[strategy][scenario.kind];
+        },
+      };
+
+      const riskLabels = {
+        good: "边界清晰",
+        warn: "需要约定",
+        bad: "高漂移风险",
+      };
+
+      function renderStrategies() {
+        document.querySelector("#strategy-tabs").innerHTML = Object.entries(
+          strategies
+        )
+          .map(
+            ([id, strategy]) =>
+              `<button data-strategy="${id}" class="${id === state.strategy ? "active" : ""} ${id === "hybrid" ? "recommended" : ""}">${strategy.label}</button>`
+          )
+          .join("");
+
+        const strategy = strategies[state.strategy];
+        document.querySelector("#strategy-copy").innerHTML =
+          `<p><strong>${strategy.summary}</strong></p><p class="tradeoff">${strategy.tradeoff}</p>`;
+        document.querySelector("#strategy-code").textContent = strategy.code;
+      }
+
+      function renderScenarios() {
+        document.querySelector("#scenario-list").innerHTML = scenarios
+          .map(
+            (scenario) =>
+              `<button data-scenario="${scenario.id}" class="${scenario.id === state.scenario ? "active" : ""}">${scenario.label}</button>`
+          )
+          .join("");
+      }
+
+      function renderWorkbench() {
+        const scenario = scenarios.find(
+          (candidate) => candidate.id === state.scenario
+        );
+        const result = ContractPolicy.evaluate(state.strategy, scenario);
+        const badge = document.querySelector("#risk-badge");
+
+        document.querySelector("#scenario-title").textContent = scenario.title;
+        document.querySelector("#scenario-description").textContent =
+          scenario.description;
+
+        for (const [key, value] of Object.entries({
+          runtime: result.runtime,
+          type: result.types,
+          maintainer: result.maintainer,
+          invariant: result.invariant,
+        })) {
+          document.querySelector(`#${key}-title`).textContent = value[0];
+          document.querySelector(`#${key}-copy`).textContent = value[1];
+        }
+
+        badge.className = `badge ${result.risk}`;
+        badge.textContent = riskLabels[result.risk];
+      }
+
+      function renderGuide() {
+        document.querySelector("#guided-steps").innerHTML = walkthroughs
+          .map(
+            (walkthrough, index) =>
+              `<button data-step="${index}" class="${state.completed.has(index) ? "done" : ""}">${state.completed.has(index) ? "✓ " : ""}${walkthrough.label}</button>`
+          )
+          .join("");
+      }
+
+      function render() {
+        renderStrategies();
+        renderScenarios();
+        renderWorkbench();
+        renderGuide();
+      }
+
+      document.addEventListener("click", (event) => {
+        const strategyButton = event.target.closest("[data-strategy]");
+        if (strategyButton) {
+          state.strategy = strategyButton.dataset.strategy;
+          render();
+          return;
+        }
+
+        const scenarioButton = event.target.closest("[data-scenario]");
+        if (scenarioButton) {
+          state.scenario = scenarioButton.dataset.scenario;
+          render();
+          return;
+        }
+
+        const stepButton = event.target.closest("[data-step]");
+        if (stepButton) {
+          const index = Number(stepButton.dataset.step);
+          state.completed.add(index);
+          state.strategy = "hybrid";
+          state.scenario = walkthroughs[index].scenario;
+          render();
+        }
+      });
+
+      render();
+    </script>
+  </body>
+</html>
