@@ -82,7 +82,7 @@ Compatibility facade 继续把共享核心结果转换成 `{ statusCode, data, e
 | `@terminalzero/lemonsqueezy/compat` | v4 compatibility facade                                                                        |
 | `@terminalzero/lemonsqueezy/types`  | 集中的公共类型入口                                                                             |
 
-所有入口最终都要满足已决定的 ESM、CJS 和双声明要求。具体 package `exports` 条件由构建与包产物票决定。
+所有入口都发布原生 ESM/CJS 与匹配格式的双声明；`./types` 是无 runtime target 的 type-only 入口。固定条件布局、TypeScript 5.4 基线和 tarball 消费矩阵见 [v5 运行时与包产物支持矩阵](./runtime-package-support-matrix.md)。
 
 v5 beta 不公开 default export、wildcard、`./internal`、runtime 资源 subpath、transport、middleware、testing、generic request 或 extension 入口。未来可按真实需求增量添加；当前不提前承担 semver 成本。
 

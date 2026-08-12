@@ -60,7 +60,7 @@ export type WebhookErrorCode = "invalid_signature" | "invalid_payload";
 - 格式、长度或 HMAC 不匹配统一产生 `invalid_signature`，不泄漏比较细节。
 - 只有签名通过后才运行 JSON parser。
 - `X-Event-Name` 不进入公共 input，也不是类型判断的信任源；event name 读取已签名 body 的 `meta.event_name`。
-- v5 beta 目标 Node 22、Node 24 与 Bun，使用同步 in-process crypto；不为尚未纳入 runtime contract 的 Edge/WebCrypto 增加异步 factory。
+- v5 beta 目标 Node 22、Node 24 与 Bun `>=1.3.14 <2`，使用同步 in-process crypto；不为明确排除的 Edge/WebCrypto 增加异步 factory。完整范围见 [v5 运行时与包产物支持矩阵](./runtime-package-support-matrix.md)。
 
 签名验证只证明给定 body 与给定 secret 的 HMAC 匹配。它不证明 freshness、delivery 唯一性、幂等处理或防重放。
 

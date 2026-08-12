@@ -213,5 +213,5 @@ v5 beta 不自动重试。一次 SDK 调用最多产生一次网络尝试，包�
 
 - 不承诺通用 HTTP client、任意 endpoint 或 transport 插件系统。
 - 不承诺自动重试、缓存、限流队列、日志或遥测 hooks。
-- 不承诺 Edge runtime；已有 runtime 决策只把它保留为可选结果。
+- 不承诺 Edge runtime；正式范围是 Node 22、Node 24 与 Bun `>=1.3.14 <2`，具体边界见 [v5 运行时与包产物支持矩阵](./runtime-package-support-matrix.md)。
 - 不复现 v4 的 204 parse error、错误状态丢失、空 `include`、隐式 falsy body、同步参数 throw 或 `onError` 二次调用。

@@ -28,13 +28,21 @@ _Avoid_: Transparent package replacement, old-package alias
 The first externally testable release target for the redesigned SDK, beginning at `5.0.0-beta.1` and published only through the npm `beta` dist-tag. Promotion to stable and the `latest` dist-tag depends on explicit acceptance criteria and beta feedback.
 _Avoid_: v5 stable, final release
 
+**Supported runtime**:
+A runtime and version range that the Terminal Zero package formally promises, verifies through installed-package consumer fixtures, and protects as part of its release compatibility contract.
+_Avoid_: Environment where the package happens to run, development tool
+
+**Incidental runtime compatibility**:
+Observed ability to use the Terminal Zero package outside the Supported runtime matrix without a release guarantee, compatibility fixture, or maintenance commitment.
+_Avoid_: Supported runtime, experimental support
+
 **Compatibility facade**:
 The v5 root surface that preserves supported v4 runtime and type names, call shapes, and JSON:API data shapes while sharing the same underlying SDK behavior as the new client API. It is semver-protected throughout v5 and is not deprecated until a later major-version removal plan is explicitly approved.
 _Avoid_: Second implementation, legacy SDK, already-deprecated API
 
 **Default Client**:
-The process-wide Client configured by `lemonSqueezySetup` and used only by compatibility-facade functions. A later setup replaces this default without changing explicitly created Client instances.
-_Avoid_: Global Client, shared configuration for every Client
+The module-instance-wide Client configured by `lemonSqueezySetup` and used only by compatibility-facade functions loaded through the same package format. A later setup replaces this default without changing explicitly created Client instances; separately loaded ESM and CJS package instances do not share it.
+_Avoid_: Cross-format global Client, shared configuration for every Client
 
 **Explicit Client**:
 An isolated SDK instance returned by `createClient`, with its own immutable configuration and discoverable resource namespaces. It never reads from or writes to the Default Client; credential rotation creates a new Explicit Client.
