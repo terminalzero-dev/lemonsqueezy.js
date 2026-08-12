@@ -92,6 +92,18 @@ _Avoid_: Line coverage target, incidental execution, Test Mode endpoint census
 The protected Test Mode integration run against the exact package tarball proposed for a v5 beta publish. A passing run for another commit or artifact cannot satisfy it, and a failure blocks publishing without affecting ordinary pull-request merges.
 _Avoid_: Nightly result reuse, pull-request secret job, post-publish smoke test
 
+**Repository package manager**:
+The exact pnpm version declared by the Terminal Zero fork and used for dependency installation, scripts, packing, and registry publishing with one committed `pnpm-lock.yaml`. It is a maintainer tool and does not narrow the package's Node/Bun Supported runtime matrix.
+_Avoid_: Bun runtime support, interchangeable package managers, npm installer
+
+**Build host**:
+The controlled Node 24 environment that executes repository build, validation, and release tooling. It is separate from the minimum and latest Node/Bun versions exercised as package consumers.
+_Avoid_: Minimum Supported runtime, production runtime, package manager
+
+**Canonical Package Artifact**:
+The single npm-compatible `.tgz` produced for a release candidate, identified by its SHA-256 digest and reused unchanged by package smoke, Test Mode integration, and registry publishing.
+_Avoid_: Rebuilt tarball, source checkout, dist directory
+
 **Compatibility facade**:
 The v5 root surface that preserves supported v4 runtime and type names, call shapes, and JSON:API data shapes while sharing the same underlying SDK behavior as the new client API. It is semver-protected throughout v5 and is not deprecated until a later major-version removal plan is explicitly approved.
 _Avoid_: Second implementation, legacy SDK, already-deprecated API

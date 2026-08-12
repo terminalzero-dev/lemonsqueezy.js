@@ -31,7 +31,7 @@ v5 beta 不正式支持抽象的 “Edge”、浏览器或 Worker 环境，也�
 
 `engines` 是消费提示，不替代 fixture 或运行时防线。未来 Node 26 等大版本只有在相同消费矩阵通过后才进入正式范围。v5 stable 后移除已支持的 Node major、Bun range 或模块格式属于 breaking change；增加验证通过的新 runtime range 可以是向后兼容变更。
 
-这里的 Bun 版本只描述消费者 runtime，不决定仓库使用哪个 package manager。lockfile、开发工具版本与构建编排由 [选择构建与包管理工具链](https://github.com/terminalzero-dev/lemonsqueezy.js/issues/3) 决定。
+这里的 Bun 版本只描述消费者 runtime，不决定仓库使用哪个 package manager。仓库统一使用 pnpm、Node 24 Build host 与 tsdown，完整 lockfile、编译和质量工具规则见 [v5 构建与包管理工具链](./build-package-toolchain.md)。
 
 ## JavaScript 产物
 

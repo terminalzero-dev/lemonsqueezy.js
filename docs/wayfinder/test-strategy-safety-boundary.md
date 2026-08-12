@@ -100,6 +100,8 @@ Package Smoke 只测试一次 build/pack 产生的 exact `.tgz`。CI 将同一 t
 
 Package Smoke 不允许 source import、workspace symlink、直接 `dist` path 或重新 build 一个与待测 tarball 不同的 artifact。完整矩阵在每个 pull request 中是 required check，不延后到 nightly 或 release。
 
+Tarball 由 Changesets 3 只 pack 一次，后续 gates 与 publish 复用同一 SHA-256；repository scripts、build compiler 与 output layout 见 [v5 构建与包管理工具链](./build-package-toolchain.md)。
+
 ## Structural test coverage
 
 合并门禁使用明确的结构化 inventory，不使用一个 repository-wide line coverage percentage 代表正确性。
