@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE — Client 与导出结构</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17233c;
+        --muted: #667085;
+        --line: #d9dfeb;
+        --paper: #f6f8fc;
+        --card: #ffffff;
+        --accent: #3157d5;
+        --accent-soft: #e9eeff;
+        --good: #067647;
+        --warn: #b54708;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 40px auto 64px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+        font-size: clamp(28px, 4vw, 44px);
+        letter-spacing: -0.04em;
+      }
+
+      h2 {
+        margin-bottom: 16px;
+        font-size: 20px;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 16px;
+      }
+
+      .eyebrow {
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 860px;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+        gap: 20px;
+        margin-top: 28px;
+      }
+
+      .panel {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--card);
+        box-shadow: 0 10px 30px rgb(29 41 57 / 5%);
+      }
+
+      .tabs,
+      .actions,
+      .scenario-tabs,
+      .steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      button {
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--ink);
+        background: var(--card);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover,
+      button.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      button.primary {
+        border-color: var(--accent);
+        color: white;
+        background: var(--accent);
+      }
+
+      button.done {
+        border-color: #75caa5;
+        color: var(--good);
+        background: #ecfdf3;
+      }
+
+      .design-summary {
+        min-height: 88px;
+        margin: 16px 0;
+        padding: 14px;
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        background: var(--accent-soft);
+      }
+
+      .design-summary p {
+        margin-bottom: 6px;
+      }
+
+      .tradeoff {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      pre {
+        min-height: 228px;
+        margin: 0;
+        padding: 16px;
+        overflow: auto;
+        border-radius: 12px;
+        color: #e7eaff;
+        background: #111a2e;
+        font:
+          12px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        white-space: pre-wrap;
+      }
+
+      .state-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .state-card {
+        min-height: 82px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      .state-card span {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .state-card strong {
+        font-size: 14px;
+      }
+
+      .actions {
+        margin-top: 16px;
+      }
+
+      .notice {
+        margin: 14px 0 0;
+        color: var(--good);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .log {
+        max-height: 238px;
+        margin: 14px 0 0;
+        padding: 0;
+        overflow: auto;
+        list-style: none;
+      }
+
+      .log li {
+        display: grid;
+        grid-template-columns: 70px 1fr;
+        gap: 10px;
+        padding: 8px 0;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+      }
+
+      .log code {
+        color: var(--accent);
+      }
+
+      .scenario {
+        margin-top: 20px;
+      }
+
+      .scenario-copy {
+        min-height: 76px;
+        margin: 14px 0;
+        color: var(--muted);
+      }
+
+      .compare {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .compare article {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+      }
+
+      .compare article.recommended {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+
+      .score {
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .footnote {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @media (max-width: 860px) {
+        .grid,
+        .compare {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Throwaway prototype</p>
+      <h1>Client 与导出结构应该让什么最容易？</h1>
+      <p class="lede">
+        这个原型比较四种公共形态，并用两个租户与一个 Default Client
+        验证实例隔离。它不实现 HTTP；问题是调用者应学习哪个 interface，以及
+        root、resource subpath、types 和 compatibility facade 如何组合。
+      </p>
+
+      <section class="grid">
+        <article class="panel">
+          <h2>选择一种 interface</h2>
+          <div class="tabs" id="design-tabs"></div>
+          <div class="design-summary" id="design-summary"></div>
+          <pre><code id="design-code"></code></pre>
+        </article>
+
+        <article class="panel">
+          <h2>当前完整状态</h2>
+          <div class="state-grid">
+            <div class="state-card">
+              <span>Merchant A Client</span>
+              <strong id="client-a">未创建</strong>
+            </div>
+            <div class="state-card">
+              <span>Merchant B Client</span>
+              <strong id="client-b">未创建</strong>
+            </div>
+            <div class="state-card">
+              <span>Default Client</span>
+              <strong id="default-client">未配置</strong>
+            </div>
+            <div class="state-card">
+              <span>本方案载入的 runtime modules</span>
+              <strong id="modules">—</strong>
+            </div>
+          </div>
+
+          <div class="actions" id="free-play"></div>
+          <p class="notice" id="last-change">尚未执行动作。</p>
+          <ul class="log" id="request-log"></ul>
+        </article>
+      </section>
+
+      <section class="panel scenario">
+        <h2>引导场景</h2>
+        <div class="scenario-tabs" id="scenario-tabs"></div>
+        <p class="scenario-copy" id="scenario-copy"></p>
+        <div class="steps" id="scenario-steps"></div>
+      </section>
+
+      <section class="compare" id="comparison"></section>
+
+      <p class="footnote">
+        原型结论候选：使用 factory + resource namespaces；`./client` 隔离新
+        Client 与 v4 facade，但 v5 beta 不复制 runtime 资源函数 subpath。HTTP
+        transport、middleware 和测试 adapter 暂时保持内部 seam，等待 HTTP Core
+        票决定。
+      </p>
+    </main>
+
+    <script>
+      const designs = {
+        callable: {
+          label: "A · Callable",
+          title: "Callable Client + opaque operations",
+          summary:
+            "Interface 最小、operation 可复用，新增资源不会扩大 Client；代价是 client(orders.list()) 语法陌生且自动补全弱。",
+          modules: ["client", "operations/orders"],
+          scores: "Depth 5 · Locality 5 · 易用 2 · 精简 5",
+          code: `import { createClient } from "@terminalzero/lemonsqueezy/client";
+import { list } from "@terminalzero/lemonsqueezy/orders";
+
+const merchant = createClient({ apiKey });
+const result = await merchant(list({ storeId: 42 }));`,
+        },
+        flexible: {
+          label: "B · Kernel",
+          title: "函数式 Kernel + 可组合资源",
+          summary:
+            "选择性资源与扩展能力最强；代价是 Operation、Transport、Middleware 和 ResourceDefinition 都成为长期公共 interface。",
+          modules: ["client-kernel", "resources/orders", "transport/fetch"],
+          scores: "Depth 3 · Locality 4 · 易用 2 · 精简 5",
+          code: `import { createClient, withResources } from "@terminalzero/lemonsqueezy/client";
+import { ordersResource } from "@terminalzero/lemonsqueezy/resources/orders";
+
+const merchant = withResources(createClient({ apiKey }), ordersResource);
+const result = await merchant.resources.orders.list({ storeId: 42 });`,
+        },
+        classed: {
+          label: "C · Class",
+          title: "Class + resource namespaces",
+          summary:
+            "调用最熟悉、自动补全最好；代价是完整 class 总是携带所有资源，资源级 tree-shaking 不真实。",
+          modules: ["full-client", "all-resources"],
+          scores: "Depth 4 · Locality 5 · 易用 5 · 精简 2",
+          code: `import { LemonSqueezy } from "@terminalzero/lemonsqueezy/client";
+
+const merchant = new LemonSqueezy({ apiKey });
+const result = await merchant.orders.list({ storeId: 42 });`,
+        },
+        hybrid: {
+          label: "D · 推荐",
+          title: "Factory namespaces + lean client subpath",
+          summary:
+            "factory 让常见调用可发现，./client 隔离新 Client 与 v4 facade。beta 不复制 runtime 资源函数；接受全量资源换取更小、更稳定的 interface。",
+          modules: ["client", "all-resources"],
+          scores: "Depth 5 · Locality 5 · 易用 5 · 精简 3",
+          code: `import { createClient } from "@terminalzero/lemonsqueezy/client";
+
+const merchant = createClient({ apiKey });
+const result = await merchant.orders.list({ storeId: 42 });`,
+        },
+      };
+
+      const scenarios = {
+        tenants: {
+          label: "多租户隔离",
+          copy: "创建两个显式 Client，再交错调用同一个 orders.list。观察每条记录始终使用自己的租户 key。",
+          steps: [
+            ["创建 Merchant A", { type: "create", id: "A" }],
+            ["创建 Merchant B", { type: "create", id: "B" }],
+            ["A 调用 orders.list", { type: "call", id: "A" }],
+            ["B 调用 orders.list", { type: "call", id: "B" }],
+          ],
+        },
+        facade: {
+          label: "Default 隔离",
+          copy: "显式 Client A 创建后，把 facade 先后配置为 A、B。观察重新 setup 不会改变显式 Client A。",
+          steps: [
+            ["创建显式 Client A", { type: "create", id: "A" }],
+            ["setup facade → A", { type: "setup", id: "A" }],
+            ["setup facade → B", { type: "setup", id: "B" }],
+            ["显式 A 调用", { type: "call", id: "A" }],
+            ["facade 调用", { type: "facadeCall" }],
+          ],
+        },
+        exports: {
+          label: "导入成本",
+          copy: "依次切换四种方案。Current state 会显示 orders.list 所需的 runtime modules；对比资源级 tree-shaking 的收益是否值得额外公共概念。",
+          steps: [
+            ["查看 Callable", { type: "selectDesign", id: "callable" }],
+            ["查看 Kernel", { type: "selectDesign", id: "flexible" }],
+            ["查看 Class", { type: "selectDesign", id: "classed" }],
+            ["查看推荐混合", { type: "selectDesign", id: "hybrid" }],
+          ],
+        },
+      };
+
+      const PrototypeModel = (() => {
+        const initialState = (design = "hybrid") => ({
+          design,
+          clients: { A: null, B: null },
+          defaultClient: null,
+          log: [],
+          lastChange: "尚未执行动作。",
+        });
+
+        const record = (state, source, key) => ({
+          ...state,
+          log: [
+            ...state.log,
+            {
+              source,
+              key,
+              operation: "orders.list",
+            },
+          ],
+          lastChange: `${source} 使用 ${key} 执行 orders.list。`,
+        });
+
+        const reduce = (state, action) => {
+          switch (action.type) {
+            case "reset":
+              return initialState(state.design);
+            case "selectDesign":
+              return {
+                ...state,
+                design: action.id,
+                lastChange: `已切换到 ${designs[action.id].title}。`,
+              };
+            case "create": {
+              const key = `key-${action.id.toLowerCase()}`;
+              return {
+                ...state,
+                clients: { ...state.clients, [action.id]: { key } },
+                lastChange: `已创建隔离的 Merchant ${action.id} Client。`,
+              };
+            }
+            case "setup":
+              return {
+                ...state,
+                defaultClient: { key: `key-${action.id.toLowerCase()}` },
+                lastChange: `Default Client 已替换为 Merchant ${action.id}。`,
+              };
+            case "call": {
+              const client = state.clients[action.id];
+              return client
+                ? record(state, `Client ${action.id}`, client.key)
+                : {
+                    ...state,
+                    lastChange: `请先创建 Merchant ${action.id} Client。`,
+                  };
+            }
+            case "facadeCall":
+              return state.defaultClient
+                ? record(state, "Compatibility facade", state.defaultClient.key)
+                : { ...state, lastChange: "请先 setup Default Client。" };
+            default:
+              return state;
+          }
+        };
+
+        return { initialState, reduce };
+      })();
+
+      let state = PrototypeModel.initialState();
+      let activeScenario = "tenants";
+      let completedSteps = new Set();
+
+      const actionButtons = [
+        ["创建 A", { type: "create", id: "A" }],
+        ["创建 B", { type: "create", id: "B" }],
+        ["A 调用", { type: "call", id: "A" }],
+        ["B 调用", { type: "call", id: "B" }],
+        ["setup → A", { type: "setup", id: "A" }],
+        ["setup → B", { type: "setup", id: "B" }],
+        ["facade 调用", { type: "facadeCall" }],
+        ["重置", { type: "reset" }],
+      ];
+
+      function button(label, action, className = "") {
+        const element = document.createElement("button");
+        element.type = "button";
+        element.textContent = label;
+        element.className = className;
+        element.onclick = () => dispatch(action);
+        return element;
+      }
+
+      function dispatch(action) {
+        state = PrototypeModel.reduce(state, action);
+        render();
+      }
+
+      function resetScenario(id) {
+        activeScenario = id;
+        completedSteps = new Set();
+        state = PrototypeModel.initialState();
+        render();
+      }
+
+      function render() {
+        const design = designs[state.design];
+
+        const designTabs = document.querySelector("#design-tabs");
+        designTabs.replaceChildren(
+          ...Object.entries(designs).map(([id, item]) =>
+            button(
+              item.label,
+              { type: "selectDesign", id },
+              id === state.design ? "active" : ""
+            )
+          )
+        );
+
+        document.querySelector("#design-summary").innerHTML =
+          `<p><strong>${design.title}</strong></p><p>${design.summary}</p><p class="tradeoff">${design.scores}</p>`;
+        document.querySelector("#design-code").textContent = design.code;
+        document.querySelector("#client-a").textContent = state.clients.A
+          ? "已创建 · key-a"
+          : "未创建";
+        document.querySelector("#client-b").textContent = state.clients.B
+          ? "已创建 · key-b"
+          : "未创建";
+        document.querySelector("#default-client").textContent =
+          state.defaultClient?.key ?? "未配置";
+        document.querySelector("#modules").textContent =
+          design.modules.join(" + ");
+        document.querySelector("#last-change").textContent = state.lastChange;
+
+        const freePlay = document.querySelector("#free-play");
+        freePlay.replaceChildren(
+          ...actionButtons.map(([label, action], index) =>
+            button(label, action, index === 0 ? "primary" : "")
+          )
+        );
+
+        const log = document.querySelector("#request-log");
+        const entries = state.log.length
+          ? state.log
+          : [{ source: "等待动作", key: "—", operation: "暂无请求" }];
+        log.replaceChildren(
+          ...entries.map((entry) => {
+            const li = document.createElement("li");
+            li.innerHTML = `<code>${entry.key}</code><span>${entry.source} · ${entry.operation}</span>`;
+            return li;
+          })
+        );
+
+        const scenarioTabs = document.querySelector("#scenario-tabs");
+        scenarioTabs.replaceChildren(
+          ...Object.entries(scenarios).map(([id, item]) => {
+            const element = button(item.label, { type: "noop" });
+            element.className = id === activeScenario ? "active" : "";
+            element.onclick = () => resetScenario(id);
+            return element;
+          })
+        );
+
+        const scenario = scenarios[activeScenario];
+        document.querySelector("#scenario-copy").textContent = scenario.copy;
+        const scenarioSteps = document.querySelector("#scenario-steps");
+        scenarioSteps.replaceChildren(
+          ...scenario.steps.map(([label, action], index) => {
+            const element = button(`${index + 1}. ${label}`, action);
+            if (completedSteps.has(index)) element.className = "done";
+            element.onclick = () => {
+              completedSteps.add(index);
+              dispatch(action);
+            };
+            return element;
+          })
+        );
+
+        const comparison = document.querySelector("#comparison");
+        comparison.replaceChildren(
+          ...Object.entries(designs).map(([id, item]) => {
+            const article = document.createElement("article");
+            article.className = id === "hybrid" ? "recommended" : "";
+            article.innerHTML = `<h3>${item.label}</h3><p>${item.title}</p><p class="score">${item.scores}</p>`;
+            return article;
+          })
+        );
+      }
+
+      render();
+    </script>
+  </body>
+</html>

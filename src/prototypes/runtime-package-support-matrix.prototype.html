@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROTOTYPE — 运行时与包产物支持矩阵</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172033;
+        --muted: #667085;
+        --line: #d8deea;
+        --paper: #f5f7fb;
+        --card: #fff;
+        --accent: #3157d5;
+        --accent-soft: #e9eeff;
+        --good: #067647;
+        --good-soft: #ecfdf3;
+        --warn: #b54708;
+        --warn-soft: #fff6ed;
+        --bad: #b42318;
+        --bad-soft: #fef3f2;
+        --code: #111827;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        line-height: 1.5;
+      }
+
+      main {
+        width: min(1220px, calc(100% - 32px));
+        margin: 36px auto 64px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 8px;
+        font-size: clamp(30px, 5vw, 46px);
+        letter-spacing: -0.035em;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      h3 {
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      .eyebrow {
+        margin-bottom: 6px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .lede {
+        max-width: 940px;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .notice {
+        display: inline-block;
+        padding: 5px 8px;
+        border-radius: 7px;
+        color: var(--warn);
+        background: var(--warn-soft);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .panel {
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: var(--card);
+        box-shadow: 0 10px 28px rgb(29 41 57 / 5%);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 310px minmax(0, 1fr);
+        gap: 18px;
+        margin-top: 22px;
+      }
+
+      .scenario-list,
+      .tabs,
+      .steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .scenario-list {
+        flex-direction: column;
+      }
+
+      button {
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        color: var(--ink);
+        background: #fff;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 750;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      button:hover,
+      button.active {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      button.done {
+        border-color: #75caa5;
+        color: var(--good);
+        background: var(--good-soft);
+      }
+
+      .summary-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .badge {
+        flex: 0 0 auto;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .badge.good {
+        color: var(--good);
+        background: var(--good-soft);
+      }
+
+      .badge.warn {
+        color: var(--warn);
+        background: var(--warn-soft);
+      }
+
+      .badge.bad {
+        color: var(--bad);
+        background: var(--bad-soft);
+      }
+
+      .state-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .state-card {
+        min-height: 112px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: #fafbfc;
+      }
+
+      .state-card strong {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .state-card span {
+        display: block;
+        overflow-wrap: anywhere;
+        font-size: 13px;
+        font-weight: 720;
+      }
+
+      .trace {
+        margin-top: 12px;
+        padding: 14px;
+        border-radius: 10px;
+        color: #e5e7eb;
+        background: var(--code);
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+
+      .contract-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .contract-card {
+        padding: 13px;
+        border-radius: 11px;
+        background: var(--accent-soft);
+      }
+
+      .contract-card strong,
+      .contract-card span {
+        display: block;
+      }
+
+      .contract-card strong {
+        margin-bottom: 4px;
+        color: var(--accent);
+        font-size: 12px;
+      }
+
+      .contract-card span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .guided {
+        margin-top: 18px;
+      }
+
+      .guided-copy {
+        min-height: 86px;
+        margin: 12px 0;
+        padding: 14px;
+        border-left: 4px solid var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .footnote {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @media (max-width: 900px) {
+        .layout,
+        .state-grid,
+        .contract-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">V5 Beta Package Contract Lab</div>
+      <h1>运行时与包产物支持矩阵</h1>
+      <p class="lede">
+        这个原型回答：给定运行时、模块格式、公共入口和消费方式，安装后的
+        Terminal Zero package
+        应解析到哪个产物、获得什么承诺，又应该在哪里明确失败？
+      </p>
+      <span class="notice">可丢弃原型；不修改 package.json 或生产构建</span>
+
+      <section class="contract-grid" aria-label="固定契约">
+        <article class="contract-card">
+          <strong>Supported runtimes</strong>
+          <span>Node 22 / 24 · Bun ≥1.3.14 &lt;2</span>
+        </article>
+        <article class="contract-card">
+          <strong>Published syntax</strong>
+          <span>ES2022 · native ESM + native CJS</span>
+        </article>
+        <article class="contract-card">
+          <strong>TypeScript</strong>
+          <span>5.4 minimum · latest stable verified</span>
+        </article>
+        <article class="contract-card">
+          <strong>Public entries</strong>
+          <span>root · client · compat · types-only</span>
+        </article>
+      </section>
+
+      <section class="layout">
+        <aside class="panel">
+          <h2>自由探索</h2>
+          <p class="lede">选择一个消费方式，查看完整解析状态。</p>
+          <div id="scenarios" class="scenario-list"></div>
+        </aside>
+
+        <section class="panel">
+          <div class="summary-row">
+            <div>
+              <h2 id="scenario-title"></h2>
+              <p id="scenario-description" class="lede"></p>
+            </div>
+            <span id="support-badge" class="badge"></span>
+          </div>
+
+          <div class="state-grid">
+            <article class="state-card">
+              <strong>请求</strong>
+              <span id="request-state"></span>
+            </article>
+            <article class="state-card">
+              <strong>Runtime artifact</strong>
+              <span id="runtime-state"></span>
+            </article>
+            <article class="state-card">
+              <strong>Declaration artifact</strong>
+              <span id="type-state"></span>
+            </article>
+            <article class="state-card">
+              <strong>Tree-shaking</strong>
+              <span id="tree-state"></span>
+            </article>
+            <article class="state-card">
+              <strong>Module identity</strong>
+              <span id="identity-state"></span>
+            </article>
+            <article class="state-card">
+              <strong>Required fixture</strong>
+              <span id="fixture-state"></span>
+            </article>
+          </div>
+
+          <pre id="trace" class="trace"></pre>
+        </section>
+      </section>
+
+      <section class="panel guided">
+        <h2>引导检查</h2>
+        <div id="tabs" class="tabs"></div>
+        <div id="guided-copy" class="guided-copy"></div>
+        <div id="steps" class="steps"></div>
+      </section>
+
+      <p class="footnote">
+        所有成功路径都代表从生成的 npm tarball 安装后执行。仓库内 dist
+        直连不能证明发布契约；哪些 fixture 进入 PR 或 release gate
+        由测试分层票决定。
+      </p>
+    </main>
+
+    <script type="module">
+      const packageContract = Object.freeze({
+        target: "ES2022",
+        node: Object.freeze(["22", "24"]),
+        bun: ">=1.3.14 <2",
+        typescript: ">=5.4",
+        entries: Object.freeze({
+          ".": "index",
+          "./client": "client/index",
+          "./compat": "compat/index",
+          "./types": "types/index",
+        }),
+      });
+
+      function evaluateConsumer(contract, request) {
+        const base = contract.entries[request.entry];
+        const supportedRuntime =
+          request.runtime === "node22" ||
+          request.runtime === "node24" ||
+          request.runtime === "bun-min" ||
+          request.runtime === "bun-latest";
+
+        if (!supportedRuntime) {
+          return Object.freeze({
+            status: "incidental",
+            label: "不受支持",
+            runtime: "无 Edge/browser/worker 条件入口",
+            declaration: "不验证平台 typings",
+            treeShaking: "无承诺",
+            identity: "无支持边界",
+            fixture: "无 CI fixture；出现明确平台需求后另立决策票",
+            trace: [
+              `${request.runtime} 不在 Supported runtime matrix`,
+              "即使某条 ESM 路径碰巧可执行，也只属于 incidental compatibility",
+            ],
+          });
+        }
+
+        if (base === undefined) {
+          return rejected(
+            request,
+            "ERR_PACKAGE_PATH_NOT_EXPORTED",
+            "安装后的 tarball 必须拒绝未公开深层路径"
+          );
+        }
+
+        if (request.mode === "runtime" && request.entry === "./types") {
+          return rejected(
+            request,
+            "types-only entry has no runtime target",
+            "只有 import type / CJS type context 可以解析 ./types"
+          );
+        }
+
+        const declaration =
+          request.format === "esm" ? `dist/${base}.d.ts` : `dist/${base}.d.cts`;
+
+        if (request.mode === "types") {
+          return Object.freeze({
+            status: "supported",
+            label: "类型支持",
+            runtime: "零 runtime 输出",
+            declaration,
+            treeShaking: "import type 被完全擦除",
+            identity: "不创建模块实例",
+            fixture: `${request.ts ?? "5.4/latest"} · ${request.resolver ?? "nodenext/bundler"} · ${request.format.toUpperCase()}`,
+            trace: [
+              `exports[${request.entry}].${request.format === "esm" ? "import" : "require"}.types`,
+              `→ ${declaration}`,
+              "→ emitted JavaScript contains no package import",
+            ],
+          });
+        }
+
+        const runtime =
+          request.source === "legacy"
+            ? request.format === "esm"
+              ? "dist/index.js via module"
+              : "dist/index.cjs via main"
+            : `dist/${base}.${request.format === "esm" ? "js" : "cjs"}`;
+
+        const treeShaking =
+          request.format === "esm"
+            ? request.entry === "./client"
+              ? "结构性承诺：compat/default-client 不可达"
+              : "结构性 ESM 承诺；metafile 验证未使用模块"
+            : "无 tree-shaking 承诺";
+
+        const identity = request.mixed
+          ? "ESM/CJS 是两个模块实例；不共享 class 或 Default Client"
+          : "同一格式、同一 package copy 内保持一致";
+
+        return Object.freeze({
+          status: request.mixed ? "warning" : "supported",
+          label: request.mixed ? "支持但有边界" : "正式支持",
+          runtime,
+          declaration,
+          treeShaking,
+          identity,
+          fixture: `${runtimeLabel(request.runtime)} · ${request.format.toUpperCase()} · tarball install`,
+          trace: [
+            request.source === "legacy"
+              ? `${request.format === "esm" ? "module" : "main"} fallback mirrors root`
+              : `exports[${request.entry}].${request.format === "esm" ? "import" : "require"}.default`,
+            `→ ${runtime}`,
+            `types → ${declaration}`,
+            request.format === "esm"
+              ? "sideEffects:false + module graph assertion"
+              : "CJS execution only; no dead-code-elimination promise",
+          ],
+        });
+      }
+
+      function rejected(request, reason, fixture) {
+        return Object.freeze({
+          status: "rejected",
+          label: "按契约拒绝",
+          runtime: reason,
+          declaration: "无公共 declaration target",
+          treeShaking: "不适用",
+          identity: "不创建模块实例",
+          fixture,
+          trace: [
+            `${request.entry} 不存在匹配的 ${request.mode} export target`,
+            `→ ${reason}`,
+            "→ failure itself is a package smoke acceptance case",
+          ],
+        });
+      }
+
+      function runtimeLabel(runtime) {
+        return {
+          node22: "Node 22",
+          node24: "Node 24",
+          "bun-min": "Bun 1.3.14",
+          "bun-latest": "Bun latest",
+          edge: "Edge",
+        }[runtime];
+      }
+
+      const scenarios = Object.freeze([
+        {
+          id: "node-esm-root",
+          label: "Node 22 · ESM · root",
+          title: "Node 22 ESM 消费 root",
+          description: "标准 root import 解析到原生 ESM 与 ESM declaration。",
+          request: {
+            runtime: "node22",
+            entry: ".",
+            mode: "runtime",
+            format: "esm",
+          },
+        },
+        {
+          id: "node-cjs-compat",
+          label: "Node 24 · CJS · compat",
+          title: "Node 24 require compatibility facade",
+          description:
+            "CJS 直接加载原生 .cjs，不依赖 require(ESM) 的次版本行为。",
+          request: {
+            runtime: "node24",
+            entry: "./compat",
+            mode: "runtime",
+            format: "cjs",
+          },
+        },
+        {
+          id: "bun-client",
+          label: "Bun 1.3.14 · ESM · client",
+          title: "Bun 最低版本消费 Client-only 入口",
+          description:
+            "client subpath 不加载 compatibility facade 或 Default Client。",
+          request: {
+            runtime: "bun-min",
+            entry: "./client",
+            mode: "runtime",
+            format: "esm",
+          },
+        },
+        {
+          id: "types-cjs",
+          label: "TS 5.4 · CJS · types",
+          title: "CommonJS 类型消费者",
+          description:
+            "CJS type context 解析 .d.cts；import type 不产生 runtime。",
+          request: {
+            runtime: "node22",
+            entry: "./types",
+            mode: "types",
+            format: "cjs",
+            ts: "TypeScript 5.4",
+            resolver: "nodenext",
+          },
+        },
+        {
+          id: "types-runtime",
+          label: "runtime import · types",
+          title: "types-only 入口拒绝 runtime import",
+          description: "./types 没有 JavaScript target，错误是有意的公共边界。",
+          request: {
+            runtime: "node24",
+            entry: "./types",
+            mode: "runtime",
+            format: "esm",
+          },
+        },
+        {
+          id: "deep-path",
+          label: "未公开深层路径",
+          title: "exports 封闭内部结构",
+          description: "消费者不能绕过四个稳定入口依赖内部模块。",
+          request: {
+            runtime: "node22",
+            entry: "./internal/http",
+            mode: "runtime",
+            format: "esm",
+          },
+        },
+        {
+          id: "edge",
+          label: "Edge · ESM",
+          title: "Edge 只可能是 incidental compatibility",
+          description: "没有 browser/worker 条件、平台 fixture 或维护承诺。",
+          request: {
+            runtime: "edge",
+            entry: "./client",
+            mode: "runtime",
+            format: "esm",
+          },
+        },
+        {
+          id: "mixed",
+          label: "同进程混用 ESM/CJS",
+          title: "双格式的身份边界",
+          description:
+            "两种格式都能消费，但不承诺跨格式 class 或 Default Client 身份。",
+          request: {
+            runtime: "node24",
+            entry: ".",
+            mode: "runtime",
+            format: "esm",
+            mixed: true,
+          },
+        },
+        {
+          id: "legacy-main",
+          label: "legacy main fallback",
+          title: "传统字段只镜像 root",
+          description:
+            "忽略 exports 的 CJS 工具仍得到与 root require 相同的产物。",
+          request: {
+            runtime: "node22",
+            entry: ".",
+            mode: "runtime",
+            format: "cjs",
+            source: "legacy",
+          },
+        },
+      ]);
+
+      const walkthroughs = Object.freeze([
+        {
+          id: "supported",
+          label: "正式支持路径",
+          description:
+            "依次检查 Node ESM、Node CJS 与 Bun client-only。关注 runtime 与 declaration 总是按模块格式配对。",
+          steps: ["node-esm-root", "node-cjs-compat", "bun-client"],
+        },
+        {
+          id: "boundaries",
+          label: "封闭入口",
+          description:
+            "先观察 type-only 成功，再验证 runtime types 和内部深层路径都必须失败。",
+          steps: ["types-cjs", "types-runtime", "deep-path"],
+        },
+        {
+          id: "non-contract",
+          label: "非承诺行为",
+          description:
+            "Edge 和混合模块身份不伪装成完整支持；legacy 字段只提供 root fallback。",
+          steps: ["edge", "mixed", "legacy-main"],
+        },
+      ]);
+
+      const elements = {
+        scenarios: document.querySelector("#scenarios"),
+        title: document.querySelector("#scenario-title"),
+        description: document.querySelector("#scenario-description"),
+        badge: document.querySelector("#support-badge"),
+        request: document.querySelector("#request-state"),
+        runtime: document.querySelector("#runtime-state"),
+        declaration: document.querySelector("#type-state"),
+        tree: document.querySelector("#tree-state"),
+        identity: document.querySelector("#identity-state"),
+        fixture: document.querySelector("#fixture-state"),
+        trace: document.querySelector("#trace"),
+        tabs: document.querySelector("#tabs"),
+        guidedCopy: document.querySelector("#guided-copy"),
+        steps: document.querySelector("#steps"),
+      };
+
+      let selectedGuide = walkthroughs[0].id;
+      let guideProgress = 0;
+
+      function selectScenario(id) {
+        const scenario = scenarios.find((item) => item.id === id);
+        const result = evaluateConsumer(packageContract, scenario.request);
+        document.querySelectorAll("#scenarios button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.id === id);
+        });
+
+        elements.title.textContent = scenario.title;
+        elements.description.textContent = scenario.description;
+        elements.badge.textContent = result.label;
+        elements.badge.className = `badge ${result.status === "supported" ? "good" : result.status === "rejected" ? "bad" : "warn"}`;
+        elements.request.textContent = `${runtimeLabel(scenario.request.runtime)} · ${scenario.request.format.toUpperCase()} · ${scenario.request.mode} · ${scenario.request.entry}`;
+        elements.runtime.textContent = result.runtime;
+        elements.declaration.textContent = result.declaration;
+        elements.tree.textContent = result.treeShaking;
+        elements.identity.textContent = result.identity;
+        elements.fixture.textContent = result.fixture;
+        elements.trace.textContent = result.trace.join("\n");
+      }
+
+      scenarios.forEach((scenario) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.id = scenario.id;
+        button.textContent = scenario.label;
+        button.addEventListener("click", () => selectScenario(scenario.id));
+        elements.scenarios.append(button);
+      });
+
+      function selectWalkthrough(id) {
+        const walkthrough = walkthroughs.find((item) => item.id === id);
+        selectedGuide = id;
+        guideProgress = 0;
+        document.querySelectorAll("#tabs button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.id === id);
+        });
+        elements.guidedCopy.innerHTML = `<h3>${walkthrough.label}</h3><p>${walkthrough.description}</p>`;
+        renderSteps(walkthrough);
+        selectScenario(walkthrough.steps[0]);
+      }
+
+      function renderSteps(walkthrough) {
+        elements.steps.innerHTML = "";
+        walkthrough.steps.forEach((scenarioId, index) => {
+          const scenario = scenarios.find((item) => item.id === scenarioId);
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = `${index + 1}. ${scenario.label}`;
+          button.classList.toggle("done", index < guideProgress);
+          button.classList.toggle("active", index === guideProgress);
+          button.addEventListener("click", () => {
+            selectScenario(scenarioId);
+            guideProgress = Math.max(guideProgress, index + 1);
+            renderSteps(walkthrough);
+          });
+          elements.steps.append(button);
+        });
+      }
+
+      walkthroughs.forEach((walkthrough) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.id = walkthrough.id;
+        button.textContent = walkthrough.label;
+        button.addEventListener("click", () =>
+          selectWalkthrough(walkthrough.id)
+        );
+        elements.tabs.append(button);
+      });
+
+      selectWalkthrough(selectedGuide);
+    </script>
+  </body>
+</html>
