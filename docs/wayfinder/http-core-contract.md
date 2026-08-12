@@ -209,6 +209,8 @@ v5 beta 不自动重试。一次 SDK 调用最多产生一次网络尝试，包�
 11. JSON body 不注入隐式 `false`，保留显式 `null`，并保持 opaque custom map 的键。
 12. observer 抛错不突破 Compatibility envelope。
 
+这些场景由 credential-free Transport Contract tests 覆盖；真实 API canary 不重复完整错误矩阵。测试职责、CI 门禁与 Test Mode 规则见 [v5 测试分层与真实 API 安全边界](./test-strategy-safety-boundary.md)。
+
 ## 明确不承诺
 
 - 不承诺通用 HTTP client、任意 endpoint 或 transport 插件系统。

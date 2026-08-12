@@ -541,6 +541,8 @@ CI 最低锁定：
 
 旧 `$fetch`、recursive key converter、global Relationships 和浅 helper 的实现级测试在新 Interface coverage 建立后删除。测试不穿透 seam，也不同时保留新旧实现测试。
 
+上述 Interface、parity、completeness 与 type checks 全部属于默认 credential-free merge gate；Test Mode integration 只保留代表性 canary。完整分层与真实 API 安全边界见 [v5 测试分层与真实 API 安全边界](./test-strategy-safety-boundary.md)。
+
 ## 验收场景
 
 实施至少证明：

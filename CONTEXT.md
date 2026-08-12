@@ -36,6 +36,62 @@ _Avoid_: Environment where the package happens to run, development tool
 Observed ability to use the Terminal Zero package outside the Supported runtime matrix without a release guarantee, compatibility fixture, or maintenance commitment.
 _Avoid_: Supported runtime, experimental support
 
+**Credential-free test suite**:
+The deterministic v5 validation suite that runs without Lemon Squeezy credentials, Lemon Squeezy network access, or external service state. It contains Unit, Transport Contract, Type Contract, and Installed-package Smoke tests and is required by the default CI and pull-request merge gate.
+_Avoid_: Test Mode integration, optional local checks
+
+**Unit test**:
+A credential-free test of an isolated pure rule such as serialization, validation, event decoding, or error mapping, without network, clock, process-wide configuration, or other external state.
+_Avoid_: Transport Contract test, Test Mode integration
+
+**Transport Contract test**:
+A credential-free test that exercises an Operation Contract through an in-memory Transport and verifies exact request compilation, response interpretation, and error classification without making a real HTTP request.
+_Avoid_: Mocked API integration, Test Mode integration
+
+**Type Contract test**:
+A compile-only positive or negative consumer fixture that protects public signatures, narrowing behavior, and rejected usage independently of runtime assertions.
+_Avoid_: Runtime unit test, declaration snapshot alone
+
+**Installed-package Smoke test**:
+A credential-free consumer fixture that installs the exact packed package tarball and verifies the promised runtime, module format, export, TypeScript, and bundler behavior outside the source workspace.
+_Avoid_: Source import test, build-only check
+
+**Test Mode integration**:
+A small real-network canary against Lemon Squeezy Test Mode that detects upstream behavior drift and account configuration failures. It supplements rather than replaces deterministic coverage, runs outside the normal pull-request merge gate, and is required before a v5 beta publish.
+_Avoid_: Default test suite, exhaustive endpoint coverage, live-mode test
+
+**Dedicated SDK Test Store**:
+The synthetic-data-only Lemon Squeezy store reserved for Terminal Zero package integration checks. It remains in Test Mode, is never activated for Live Mode, has only necessary team members, and does not contain real customer or business data.
+_Avoid_: Maintainer's normal test store, production store, disposable store
+
+**Test Mode credential**:
+An API key created on the Test side of the Dedicated SDK Test Store and available only to trusted scheduled, manual, and protected release workflows. It is never exposed to pull-request or fork jobs and is revoked rather than replaced with a Live Mode credential when unavailable.
+_Avoid_: Live API key, repository variable, License Key
+
+**Test Mode safety preflight**:
+The fail-closed read-only check that must prove the API response is in Test Mode and the selected store ID matches the single configured allowlist before any integration write occurs. Missing or contradictory evidence aborts the run without mutation.
+_Avoid_: Environment flag alone, post-write assertion, best-effort warning
+
+**Seed Fixture**:
+A deliberately provisioned, inventoried resource in the Dedicated SDK Test Store used only by read-only Test Mode integration canaries. Routine automation does not mutate it, recreate it per run, or assume that it expires automatically.
+_Avoid_: Per-run fixture, disposable record, production sample
+
+**Ephemeral Integration Fixture**:
+A synthetic Discount or Webhook created for one Test Mode integration run, identified by the run ID and guaranteed a hard-delete cleanup path. Resources without a real delete operation are not Ephemeral Integration Fixtures.
+_Avoid_: Any Test Mode record, soft-deleted resource, Seed Fixture
+
+**Fixture journal**:
+The secret-free per-run record of every Ephemeral Integration Fixture's type, ID, store, run identifier, and cleanup state. Cleanup and recovery act on this exact evidence and never use an unbounded store sweep.
+_Avoid_: Test log, credential artifact, resource-name guess
+
+**Structural test coverage**:
+The explicit coverage inventory that maps every Operation Contract, HTTP outcome class, Webhook event route, public type contract, and supported package-consumer matrix entry to deterministic evidence. It is the merge criterion; one repository-wide line-coverage percentage is not.
+_Avoid_: Line coverage target, incidental execution, Test Mode endpoint census
+
+**Release integration gate**:
+The protected Test Mode integration run against the exact package tarball proposed for a v5 beta publish. A passing run for another commit or artifact cannot satisfy it, and a failure blocks publishing without affecting ordinary pull-request merges.
+_Avoid_: Nightly result reuse, pull-request secret job, post-publish smoke test
+
 **Compatibility facade**:
 The v5 root surface that preserves supported v4 runtime and type names, call shapes, and JSON:API data shapes while sharing the same underlying SDK behavior as the new client API. It is semver-protected throughout v5 and is not deprecated until a later major-version removal plan is explicitly approved.
 _Avoid_: Second implementation, legacy SDK, already-deprecated API

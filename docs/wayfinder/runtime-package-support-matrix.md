@@ -198,7 +198,7 @@ CJS 只承诺执行和导出兼容，不承诺 tree-shaking。v5 不冻结具体
 | Module identity     | 同一格式 root/compat 共享 Default Client；混用 ESM/CJS 明确不要求共享                       |
 | Declaration hygiene | Node 与 Bun type environments 不要求消费者补装未声明的 Node、DOM 或 platform-specific types |
 
-这些 fixture 分配到每次 PR、nightly 或 release gate 的规则由 [定义测试分层与真实 API 安全边界](https://github.com/terminalzero-dev/lemonsqueezy.js/issues/17) 决定；本票只固定覆盖面和通过条件。
+完整 fixture matrix 是每次 PR 的 required check；nightly 与 release 仍使用同一 exact tarball 运行，并在 release 时叠加 Test Mode integration。具体编排与安全边界见 [v5 测试分层与真实 API 安全边界](./test-strategy-safety-boundary.md)。
 
 ## Edge 与浏览器边界
 
