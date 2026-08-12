@@ -24,6 +24,34 @@ _Avoid_: Bug-for-bug snapshot, v4 maintenance line, legacy codebase
 The required dependency and root import change from `@lemonsqueezy/lemonsqueezy.js` to `@terminalzero/lemonsqueezy`. Named root imports and both ESM and CJS consumption remain compatibility targets; the upstream package name and unexported deep paths do not.
 _Avoid_: Transparent package replacement, old-package alias
 
+**Compatibility-first migration**:
+The default v4 migration path that crosses the Package migration boundary while retaining the supported Compatibility facade before any optional Client rewrite. It isolates package adoption from API modernization.
+_Avoid_: Full rewrite, legacy migration, automatic package replacement
+
+**Progressive Client migration**:
+The optional movement of selected call sites from the Compatibility facade to an Explicit Client after Compatibility-first migration is verified. Facade and Client calls may coexist during this bounded transition without sharing configuration.
+_Avoid_: Flag day, facade deprecation, mixed implementation
+
+**Migration rollback**:
+The source-and-dependency reversal to a recorded Last Known Good Terminal Zero version or the exact pre-migration Upstream SDK version. The SDK has no persistent state to reverse, so this is not a data rollback or automatic runtime failover.
+_Avoid_: Data rollback, dist-tag rollback, automatic fallback
+
+**Migration Behavior Audit**:
+The required v4-to-v5 review that maps every corrected compatibility behavior to its consumer risk and verification step. It distinguishes a supported source migration from a claim of bug-for-bug, behavior-neutral replacement.
+_Avoid_: Changelog, breaking-change summary, upgrade warning
+
+**Package migration complete**:
+The state in which a consumer depends only on an exact Terminal Zero package version, has crossed the Package migration boundary, accepted the Migration Behavior Audit, and recorded test, canary, and rollback evidence. It does not require adopting the Explicit Client.
+_Avoid_: Client rewrite complete, temporary facade state, install succeeded
+
+**Client migration complete**:
+The optional later state in which the consumer's selected scope uses Explicit Clients and no longer depends on the Default Client or Compatibility envelope. It is not a prerequisite for Package migration complete.
+_Avoid_: Package migration complete, mandatory v5 migration, flag-day rewrite
+
+**Migration impact**:
+The release-note classification that tells a beta consumer whether a version requires no migration action, adds only compatible surface, corrects an observable behavior, or breaks a beta-only contract. It points to concrete affected usage and rollback guidance rather than restating SemVer.
+_Avoid_: SemVer bump, generic breaking-change label, changelog heading
+
 **v5 beta**:
 The first externally testable release target for the redesigned SDK, beginning at `5.0.0-beta.1` and published only through the npm `beta` dist-tag. Promotion to stable and the `latest` dist-tag depends on explicit acceptance criteria and beta feedback.
 _Avoid_: v5 stable, final release
