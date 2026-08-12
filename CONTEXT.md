@@ -56,6 +56,26 @@ _Avoid_: Authenticated API, API-key authentication
 A stable group of operations for one Lemon Squeezy API resource exposed on an Explicit Client, such as `client.orders.list`. Namespaces organize the public interface while sharing one request implementation core.
 _Avoid_: Service, manager, second implementation
 
+**Namespace Module**:
+The cohesive SDK module that owns one Explicit Client namespace's types, Operation Contracts, evidence, namespace adapter, and tests. Twenty Namespace Modules represent Authenticated API resources; the License Namespace Module represents the separate License API protocol.
+_Avoid_: Resource service, endpoint folder, second implementation
+
+**Operation Contract**:
+The reviewed executable contract for one Explicit Client method, combining its public arguments, protocol request compilation, success shape, and evidence. Explicit Client and Compatibility facade calls share it.
+_Avoid_: Passive endpoint metadata, generic request, response schema
+
+**v5 beta operation set**:
+The complete Explicit Client surface for the currently documented Lemon Squeezy API: 21 namespaces and 61 methods, including the `customers.archive` convenience. It excludes undocumented CRUD, automatic pagination, bulk helpers, and generic requests.
+_Avoid_: Partial beta surface, inferred endpoint set, every possible convenience
+
+**Webhook Management API**:
+The Authenticated API resource for creating, retrieving, updating, deleting, and listing Webhook registrations. It manages delivery configuration but does not receive or verify events.
+_Avoid_: Inbound Webhook delivery, Webhook receiver
+
+**Inbound Webhook delivery**:
+The signed event request Lemon Squeezy sends to a consumer endpoint, carrying an event name and JSON:API resource payload. It is distinct from the Webhook Management API.
+_Avoid_: Webhook resource, Webhook registration
+
 **Contract Catalog**:
 The Terminal Zero fork's reviewed record of Lemon Squeezy resource types, operations, relationships, known values, wire mappings, and supporting evidence. It is the repository's truth source for SDK projections, not an official Lemon Squeezy schema.
 _Avoid_: Official schema, scraped documentation, generated SDK
