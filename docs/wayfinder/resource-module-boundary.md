@@ -438,7 +438,7 @@ Compatibility adapter 不得复制或覆盖：
 
 Inbound Webhook delivery 不计入 61 个 Client methods，也不进入 `webhooks` operation contracts。
 
-Inbound event payload types 可以复用 Canonical resource types，但 receiver、raw-body HMAC validation、event narrowing、acknowledgment、retry implications 和 module location 由 [原型化 Webhook 接收端契约](https://github.com/terminalzero-dev/lemonsqueezy.js/issues/5) 决定。
+Inbound event payload types 复用 Canonical resource types；独立 receiver module 负责 raw-body HMAC validation、最低 envelope validation 与 event narrowing。acknowledgment、retry、框架适配和幂等仍由应用负责，完整 Interface 与 module location 见 [v5 Webhook 接收端契约](./webhook-receiver-contract.md)。
 
 不把官方模拟页单独出现的 `subscription_plan_changed` 当作正式可订阅 event；不推断官方未公开的 delivery ID、timestamp 或 replay window。
 

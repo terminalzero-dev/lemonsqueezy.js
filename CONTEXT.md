@@ -76,6 +76,30 @@ _Avoid_: Inbound Webhook delivery, Webhook receiver
 The signed event request Lemon Squeezy sends to a consumer endpoint, carrying an event name and JSON:API resource payload. It is distinct from the Webhook Management API.
 _Avoid_: Webhook resource, Webhook registration
 
+**Inbound Webhook receiver**:
+The v5 beta capability that authenticates and interprets an Inbound Webhook delivery independently of the Explicit Client and Webhook Management API. The consumer remains responsible for its HTTP endpoint response, retries, and idempotent processing.
+_Avoid_: Webhook management namespace, Client method, request handler
+
+**Webhook raw body**:
+The exact, unparsed request-body content covered by an Inbound Webhook delivery signature. Parsing or reconstructing the payload before authentication no longer preserves this evidence.
+_Avoid_: Parsed JSON, re-serialized payload
+
+**Inbound Webhook event**:
+The authenticated, minimally validated event returned by the Inbound Webhook receiver. Its event name is read from the signed payload metadata rather than the unsigned request header.
+_Avoid_: Unverified payload, X-Event-Name value
+
+**Known Inbound Webhook event**:
+An Inbound Webhook event whose signed event name is in the reviewed Contract Catalog and whose JSON:API resource type matches that event. It carries the corresponding Canonical resource type.
+_Avoid_: Closed event universe, deeply validated resource
+
+**Unknown Inbound Webhook event**:
+An authenticated Inbound Webhook event whose signed event name is not yet in the reviewed Contract Catalog. Its original name, metadata, resource, and unknown fields are preserved for safe handling.
+_Avoid_: Invalid event, discarded event
+
+**Webhook receiver failure**:
+A signature or payload failure recognized while authenticating and interpreting an Inbound Webhook delivery. It is distinct from a LemonSqueezyError produced by an Explicit Client operation.
+_Avoid_: HTTP API error, business-processing failure
+
 **Contract Catalog**:
 The Terminal Zero fork's reviewed record of Lemon Squeezy resource types, operations, relationships, known values, wire mappings, and supporting evidence. It is the repository's truth source for SDK projections, not an official Lemon Squeezy schema.
 _Avoid_: Official schema, scraped documentation, generated SDK

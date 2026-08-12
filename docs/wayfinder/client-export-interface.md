@@ -75,12 +75,12 @@ Compatibility facade 继续把共享核心结果转换成 `{ statusCode, data, e
 
 ## Export map
 
-| 入口                                | 稳定用途                                                             |
-| ----------------------------------- | -------------------------------------------------------------------- |
-| `@terminalzero/lemonsqueezy`        | `createClient`、新 Client 类型、v4 facade 的 60 个运行时和 92 个类型 |
-| `@terminalzero/lemonsqueezy/client` | 新 Client runtime、错误判别和 Client 相关类型，不加载 facade         |
-| `@terminalzero/lemonsqueezy/compat` | v4 compatibility facade                                              |
-| `@terminalzero/lemonsqueezy/types`  | 集中的公共类型入口                                                   |
+| 入口                                | 稳定用途                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `@terminalzero/lemonsqueezy`        | `createClient`、Webhook receiver runtime、新 Client 类型、v4 facade 的 60 个运行时和 92 个类型 |
+| `@terminalzero/lemonsqueezy/client` | 新 Client runtime、错误判别和 Client 相关类型，不加载 facade                                   |
+| `@terminalzero/lemonsqueezy/compat` | v4 compatibility facade                                                                        |
+| `@terminalzero/lemonsqueezy/types`  | 集中的公共类型入口                                                                             |
 
 所有入口最终都要满足已决定的 ESM、CJS 和双声明要求。具体 package `exports` 条件由构建与包产物票决定。
 

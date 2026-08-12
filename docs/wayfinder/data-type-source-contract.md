@@ -320,7 +320,7 @@ Contract Catalog 分开：
 
 管理 Webhook 时的 event list 使用封闭 `WebhookSubscriptionEventName`，阻止订阅官方未支持的事件。
 
-入站 event name 使用开放策略：已知事件具有精确 event-to-resource mapping，未知事件保留原 event name 与 `UnknownJSONAPIResource` fallback。具体 receiver、签名验证和 ergonomic narrowing Interface 由 [原型化 Webhook 接收端契约](https://github.com/terminalzero-dev/lemonsqueezy.js/issues/5) 决定。
+入站 event name 使用开放策略：已知事件具有精确 event-to-resource mapping，未知事件保留原 event name 与 `UnknownJSONAPIResource` fallback。receiver 强制先对 Webhook raw body 验签再解析，并返回带 `known` 与 `eventName` 判别字段的开放联合；完整 Interface 与边界见 [v5 Webhook 接收端契约](./webhook-receiver-contract.md)。
 
 ## Evidence 与冲突处理
 
