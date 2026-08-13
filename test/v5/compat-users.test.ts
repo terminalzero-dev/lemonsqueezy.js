@@ -84,16 +84,17 @@ describe("getAuthenticatedUser compatibility facade", () => {
     expect(observer).toHaveBeenCalledOnce();
   });
 
-  it("projects empty success and rejects validation without notifying onError", async () => {
+  it("projects an empty read response as invalid and rejects local validation", async () => {
     const observer = vi.fn();
     setDefaultAdapter(async () => new Response(null, { status: 204 }));
     lemonSqueezySetup({ apiKey: "default-key", onError: observer });
 
-    await expect(getAuthenticatedUser()).resolves.toEqual({
+    await expect(getAuthenticatedUser()).resolves.toMatchObject({
       statusCode: 204,
       data: null,
-      error: null,
+      error: { code: "invalid_response", statusCode: 204 },
     });
+    expect(observer).toHaveBeenCalledOnce();
 
     lemonSqueezySetup({
       apiKey: "default-key",
@@ -103,7 +104,7 @@ describe("getAuthenticatedUser compatibility facade", () => {
     await expect(getAuthenticatedUser()).rejects.toMatchObject({
       code: "validation",
     });
-    expect(observer).not.toHaveBeenCalled();
+    expect(observer).toHaveBeenCalledOnce();
   });
 
   it.each([

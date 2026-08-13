@@ -26,10 +26,6 @@ export function createResourceRuntime(
         options,
       );
 
-      if (result.body === undefined) {
-        return { statusCode: result.statusCode, body: undefined as Result };
-      }
-
       if (!isValidResponse(result.body, operation.success)) {
         throw new LemonSqueezyError(
           "Lemon Squeezy API returned an invalid response.",

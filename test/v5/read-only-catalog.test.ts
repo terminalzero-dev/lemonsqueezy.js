@@ -257,11 +257,13 @@ describe("read-only catalog namespaces", () => {
       },
     );
 
-    await client.prices.get(5, { include: ["variant"] });
+    await client.prices.get(5, {
+      include: ["variant", "subscription-items", "usage-records"],
+    });
     await client.prices.list({ filter: { variantId: 6 } });
 
     expect(requests[0]?.url).toBe(
-      "https://api.lemonsqueezy.com/v1/prices/5?include=variant",
+      "https://api.lemonsqueezy.com/v1/prices/5?include=variant%2Csubscription-items%2Cusage-records",
     );
     expect(
       new URL(requests[1]!.url).searchParams.get("filter[variant_id]"),
@@ -337,7 +339,13 @@ describe("read-only catalog namespaces", () => {
       () => client.files.get(""),
       () => client.affiliates.get(""),
     ];
-    const invalidLists = [
+    const invalidOptions = [
+      () => client.stores.get(1, {}, { timeoutMs: 0 }),
+      () => client.products.get(1, {}, { timeoutMs: 0 }),
+      () => client.variants.get(1, {}, { timeoutMs: 0 }),
+      () => client.prices.get(1, {}, { timeoutMs: 0 }),
+      () => client.files.get(1, {}, { timeoutMs: 0 }),
+      () => client.affiliates.get(1, {}, { timeoutMs: 0 }),
       () => client.stores.list({}, { timeoutMs: 0 }),
       () => client.products.list({}, { timeoutMs: 0 }),
       () => client.variants.list({}, { timeoutMs: 0 }),
@@ -345,8 +353,14 @@ describe("read-only catalog namespaces", () => {
       () => client.files.list({}, { timeoutMs: 0 }),
       () => client.affiliates.list({}, { timeoutMs: 0 }),
     ];
+    const invalidInputs = [
+      () =>
+        client.variants.list({
+          filter: { status: "archived" as "published" },
+        }),
+    ];
 
-    for (const run of [...invalidGets, ...invalidLists]) {
+    for (const run of [...invalidGets, ...invalidOptions, ...invalidInputs]) {
       await expect(run()).rejects.toMatchObject({ code: "validation" });
     }
     expect(attempts).toBe(0);

@@ -205,14 +205,21 @@ describe("users.getAuthenticated", () => {
     expect(attempts).toBe(0);
   });
 
-  it.each([204, 205])("does not parse an empty %s response", async (status) => {
-    const client = createClientWithAdapter(
-      { apiKey: "explicit-key" },
-      async () => new Response(null, { status }),
-    );
+  it.each([204, 205])(
+    "rejects an empty %s response for a JSON:API read contract",
+    async (status) => {
+      const client = createClientWithAdapter(
+        { apiKey: "explicit-key" },
+        async () => new Response(null, { status }),
+      );
 
-    await expect(client.users.getAuthenticated()).resolves.toBeUndefined();
-  });
+      await expect(client.users.getAuthenticated()).rejects.toMatchObject({
+        code: "invalid_response",
+        statusCode: status,
+        responseBody: null,
+      });
+    },
+  );
 
   it("copies client configuration instead of observing later mutations", async () => {
     const requests: Request[] = [];

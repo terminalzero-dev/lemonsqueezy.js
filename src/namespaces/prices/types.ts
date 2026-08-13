@@ -66,7 +66,7 @@ export type PriceResponse = JSONAPISingleResponse<PriceResource>;
 export type PriceListResponse = JSONAPIListResponse<PriceResource>;
 
 export interface GetPriceParams {
-  readonly include?: readonly "variant"[];
+  readonly include?: readonly (keyof PriceRelationships)[];
 }
 
 export interface ListPricesParams extends GetPriceParams {

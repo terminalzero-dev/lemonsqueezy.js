@@ -63,6 +63,8 @@ const futureAffiliateStatus: AffiliateStatus = "reviewing";
 declare const affiliateResponse: AffiliateResponse;
 const affiliateProducts: JSONValue | null =
   affiliateResponse.data.attributes.products;
+type AffiliateProducts =
+  (typeof affiliateResponse)["data"]["attributes"]["products"];
 const _user: User | undefined = undefined;
 const filters: ListCustomersParams = { filter: { email: "test@example.com" } };
 
@@ -93,6 +95,17 @@ client.users = client.users;
 client.affiliates.create({});
 // @ts-expect-error Affiliate includes are limited to reviewed relationships
 client.affiliates.get(1, { include: ["products"] });
+// @ts-expect-error Variant request status is a closed documented enum
+client.variants.list({ filter: { status: "archived" } });
+client.prices.get(1, {
+  include: ["variant", "subscription-items", "usage-records"],
+});
+// @ts-expect-error Affiliate products are JSON values or null, not functions
+const functionProducts: AffiliateProducts = () => undefined;
+// @ts-expect-error Affiliate products are present and cannot be undefined
+const undefinedProducts: AffiliateProducts = undefined;
+void functionProducts;
+void undefinedProducts;
 // @ts-expect-error Internal contracts are not public package entries
 import("@terminalzero/lemonsqueezy/namespaces/affiliates/contract");
 // @ts-expect-error Compatibility facade returns an envelope, not a direct body

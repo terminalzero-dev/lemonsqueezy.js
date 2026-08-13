@@ -1,3 +1,4 @@
+import { LemonSqueezyError } from "../../client/error";
 import { compilePathId, compileReadQuery } from "../../internal/v5/request";
 import type { OperationContract } from "../../internal/v5/types";
 import type { Id } from "../../types/jsonapi";
@@ -10,6 +11,7 @@ import type {
 
 const objectEvidence =
   "https://docs.lemonsqueezy.com/api/variants/the-variant-object";
+const knownStatuses = new Set(["pending", "draft", "published"]);
 
 export const getVariantOperation = {
   key: "variants.get",
@@ -31,15 +33,25 @@ export const getVariantOperation = {
 
 export const listVariantsOperation = {
   key: "variants.list",
-  compile: ([params]) => ({
-    protocol: "jsonapi",
-    method: "GET",
-    path: "/v1/variants",
-    query: compileReadQuery(params, {
-      productId: "filter[product_id]",
-      status: "filter[status]",
-    }),
-  }),
+  compile: ([params]) => {
+    const status = params.filter?.status;
+    if (status != null && !knownStatuses.has(status)) {
+      throw new LemonSqueezyError(
+        "filter.status must be pending, draft, or published.",
+        "validation",
+      );
+    }
+
+    return {
+      protocol: "jsonapi",
+      method: "GET",
+      path: "/v1/variants",
+      query: compileReadQuery(params, {
+        productId: "filter[product_id]",
+        status: "filter[status]",
+      }),
+    };
+  },
   success: { kind: "jsonapi-list", resourceType: "variants" },
   evidence: [
     "https://docs.lemonsqueezy.com/api/variants/list-all-variants",
