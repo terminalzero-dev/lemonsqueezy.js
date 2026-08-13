@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   getSubscriptionInvoice,
   lemonSqueezySetup,
@@ -60,7 +60,7 @@ describe("List all subscription invoices", () => {
     expect(data).toBeArray();
     expect(data[0]).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "stores")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "stores")).toBe(true);
   });
 
   it("Should return a paginated list of subscription invoices filtered by store id", async () => {
@@ -313,7 +313,7 @@ describe("Retrieve a subscription invoice", () => {
     expect(included).toBeArray();
     expect(
       Boolean(included?.filter((item) => item.type === "subscriptions"))
-    ).toBeTrue();
+    ).toBe(true);
 
     const { type, id, attributes, relationships } = data;
     expect(type).toEqual(DATA_TYPE);
@@ -410,6 +410,7 @@ describe("Retrieve a subscription invoice", () => {
 describe("Generate subscription invoice", () => {
   it("Throw an error about a parameter that must be provided", async () => {
     try {
+      // @ts-expect-error Exercise the runtime guard for a missing identifier.
       await generateSubscriptionInvoice("");
     } catch (error) {
       expect((error as Error).message).toMatch(
@@ -423,6 +424,7 @@ describe("Generate subscription invoice", () => {
       statusCode,
       error,
       data: _data,
+      // @ts-expect-error Preserve the v4 runtime case with omitted invoice fields.
     } = await generateSubscriptionInvoice(subscriptionInvoiceId);
     expect(statusCode).toEqual(200);
     expect(error).toBeNull();

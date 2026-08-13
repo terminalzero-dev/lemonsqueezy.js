@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   createWebhook,
   deleteWebhook,
@@ -239,7 +239,7 @@ describe("Retrieve a checkout", () => {
     expect(data).toBeDefined();
     expect(links).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "stores")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "stores")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toBeDefined();
@@ -318,7 +318,7 @@ describe("List all webhooks", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "stores")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "stores")).toBe(true);
 
     const { currentPage, from, to, perPage, lastPage, total } = meta.page;
     const items = [currentPage, from, to, perPage, lastPage, total];

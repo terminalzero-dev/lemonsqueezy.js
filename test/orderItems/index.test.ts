@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { getOrderItem, lemonSqueezySetup, listOrderItems } from "../../src";
 import { API_BASE_URL } from "../../src/internal";
 
@@ -53,7 +53,7 @@ describe("List all order items", () => {
     expect(links.last).toBeDefined();
     expect(data).toBeArray();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "products")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "products")).toBe(true);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
     for (const item of [currentPage, from, lastPage, perPage, to, total]) {
@@ -243,7 +243,7 @@ describe("Retrieve an order item", () => {
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${orderItemId}`);
     expect(data).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "orders")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "orders")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(orderItemId.toString());

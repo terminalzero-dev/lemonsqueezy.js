@@ -1,10 +1,10 @@
 # The official Lemon Squeezy JavaScript SDK
 
-[![NPM version](https://img.shields.io/npm/v/%40lemonsqueezy%2Flemonsqueezy.js?label=&color=%230d9488)](https://www.npmjs.com/package/@lemonsqueezy/lemonsqueezy.js)
+[![NPM version](https://img.shields.io/npm/v/%40terminalzero%2Flemonsqueezy?label=&color=%230d9488)](https://www.npmjs.com/package/@terminalzero/lemonsqueezy)
 [![Functions usage](https://img.shields.io/badge/Wiki-%237c3aed)](https://github.com/lmsqueezy/lemonsqueezy.js/wiki)
 [![APIs Count](https://img.shields.io/badge/59_Functions-%232563eb)](https://github.com/lmsqueezy/lemonsqueezy.js/wiki)
-[![Weekly downloads](https://img.shields.io/npm/dw/@lemonsqueezy/lemonsqueezy.js)](https://www.npmjs.com/package/@lemonsqueezy/lemonsqueezy.js)
-![NPM Downloads](https://img.shields.io/npm/d18m/%40lemonsqueezy%2Flemonsqueezy.js)
+[![Weekly downloads](https://img.shields.io/npm/dw/@terminalzero/lemonsqueezy)](https://www.npmjs.com/package/@terminalzero/lemonsqueezy)
+![NPM Downloads](https://img.shields.io/npm/d18m/%40terminalzero%2Flemonsqueezy)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Flmsqueezy%2Flemonsqueezy.js.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Flmsqueezy%2Flemonsqueezy.js?ref=badge_shield)
 
 ## Introduction
@@ -25,17 +25,17 @@ This is the official JavaScript SDK for [Lemon Squeezy](https://lemonsqueezy.com
 
 ```bash
 # bun
-bun install @lemonsqueezy/lemonsqueezy.js
+bun install @terminalzero/lemonsqueezy
 ```
 
 ```bash
 # pnpm
-pnpm install @lemonsqueezy/lemonsqueezy.js
+pnpm install @terminalzero/lemonsqueezy
 ```
 
 ```bash
 # npm
-npm install @lemonsqueezy/lemonsqueezy.js
+npm install @terminalzero/lemonsqueezy
 ```
 
 ### Create an API key
@@ -62,7 +62,7 @@ When you are ready to go live with your integration, make sure to create an API 
 import {
   getAuthenticatedUser,
   lemonSqueezySetup,
-} from "@lemonsqueezy/lemonsqueezy.js";
+} from "@terminalzero/lemonsqueezy";
 
 const apiKey = import.meta.env.LEMON_SQUEEZY_API_KEY;
 

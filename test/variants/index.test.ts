@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { getVariant, lemonSqueezySetup, listVariants } from "../../src";
 import { API_BASE_URL } from "../../src/internal";
 
@@ -51,7 +51,7 @@ describe("List all variants", () => {
     expect(links.last).toBeDefined();
     expect(data).toBeArray();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "products")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "products")).toBe(true);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
     const items = [currentPage, from, lastPage, perPage, to, total];
@@ -253,7 +253,7 @@ describe("Retrieve a variant", () => {
     expect(dataLinks.self).toEqual(`${API_BASE_URL}${PATH}${variantId}`);
     expect(data).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "products")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "products")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(variantId.toString());

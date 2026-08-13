@@ -1,22 +1,21 @@
 {
   "compilerOptions": {
-    "lib": ["ESNext"],
-
-    "allowJs": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleDetection": "force",
-    "target": "ESNext",
-
+    "target": "ES2022",
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
     "noEmit": true,
     "verbatimModuleSyntax": true,
-
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "skipLibCheck": true,
-    "strict": true
-  }
+    "strict": true,
+    "types": ["node", "vitest/globals", "vite/client"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "*.config.ts"],
+  "exclude": ["dist", "node_modules"]
 }

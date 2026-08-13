@@ -34,7 +34,7 @@ export async function $fetch<T>(options: FetchOptions, needApiKey = true) {
     }
 
     const { path, method = "GET", query, body } = options;
-    const _options: FetchRequestInit = {
+    const _options: RequestInit = {
       method,
     };
 

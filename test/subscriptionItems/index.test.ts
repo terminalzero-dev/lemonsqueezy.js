@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   getSubscriptionItem,
   getSubscriptionItemCurrentUsage,
@@ -68,7 +68,7 @@ describe("List all subscription items", () => {
     expect(included).toBeArray();
     expect(
       !!included?.filter((item) => item.type === "subscriptions")
-    ).toBeTrue();
+    ).toBe(true);
   });
 
   it("Should return a paginated list of subscription items filtered by subscription id", async () => {
@@ -209,7 +209,7 @@ describe("Retrieve a subscription item", () => {
     expect(included).toBeArray();
     expect(
       !!included?.filter((item) => item.type === "subscriptions")
-    ).toBeTrue();
+    ).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(subscriptionItemId.toString());

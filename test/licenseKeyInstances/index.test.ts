@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   getLicenseKeyInstance,
   lemonSqueezySetup,
@@ -70,7 +70,7 @@ describe("List all license key instances", () => {
     expect(included).toBeArray();
     expect(
       !!included?.filter((item) => item.type === "license-keys")
-    ).toBeTrue();
+    ).toBe(true);
 
     const { currentPage, from, to, perPage, lastPage, total } = meta.page;
     const items = [currentPage, from, to, perPage, lastPage, total];
@@ -200,7 +200,7 @@ describe("Retrieve a license key instance", () => {
     expect(included).toBeArray();
     expect(
       !!included?.filter((item) => item.type === "license-keys")
-    ).toBeTrue();
+    ).toBe(true);
 
     const { type, id, attributes, relationships } = data;
     expect(id).toEqual(licenseKeyInstanceId.toString());

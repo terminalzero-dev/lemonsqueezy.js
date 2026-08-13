@@ -77,10 +77,10 @@ export function convertListParamsToQueryString(params: Params) {
 
     if (isObject(params)) {
       for (const iKey in params) {
-        searchParams[`${key}[${iKey}]`] = `${params[iKey]}`;
+        searchParams[`${key}[${iKey}]`] = String(params[iKey]);
       }
     } else {
-      searchParams[`${key}`] = `${convertedQuery[key]}`;
+      searchParams[key] = String(convertedQuery[key]);
     }
   }
 

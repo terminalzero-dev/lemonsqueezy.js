@@ -9,7 +9,7 @@ import type {
   Relationships,
 } from "../types";
 
-type InvoiceBillingReason = "initial" | "renewal" | "renewal";
+type InvoiceBillingReason = "initial" | "renewal";
 type InvoiceCardBrand =
   | "visa"
   | "mastercard"

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { getProduct, lemonSqueezySetup, listProducts } from "../../src";
 import { API_BASE_URL } from "../../src/internal";
 
@@ -82,7 +82,7 @@ describe("List all products", () => {
     expect(data).toBeArray();
     expect(links).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.find((item) => item.type === "variants")).toBeTrue();
+    expect(!!included?.find((item) => item.type === "variants")).toBe(true);
 
     const { first, last } = links;
     expect(first).toBeString();
@@ -217,7 +217,7 @@ describe("Retrieve a product", () => {
     expect(links).toBeDefined();
     expect(links.self).toEqual(`${API_BASE_URL}/v1/${DATA_TYPE}/${productId}`);
     expect(included).toBeArray();
-    expect(!!included?.find((item) => item.type === "variants")).toBeTrue();
+    expect(!!included?.find((item) => item.type === "variants")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(productId.toString());

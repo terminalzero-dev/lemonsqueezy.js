@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   archiveCustomer,
   createCustomer,
@@ -489,7 +489,7 @@ describe("Retrieve a customer", () => {
     expect(data).toBeDefined();
     expect(links).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.find((item) => item.type === "stores")).toBeTrue();
+    expect(!!included?.find((item) => item.type === "stores")).toBe(true);
 
     const { type, attributes, id, relationships } = data;
     expect(type).toEqual(DATA_TYPE);
@@ -645,7 +645,7 @@ describe("List all customers", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.find((item) => item.type === "stores")).toBeTrue();
+    expect(!!included?.find((item) => item.type === "stores")).toBe(true);
 
     const { currentPage, from, to, perPage, lastPage, total } = meta.page;
     const items = [currentPage, from, to, perPage, lastPage, total];

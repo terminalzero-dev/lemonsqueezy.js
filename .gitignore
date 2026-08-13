@@ -57,6 +57,9 @@ lib-cov
 coverage
 *.lcov
 
+# Reproducible build and canonical package artifacts
+.artifacts/
+
 # nyc test coverage
 .nyc_output
 

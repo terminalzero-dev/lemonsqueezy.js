@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   activateLicense,
   deactivateLicense,
@@ -34,7 +34,7 @@ describe("Activate a license key", () => {
     expect(_data).toBeDefined();
 
     const { activated, error, license_key, instance, meta } = _data!;
-    expect(activated).toBeTrue();
+    expect(activated).toBe(true);
     expect(error).toBeNull();
     expect(license_key).toBeDefined();
     expect(instance).toBeDefined();
@@ -123,7 +123,7 @@ describe("Failed to activate a license key", () => {
     expect(_data).toBeDefined();
 
     const { activated, error, license_key, instance, meta } = _data!;
-    expect(activated).toBeFalse();
+    expect(activated).toBe(false);
     expect(error).toBeDefined();
     expect(license_key).toBeDefined();
     expect(instance).toBeUndefined();
@@ -195,7 +195,7 @@ describe("Failed to activate a license key", () => {
     expect(_data).toBeDefined();
 
     const { activated, error } = _data!;
-    expect(activated).toBeFalse();
+    expect(activated).toBe(false);
     expect(error).toBeDefined();
   });
 });
@@ -212,7 +212,7 @@ describe("Validate a license key", () => {
     expect(_data).toBeDefined();
 
     const { valid, error, license_key, meta } = _data!;
-    expect(valid).toBeTrue();
+    expect(valid).toBe(true);
     expect(error).toBeNull();
     expect(license_key).toBeDefined();
     expect(meta).toBeDefined();
@@ -279,7 +279,7 @@ describe("Validate a license key", () => {
     expect(_data).toBeDefined();
 
     const { valid, error, license_key, meta, instance } = _data!;
-    expect(valid).toBeTrue();
+    expect(valid).toBe(true);
     expect(error).toBeNull();
     expect(license_key).toBeDefined();
     expect(meta).toBeDefined();
@@ -367,7 +367,7 @@ describe("Failed to validate a license key", async () => {
     expect(_data).toBeDefined();
 
     const { valid, error, license_key, instance, meta } = _data!;
-    expect(valid).toBeFalse();
+    expect(valid).toBe(false);
     expect(error).toBeDefined();
     expect(license_key).toBeDefined();
     expect(instance).toBeNull();
@@ -439,7 +439,7 @@ describe("Failed to validate a license key", async () => {
     expect(_data).toBeDefined();
 
     const { valid, error } = _data!;
-    expect(valid).toBeFalse();
+    expect(valid).toBe(false);
     expect(error).toBeDefined();
   });
 });
@@ -470,7 +470,7 @@ describe("Failed to deactivate a license key", async () => {
     expect(_data).toBeDefined();
 
     const { deactivated, error, license_key, meta } = _data!;
-    expect(deactivated).toBeFalse();
+    expect(deactivated).toBe(false);
     expect(error).toBeDefined();
     expect(license_key).toBeDefined();
     expect(meta).toBeDefined();
@@ -541,7 +541,7 @@ describe("Failed to deactivate a license key", async () => {
     expect(_data).toBeDefined();
 
     const { deactivated, error } = _data!;
-    expect(deactivated).toBeFalse();
+    expect(deactivated).toBe(false);
     expect(error).toBeDefined();
   });
 });
@@ -558,7 +558,7 @@ describe("Deactivate a license key", () => {
     expect(_data).toBeDefined();
 
     const { deactivated, error, license_key, meta } = _data!;
-    expect(deactivated).toBeTrue();
+    expect(deactivated).toBe(true);
     expect(error).toBeNull();
     expect(license_key).toBeDefined();
     expect(meta).toBeDefined();

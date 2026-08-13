@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   createUsageRecord,
   getUsageRecord,
@@ -151,7 +151,7 @@ describe("List all usage records", () => {
     expect(included).toBeArray();
     expect(
       !!included?.filter((item) => item.type === "subscription-items")
-    ).toBeTrue();
+    ).toBe(true);
 
     const { currentPage, from, to, lastPage, perPage, total } = meta.page;
     const pageItems = [currentPage, from, to, lastPage, perPage, total];
@@ -260,7 +260,7 @@ describe("Retrieve a usage record", () => {
     for (const item of items) expect(item).toBeDefined();
     expect(subscription_item_id).toEqual(Number(subscriptionItemId));
     expect(quantity).toBeInteger();
-    expect(["increment", "set"].includes(action)).toBeTrue();
+    expect(["increment", "set"].includes(action)).toBe(true);
 
     const { "subscription-item": subscriptionItem } = relationships;
     expect(subscriptionItem.links).toBeDefined();
@@ -282,7 +282,7 @@ describe("Retrieve a usage record", () => {
     expect(included).toBeArray();
     expect(
       !!included?.filter((item) => item.type === "subscription-items")
-    ).toBeTrue();
+    ).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(usageRecordId.toString());
@@ -302,7 +302,7 @@ describe("Retrieve a usage record", () => {
     for (const item of items) expect(item).toBeDefined();
     expect(subscription_item_id).toEqual(Number(subscriptionItemId));
     expect(quantity).toBeInteger();
-    expect(["increment", "set"].includes(action)).toBeTrue();
+    expect(["increment", "set"].includes(action)).toBe(true);
 
     const { "subscription-item": subscriptionItem } = relationships;
     expect(subscriptionItem.links).toBeDefined();

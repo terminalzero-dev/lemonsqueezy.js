@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   getLicenseKey,
   lemonSqueezySetup,
@@ -68,7 +68,7 @@ describe("List all license keys", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "orders")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "orders")).toBe(true);
 
     const { currentPage, from, to, perPage, lastPage, total } = meta.page;
     const items = [currentPage, from, to, perPage, lastPage, total];
@@ -358,7 +358,7 @@ describe("Retrieve a license key", () => {
     const { data, links, included } = _data!;
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${licenseKeyId}`);
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "orders")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "orders")).toBe(true);
 
     const { type, id, attributes, relationships } = data;
     expect(type).toEqual(DATA_TYPE);
@@ -786,7 +786,7 @@ describe("Update a license key", () => {
     expect(order_id).toEqual(Number(orderId));
     expect(order_item_id).toEqual(Number(orderItemId));
     expect(product_id).toEqual(Number(productId));
-    expect(disabled).toBeTrue();
+    expect(disabled).toBe(true);
 
     const {
       store,

@@ -1,49 +1,49 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { camelToUnderscore, getKV, isObject, setKV } from "../../src/internal";
 import { type Config } from "../../src/internal/setup/types";
 
 describe("Test isObject", () => {
   it("String is not an object type", () => {
-    expect(isObject("test")).toBeFalse();
+    expect(isObject("test")).toBe(false);
   });
   it("Number is not an object type", () => {
-    expect(isObject(1)).toBeFalse();
+    expect(isObject(1)).toBe(false);
   });
   it("Boolean is not an object type", () => {
-    expect(isObject(true)).toBeFalse();
+    expect(isObject(true)).toBe(false);
   });
   it("null is not an object type", () => {
-    expect(isObject(null)).toBeFalse();
+    expect(isObject(null)).toBe(false);
   });
   it("undefined is not an object type", () => {
-    expect(isObject(undefined)).toBeFalse();
+    expect(isObject(undefined)).toBe(false);
   });
   it("symbol is not an object type", () => {
-    expect(isObject(Symbol("test"))).toBeFalse();
+    expect(isObject(Symbol("test"))).toBe(false);
   });
   it("Array is not an object type", () => {
-    expect(isObject([1])).toBeFalse();
+    expect(isObject([1])).toBe(false);
   });
   it("Function is not an object type", () => {
-    expect(isObject(() => {})).toBeFalse();
+    expect(isObject(() => {})).toBe(false);
   });
   it("Date is not an object type", () => {
-    expect(isObject(new Date())).toBeFalse();
+    expect(isObject(new Date())).toBe(false);
   });
   it("RegExp is not an object type", () => {
-    expect(isObject(/(?:)/)).toBeFalse();
+    expect(isObject(/(?:)/)).toBe(false);
   });
   it("Map is not an object type", () => {
-    expect(isObject(new Map())).toBeFalse();
+    expect(isObject(new Map())).toBe(false);
   });
   it("Set is not an object type", () => {
-    expect(isObject(new Set())).toBeFalse();
+    expect(isObject(new Set())).toBe(false);
   });
   it("Object is an object type", () => {
-    expect(isObject(new Object())).toBeTrue();
+    expect(isObject(new Object())).toBe(true);
   });
   it("Object is an object type", () => {
-    expect(isObject({})).toBeTrue();
+    expect(isObject({})).toBe(true);
   });
 });
 

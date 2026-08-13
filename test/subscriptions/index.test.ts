@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   cancelSubscription,
   getSubscription,
@@ -78,7 +78,7 @@ describe("List all subscriptions", () => {
     expect(data).toBeArray();
     expect(data[0]).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "products")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "products")).toBe(true);
   });
 
   it("Should return a paginated list of subscriptions filtered by store id", async () => {
@@ -394,7 +394,7 @@ describe("Retrieve a subscription", () => {
     expect(data).toBeDefined();
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${subscriptionId}`);
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "products")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "products")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(type).toBe(DATA_TYPE);
@@ -586,7 +586,7 @@ describe("Update a subscription", () => {
     expect(attributes).toBeDefined();
 
     const { cancelled } = attributes;
-    expect(cancelled).toBeTrue();
+    expect(cancelled).toBe(true);
   });
 
   it("The subscription should be successfully active", async () => {
@@ -611,7 +611,7 @@ describe("Update a subscription", () => {
     expect(attributes).toBeDefined();
 
     const { cancelled } = attributes;
-    expect(cancelled).toBeFalse();
+    expect(cancelled).toBe(false);
   });
 
   it("The subscription should be changed to trial_ends_at", async () => {

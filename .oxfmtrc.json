@@ -1,0 +1,15 @@
+{
+  "printWidth": 80,
+  "singleQuote": false,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "useTabs": false,
+  "sortImports": false,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    ".artifacts/**",
+    "dist/**",
+    "node_modules/**",
+    "src/prototypes/**"
+  ]
+}
