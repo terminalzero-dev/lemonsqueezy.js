@@ -1,9 +1,15 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  getPriceOperation,
+  listPricesOperation,
+} from "../namespaces/prices/contract";
+import type {
+  GetPriceParams as CanonicalGetPriceParams,
+  ListPricesParams as CanonicalListPricesParams,
+  PriceListResponse,
+  PriceResponse,
+} from "../namespaces/prices/types";
 import type {
   GetPriceParams,
   ListPrices,
@@ -23,10 +29,11 @@ export function getPrice(
   priceId: number | string,
   params: GetPriceParams = {},
 ) {
-  requiredCheck({ priceId });
-  return $fetch<Price>({
-    path: `/v1/prices/${priceId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetPriceParams],
+    PriceResponse,
+    Price
+  >(getPriceOperation, [priceId, params]) as Promise<FetchResponse<Price>>;
 }
 
 /**
@@ -42,7 +49,9 @@ export function getPrice(
  * @returns A paginated list of price objects ordered by `created_at` (descending).
  */
 export function listPrices(params: ListPricesParams = {}) {
-  return $fetch<ListPrices>({
-    path: `/v1/prices${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListPricesParams],
+    PriceListResponse,
+    ListPrices
+  >(listPricesOperation, [params]) as Promise<FetchResponse<ListPrices>>;
 }

@@ -1,5 +1,11 @@
 import type { LemonSqueezyClient } from "../../client";
 import { createUsersNamespace } from "../../namespaces/users/namespace";
+import { createStoresNamespace } from "../../namespaces/stores/namespace";
+import { createProductsNamespace } from "../../namespaces/products/namespace";
+import { createVariantsNamespace } from "../../namespaces/variants/namespace";
+import { createPricesNamespace } from "../../namespaces/prices/namespace";
+import { createFilesNamespace } from "../../namespaces/files/namespace";
+import { createAffiliatesNamespace } from "../../namespaces/affiliates/namespace";
 import { createResourceRuntime } from "./runtime";
 import {
   DEFAULT_TIMEOUT_MS,
@@ -21,5 +27,11 @@ export function createClientWithTransport(
 
   return Object.freeze({
     users: createUsersNamespace(runtime),
+    stores: createStoresNamespace(runtime),
+    products: createProductsNamespace(runtime),
+    variants: createVariantsNamespace(runtime),
+    prices: createPricesNamespace(runtime),
+    files: createFilesNamespace(runtime),
+    affiliates: createAffiliatesNamespace(runtime),
   });
 }

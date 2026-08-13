@@ -1,5 +1,11 @@
 export type JSONPrimitive = string | number | boolean | null;
 
+export type Id = string | number;
+
+export type OpenString<Known extends string> =
+  | Known
+  | (string & Record<never, never>);
+
 export type JSONValue =
   | JSONPrimitive
   | readonly JSONValue[]
@@ -40,7 +46,13 @@ export interface UnknownJSONAPIResource extends JSONAPIResource<
 > {}
 
 export type KnownLemonSqueezyResource =
-  import("../namespaces/users/types").UserResource;
+  | import("../namespaces/users/types").UserResource
+  | import("../namespaces/stores/types").StoreResource
+  | import("../namespaces/products/types").ProductResource
+  | import("../namespaces/variants/types").VariantResource
+  | import("../namespaces/prices/types").PriceResource
+  | import("../namespaces/files/types").FileResource
+  | import("../namespaces/affiliates/types").AffiliateResource;
 export type LemonSqueezyResource =
   | KnownLemonSqueezyResource
   | UnknownJSONAPIResource;

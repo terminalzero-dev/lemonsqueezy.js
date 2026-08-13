@@ -1,9 +1,15 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  getFileOperation,
+  listFilesOperation,
+} from "../namespaces/files/contract";
+import type {
+  FileListResponse,
+  FileResponse,
+  GetFileParams as CanonicalGetFileParams,
+  ListFilesParams as CanonicalListFilesParams,
+} from "../namespaces/files/types";
 import type { File, GetFileParams, ListFiles, ListFilesParams } from "./types";
 
 /**
@@ -15,10 +21,11 @@ import type { File, GetFileParams, ListFiles, ListFilesParams } from "./types";
  * @returns A file object.
  */
 export function getFile(fileId: number | string, params: GetFileParams = {}) {
-  requiredCheck({ fileId });
-  return $fetch<File>({
-    path: `/v1/files/${fileId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetFileParams],
+    FileResponse,
+    File
+  >(getFileOperation, [fileId, params]) as Promise<FetchResponse<File>>;
 }
 
 /**
@@ -34,7 +41,9 @@ export function getFile(fileId: number | string, params: GetFileParams = {}) {
  * @returns A paginated list of file objects ordered by `sort`.
  */
 export function listFiles(params: ListFilesParams = {}) {
-  return $fetch<ListFiles>({
-    path: `/v1/files${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListFilesParams],
+    FileListResponse,
+    ListFiles
+  >(listFilesOperation, [params]) as Promise<FetchResponse<ListFiles>>;
 }

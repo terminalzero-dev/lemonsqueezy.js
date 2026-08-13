@@ -1,9 +1,15 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  getVariantOperation,
+  listVariantsOperation,
+} from "../namespaces/variants/contract";
+import type {
+  GetVariantParams as CanonicalGetVariantParams,
+  ListVariantsParams as CanonicalListVariantsParams,
+  VariantListResponse,
+  VariantResponse,
+} from "../namespaces/variants/types";
 import type {
   GetVariantParams,
   ListVariants,
@@ -23,10 +29,13 @@ export function getVariant(
   variantId: number | string,
   params: GetVariantParams = {},
 ) {
-  requiredCheck({ variantId });
-  return $fetch<Variant>({
-    path: `/v1/variants/${variantId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetVariantParams],
+    VariantResponse,
+    Variant
+  >(getVariantOperation, [variantId, params]) as Promise<
+    FetchResponse<Variant>
+  >;
 }
 
 /**
@@ -43,7 +52,9 @@ export function getVariant(
  * @returns A paginated list of variant objects ordered by `sort`.
  */
 export function listVariants(params: ListVariantsParams = {}) {
-  return $fetch<ListVariants>({
-    path: `/v1/variants${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListVariantsParams],
+    VariantListResponse,
+    ListVariants
+  >(listVariantsOperation, [params]) as Promise<FetchResponse<ListVariants>>;
 }
