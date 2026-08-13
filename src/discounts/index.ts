@@ -1,11 +1,18 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertKeys,
-  convertListParamsToQueryString,
-  generateDiscount,
-  requiredCheck,
-} from "../internal";
+  createDiscountOperation,
+  deleteDiscountOperation,
+  getDiscountOperation,
+  listDiscountsOperation,
+} from "../namespaces/discounts/contract";
+import type {
+  CreateDiscountInput,
+  DiscountResponse,
+  GetDiscountParams as CanonicalGetDiscountParams,
+  DiscountListResponse,
+  ListDiscountsParams as CanonicalListDiscountsParams,
+} from "../namespaces/discounts/types";
 import type {
   Discount,
   GetDiscountParams,
@@ -21,69 +28,12 @@ import type {
  * @returns A discount object.
  */
 export function createDiscount(discount: NewDiscount) {
-  const {
-    storeId,
-    variantIds,
-    name,
-    amount,
-    amountType = "fixed",
-    code = generateDiscount(),
-    isLimitedToProducts = false,
-    isLimitedRedemptions = false,
-    maxRedemptions = 0,
-    startsAt = null,
-    expiresAt = null,
-    duration = "once",
-    durationInMonths = 1,
-    testMode,
-  } = discount;
-
-  requiredCheck({ storeId, name, code, amount });
-
-  const attributes = convertKeys({
-    name,
-    amount,
-    amountType,
-    code,
-    isLimitedRedemptions,
-    isLimitedToProducts,
-    maxRedemptions,
-    startsAt,
-    expiresAt,
-    duration,
-    durationInMonths,
-    testMode,
-  });
-
-  const relationships: Record<string, any> = {
-    store: {
-      data: {
-        type: "stores",
-        id: storeId.toString(),
-      },
-    },
-  };
-
-  if (variantIds && variantIds.length > 0) {
-    relationships.variants = {
-      data: variantIds.map((id) => ({
-        type: "variants",
-        id: id.toString(),
-      })),
-    };
-  }
-
-  return $fetch<Discount>({
-    path: "/v1/discounts",
-    method: "POST",
-    body: {
-      data: {
-        type: "discounts",
-        attributes,
-        relationships,
-      },
-    },
-  });
+  const input: CreateDiscountInput = discount;
+  return invokeDefaultCompatibility<
+    readonly [CreateDiscountInput],
+    DiscountResponse,
+    Discount
+  >(createDiscountOperation, [input]) as Promise<FetchResponse<Discount>>;
 }
 
 /**
@@ -99,9 +49,11 @@ export function createDiscount(discount: NewDiscount) {
  * @returns A paginated list of discount objects ordered by `created_at`.
  */
 export function listDiscounts(params: ListDiscountsParams = {}) {
-  return $fetch<ListDiscounts>({
-    path: `/v1/discounts${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListDiscountsParams],
+    DiscountListResponse,
+    ListDiscounts
+  >(listDiscountsOperation, [params]) as Promise<FetchResponse<ListDiscounts>>;
 }
 
 /**
@@ -116,10 +68,13 @@ export function getDiscount(
   discountId: number | string,
   params: GetDiscountParams = {},
 ) {
-  requiredCheck({ discountId });
-  return $fetch<Discount>({
-    path: `/v1/discounts/${discountId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetDiscountParams],
+    DiscountResponse,
+    Discount
+  >(getDiscountOperation, [discountId, params]) as Promise<
+    FetchResponse<Discount>
+  >;
 }
 
 /**
@@ -129,9 +84,8 @@ export function getDiscount(
  * @returns A `204 No Content` response on success.
  */
 export function deleteDiscount(discountId: string | number) {
-  requiredCheck({ discountId });
-  return $fetch<null>({
-    path: `/v1/discounts/${discountId}`,
-    method: "DELETE",
-  });
+  return invokeDefaultCompatibility<readonly [number | string], void, null>(
+    deleteDiscountOperation,
+    [discountId],
+  ) as Promise<FetchResponse<null>>;
 }

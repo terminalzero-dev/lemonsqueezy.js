@@ -1,11 +1,14 @@
 import {
   createClient,
+  deleteDiscount,
   generateSubscriptionInvoice,
   getAuthenticatedUser,
   issueSubscriptionInvoiceRefund,
   isLemonSqueezyError,
   updateSubscriptionItem,
   type LemonSqueezyError,
+  type Discount,
+  type DiscountRedemption,
   type User,
   type AffiliateResponse,
 } from "@terminalzero/lemonsqueezy";
@@ -16,6 +19,11 @@ import type {
   CreateCustomerInput,
   CustomerResponse,
   CustomerRelationships,
+  CreateDiscountInput,
+  DiscountListResponse,
+  DiscountRedemptionListResponse,
+  DiscountRedemptionResponse,
+  DiscountResponse,
   GenerateOrderInvoiceResponse,
   OrderItemListResponse,
   OrderItemResponse,
@@ -171,6 +179,41 @@ const usageRecords: Promise<UsageRecordListResponse> = client.usageRecords.list(
     filter: { subscriptionItemId: 1 },
   },
 );
+const createDiscountInput: CreateDiscountInput = {
+  storeId: 1,
+  name: "Ten percent off",
+  code: "TENOFF",
+  amount: 10,
+  amountType: "percent",
+  isLimitedToProducts: true,
+  variantIds: [2, 3],
+};
+const discount: Promise<DiscountResponse> =
+  client.discounts.create(createDiscountInput);
+const discounts: Promise<DiscountListResponse> = client.discounts.list({
+  filter: { storeId: 1 },
+  include: ["discount-redemptions"],
+});
+const deletedDiscount: Promise<void> = client.discounts.delete(1);
+const discountRedemption: Promise<DiscountRedemptionResponse> =
+  client.discountRedemptions.get(1, { include: ["discount", "order"] });
+const discountRedemptions: Promise<DiscountRedemptionListResponse> =
+  client.discountRedemptions.list({
+    filter: { discountId: 1, orderId: 2 },
+  });
+const deletedDiscountEnvelope = deleteDiscount(1);
+declare const canonicalDiscountResponse: DiscountResponse;
+declare const compatibilityDiscount: Discount;
+declare const canonicalDiscountRedemptionResponse: DiscountRedemptionResponse;
+declare const compatibilityDiscountRedemption: DiscountRedemption;
+const futureCanonicalDiscountStatus: (typeof canonicalDiscountResponse)["data"]["attributes"]["status"] =
+  "future_status";
+const futureCompatibilityDiscountStatus: (typeof compatibilityDiscount)["data"]["attributes"]["status"] =
+  "future_status";
+const futureCanonicalDiscountAmountType: (typeof canonicalDiscountRedemptionResponse)["data"]["attributes"]["discount_amount_type"] =
+  "future_amount_type";
+const futureCompatibilityDiscountAmountType: (typeof compatibilityDiscountRedemption)["data"]["attributes"]["discount_amount_type"] =
+  "future_amount_type";
 const subscriptionInvoice: Promise<SubscriptionInvoiceResponse> =
   client.subscriptionInvoices.get(1, { include: ["affiliate"] });
 const subscriptionInvoices: Promise<SubscriptionInvoiceListResponse> =
@@ -256,6 +299,16 @@ void numericSubscriptionItemEnvelope;
 void objectSubscriptionItemEnvelope;
 void usageRecord;
 void usageRecords;
+void discount;
+void discounts;
+void deletedDiscount;
+void discountRedemption;
+void discountRedemptions;
+void deletedDiscountEnvelope;
+void futureCanonicalDiscountStatus;
+void futureCompatibilityDiscountStatus;
+void futureCanonicalDiscountAmountType;
+void futureCompatibilityDiscountAmountType;
 void subscriptionInvoice;
 void subscriptionInvoices;
 void generatedSubscriptionInvoice;
@@ -327,6 +380,41 @@ client.usageRecords.create({
   // @ts-expect-error Usage Record create has no generic attributes escape hatch
   attributes: { arbitrary: true },
 });
+client.discounts.create({
+  storeId: 1,
+  name: "Invalid request enum",
+  amount: 10,
+  // @ts-expect-error Discount amountType is a closed request enum
+  amountType: "credit",
+});
+// @ts-expect-error Variant relationships require isLimitedToProducts true
+client.discounts.create({
+  storeId: 1,
+  name: "Contradictory relationship",
+  amount: 10,
+  amountType: "percent",
+  isLimitedToProducts: false,
+  variantIds: [2],
+});
+// @ts-expect-error Limited discounts require at least the variantIds field
+client.discounts.create({
+  storeId: 1,
+  name: "Missing variants",
+  amount: 10,
+  amountType: "percent",
+  isLimitedToProducts: true,
+});
+// @ts-expect-error Discount includes are limited to reviewed relationships
+client.discounts.get(1, { include: ["orders"] });
+// @ts-expect-error Discount Redemptions expose only get and list
+client.discountRedemptions.create({});
+// @ts-expect-error Compatibility delete returns an envelope, not Client void
+const facadeDeleteAsVoid: Promise<void> = deleteDiscount(1);
+// @ts-expect-error Client delete returns void, not a Compatibility envelope
+const clientDeleteAsEnvelope: typeof deletedDiscountEnvelope =
+  client.discounts.delete(1);
+void facadeDeleteAsVoid;
+void clientDeleteAsEnvelope;
 client.usageRecords.create({
   subscriptionItemId: 1,
   quantity: 5,

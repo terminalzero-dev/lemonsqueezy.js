@@ -49,6 +49,8 @@ for (const namespace of [
   "subscriptionInvoices",
   "subscriptionItems",
   "usageRecords",
+  "discounts",
+  "discountRedemptions",
 ]) {
   assert.equal(Object.isFrozen(explicit[namespace]), true);
 }
@@ -79,6 +81,16 @@ assert.deepEqual(Object.keys(explicit.subscriptionItems).sort(), [
 ]);
 assert.deepEqual(Object.keys(explicit.usageRecords).sort(), [
   "create",
+  "get",
+  "list",
+]);
+assert.deepEqual(Object.keys(explicit.discounts).sort(), [
+  "create",
+  "delete",
+  "get",
+  "list",
+]);
+assert.deepEqual(Object.keys(explicit.discountRedemptions).sort(), [
   "get",
   "list",
 ]);
@@ -154,6 +166,12 @@ const currentUsageResponse = {
 globalThis.fetch = async (request) => {
   installedRequests.push(request);
   const url = new URL(request.url);
+  if (
+    request.method === "DELETE" &&
+    url.pathname.startsWith("/v1/discounts/")
+  ) {
+    return new Response(null, { status: 204 });
+  }
   if (url.pathname.endsWith("/generate-invoice")) {
     return Response.json(invoiceResponse);
   }
@@ -161,17 +179,21 @@ globalThis.fetch = async (request) => {
     return Response.json(currentUsageResponse);
   }
 
-  const type = url.pathname.includes("/subscription-invoices")
-    ? "subscription-invoices"
-    : url.pathname.includes("/subscription-items")
-      ? "subscription-items"
-      : url.pathname.includes("/usage-records")
-        ? "usage-records"
-        : url.pathname.includes("/order-items")
-          ? "order-items"
-          : url.pathname.includes("/subscriptions")
-            ? "subscriptions"
-            : "orders";
+  const type = url.pathname.includes("/discount-redemptions")
+    ? "discount-redemptions"
+    : url.pathname.includes("/discounts")
+      ? "discounts"
+      : url.pathname.includes("/subscription-invoices")
+        ? "subscription-invoices"
+        : url.pathname.includes("/subscription-items")
+          ? "subscription-items"
+          : url.pathname.includes("/usage-records")
+            ? "usage-records"
+            : url.pathname.includes("/order-items")
+              ? "order-items"
+              : url.pathname.includes("/subscriptions")
+                ? "subscriptions"
+                : "orders";
   return Response.json(
     request.method === "GET" && url.pathname === `/v1/${type}`
       ? listResponse(type)
@@ -225,6 +247,20 @@ await explicit.usageRecords.create({
 });
 await explicit.usageRecords.get(1, { include: ["subscription-item"] });
 await explicit.usageRecords.list({ filter: { subscriptionItemId: 1 } });
+await explicit.discounts.create({
+  storeId: 1,
+  name: "Ten percent off",
+  code: "TENOFF",
+  amount: 10,
+  amountType: "percent",
+});
+await explicit.discounts.get(1, { include: ["variants"] });
+await explicit.discounts.list({ filter: { storeId: 1 } });
+assert.equal(await explicit.discounts.delete(1), undefined);
+await explicit.discountRedemptions.get(1, { include: ["order"] });
+await explicit.discountRedemptions.list({
+  filter: { discountId: 1, orderId: 2 },
+});
 await assert.rejects(explicit.orders.refund(1, { amount: 0 }), {
   code: "validation",
 });
@@ -274,12 +310,30 @@ const compatibilityResults = await Promise.all([
   }),
   root.getUsageRecord(1, { include: ["subscription-item"] }),
   root.listUsageRecords({ filter: { subscriptionItemId: 1 } }),
+  root.createDiscount({
+    storeId: 1,
+    name: "Ten percent off",
+    code: "TENOFF",
+    amount: 10,
+    amountType: "percent",
+  }),
+  root.getDiscount(1, { include: ["variants"] }),
+  root.listDiscounts({ filter: { storeId: 1 } }),
+  root.getDiscountRedemption(1, { include: ["order"] }),
+  root.listDiscountRedemptions({
+    filter: { discountId: 1, orderId: 2 },
+  }),
 ]);
 for (const result of compatibilityResults) {
   assert.equal(result.statusCode, 200);
   assert.notEqual(result.data, null);
   assert.equal(result.error, null);
 }
+assert.deepEqual(await root.deleteDiscount(1), {
+  statusCode: 204,
+  data: null,
+  error: null,
+});
 await assert.rejects(root.issueOrderRefund(1, 0), { code: "validation" });
 await assert.rejects(root.issueSubscriptionInvoiceRefund(1, 0), {
   code: "validation",
@@ -429,6 +483,36 @@ for (const request of usageRecordCreates) {
         "subscription-item": {
           data: { type: "subscription-items", id: "1" },
         },
+      },
+    },
+  });
+}
+
+const discountCreates = installedRequests.filter(
+  (request) =>
+    new URL(request.url).pathname === "/v1/discounts" &&
+    request.method === "POST",
+);
+assert.equal(discountCreates.length, 2);
+for (const request of discountCreates) {
+  assert.deepEqual(await request.clone().json(), {
+    data: {
+      type: "discounts",
+      attributes: {
+        name: "Ten percent off",
+        code: "TENOFF",
+        amount: 10,
+        amount_type: "percent",
+        is_limited_to_products: false,
+        is_limited_redemptions: false,
+        max_redemptions: 0,
+        starts_at: null,
+        expires_at: null,
+        duration: "once",
+        duration_in_months: 1,
+      },
+      relationships: {
+        store: { data: { type: "stores", id: "1" } },
       },
     },
   });

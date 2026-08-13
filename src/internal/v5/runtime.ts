@@ -44,6 +44,7 @@ export function createResourceRuntime(
 }
 
 function isValidResponse(body: unknown, success: SuccessContract): boolean {
+  if (success.kind === "empty") return body === undefined;
   if (success.kind === "invoice") return isValidInvoiceResponse(body);
   if (success.kind === "meta-only") return isValidMetaOnlyResponse(body);
   if (!isRecord(body)) return false;

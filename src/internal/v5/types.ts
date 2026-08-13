@@ -42,7 +42,8 @@ export type SuccessContract =
       readonly resourceType: string;
     }
   | { readonly kind: "meta-only" }
-  | { readonly kind: "invoice" };
+  | { readonly kind: "invoice" }
+  | { readonly kind: "empty" };
 
 declare const operationResult: unique symbol;
 

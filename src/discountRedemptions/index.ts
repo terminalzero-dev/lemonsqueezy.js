@@ -1,9 +1,15 @@
+import type { FetchResponse } from "../internal/fetch/types";
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  getDiscountRedemptionOperation,
+  listDiscountRedemptionsOperation,
+} from "../namespaces/discount-redemptions/contract";
+import type {
+  DiscountRedemptionListResponse,
+  DiscountRedemptionResponse,
+  GetDiscountRedemptionParams as CanonicalGetDiscountRedemptionParams,
+  ListDiscountRedemptionsParams as CanonicalListDiscountRedemptionsParams,
+} from "../namespaces/discount-redemptions/types";
 import type {
   DiscountRedemption,
   GetDiscountRedemptionParams,
@@ -23,10 +29,13 @@ export function getDiscountRedemption(
   discountRedemptionId: number | string,
   params: GetDiscountRedemptionParams = {},
 ) {
-  requiredCheck({ discountRedemptionId });
-  return $fetch<DiscountRedemption>({
-    path: `/v1/discount-redemptions/${discountRedemptionId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetDiscountRedemptionParams],
+    DiscountRedemptionResponse,
+    DiscountRedemption
+  >(getDiscountRedemptionOperation, [discountRedemptionId, params]) as Promise<
+    FetchResponse<DiscountRedemption>
+  >;
 }
 
 /**
@@ -45,7 +54,11 @@ export function getDiscountRedemption(
 export function listDiscountRedemptions(
   params: ListDiscountRedemptionsParams = {},
 ) {
-  return $fetch<ListDiscountRedemptions>({
-    path: `/v1/discount-redemptions${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListDiscountRedemptionsParams],
+    DiscountRedemptionListResponse,
+    ListDiscountRedemptions
+  >(listDiscountRedemptionsOperation, [params]) as Promise<
+    FetchResponse<ListDiscountRedemptions>
+  >;
 }

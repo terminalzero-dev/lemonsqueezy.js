@@ -10,6 +10,8 @@ import type {
   SubscriptionInvoiceListResponse,
   SubscriptionItemListResponse,
   UsageRecordListResponse,
+  DiscountListResponse,
+  DiscountRedemptionListResponse,
   Flatten,
   UserResponse,
 } from "@terminalzero/lemonsqueezy/types";
@@ -52,6 +54,13 @@ const subscriptionItems: Promise<SubscriptionItemListResponse> = createClient({
 const usageRecords: Promise<UsageRecordListResponse> = createClient({
   apiKey: "type-contract",
 }).usageRecords.list({ filter: { subscriptionItemId: 1 } });
+const discounts: Promise<DiscountListResponse> = createClient({
+  apiKey: "type-contract",
+}).discounts.list({ filter: { storeId: 1 } });
+const discountRedemptions: Promise<DiscountRedemptionListResponse> =
+  createClient({ apiKey: "type-contract" }).discountRedemptions.list({
+    filter: { discountId: 1, orderId: 2 },
+  });
 
 void value;
 void response;
@@ -64,3 +73,5 @@ void subscriptions;
 void subscriptionInvoices;
 void subscriptionItems;
 void usageRecords;
+void discounts;
+void discountRedemptions;
