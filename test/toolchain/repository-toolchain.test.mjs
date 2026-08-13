@@ -128,3 +128,15 @@ test("Test Mode integration stays fail-closed until its protected canary exists"
     false,
   );
 });
+
+test("exact-tarball type fixtures stay outside source-workspace analysis", () => {
+  const oxlint = JSON.parse(
+    readFileSync(new URL("../../.oxlintrc.json", import.meta.url), "utf8"),
+  );
+  const tsconfig = JSON.parse(
+    readFileSync(new URL("../../tsconfig.json", import.meta.url), "utf8"),
+  );
+
+  assert.ok(oxlint.ignorePatterns.includes("test/package/types/**"));
+  assert.ok(tsconfig.exclude.includes("test/package/types"));
+});

@@ -17,5 +17,5 @@
     "types": ["node", "vitest/globals", "vite/client"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "*.config.ts"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules", "test/package/types"]
 }
