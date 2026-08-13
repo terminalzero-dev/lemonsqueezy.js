@@ -8,17 +8,16 @@ import type {
   Params,
   Relationships,
 } from "../types";
+import type {
+  KnownSubscriptionInvoiceStatus,
+  SubscriptionInvoiceBillingReason,
+  SubscriptionInvoiceCardBrand,
+  SubscriptionInvoiceStatus,
+} from "../namespaces/subscription-invoices/types";
 
-type InvoiceBillingReason = "initial" | "renewal";
-type InvoiceCardBrand =
-  | "visa"
-  | "mastercard"
-  | "amex"
-  | "discover"
-  | "jcb"
-  | "diners"
-  | "unionpay";
-type InvoiceStatus = "pending" | "paid" | "void" | "refunded";
+type InvoiceBillingReason = SubscriptionInvoiceBillingReason;
+type InvoiceCardBrand = SubscriptionInvoiceCardBrand;
+type InvoiceStatus = SubscriptionInvoiceStatus;
 type Attributes = {
   /**
    * The ID of the [Store](https://docs.lemonsqueezy.com/api/stores#the-store-object) this subscription invoice belongs to.
@@ -32,6 +31,10 @@ type Attributes = {
    * The ID of the customer this subscription invoice belongs to.
    */
   customer_id: number;
+  /** The referring Affiliate ID, or null when there is no referral. */
+  affiliate_id: number | null;
+  /** The affiliate commission in invoice-currency cents, or null. */
+  referral_amount: number | null;
   /**
    * The full name of the customer.
    */
@@ -45,7 +48,7 @@ type Attributes = {
    *
    * - `initial` - The initial invoice generated when the subscription is created.
    * - `renewal` - A renewal invoice generated when the subscription is renewed.
-   * - `renewal` - An invoice generated when the subscription is updated.
+   * - `updated` - An invoice generated when the subscription is updated.
    */
   billing_reason: InvoiceBillingReason;
   /**
@@ -81,6 +84,7 @@ type Attributes = {
    * - `paid` - The invoice has been paid.
    * - `void` - The invoice was cancelled or cannot be paid.
    * - `refunded` - The invoice was paid but has since been fully refunded.
+   * - `partial_refund` - The invoice was paid but has since been partially refunded.
    */
   status: InvoiceStatus;
   /**
@@ -186,7 +190,7 @@ type Attributes = {
 };
 type SubscriptionInvoiceData = Data<
   Attributes,
-  Pick<Relationships, "store" | "subscription" | "customer">
+  Pick<Relationships, "store" | "subscription" | "customer" | "affiliate">
 >;
 
 export type GetSubscriptionInvoiceParams = Pick<
@@ -203,7 +207,7 @@ export type ListSubscriptionInvoicesParams = Params<
     /**
      * Only return subscription invoices with this status.
      */
-    status?: InvoiceStatus;
+    status?: KnownSubscriptionInvoiceStatus;
     /**
      * Only return subscription invoices that are `refunded` (the value should be `true` or `false`).
      */
@@ -218,15 +222,15 @@ export type GenerateSubscriptionInvoiceParams = {
   /**
    * The full name of the customer.
    */
-  name: string;
+  name?: string;
   /**
    * The street address of the customer.
    */
-  address: string;
+  address?: string;
   /**
    * The city of the customer.
    */
-  city: string;
+  city?: string;
   /**
    * The state of the customer. Required if the country is the United States or Canada.
    */
@@ -234,11 +238,11 @@ export type GenerateSubscriptionInvoiceParams = {
   /**
    * The ZIP code of the customer.
    */
-  zipCode: number;
+  zipCode?: string | number;
   /**
    * The country of the customer.
    */
-  country: string;
+  country?: string;
   /**
    * Optional. Any additional notes to include on the invoice.
    */
