@@ -12,6 +12,8 @@ import type {
   UsageRecordListResponse,
   DiscountListResponse,
   DiscountRedemptionListResponse,
+  LicenseKeyListResponse,
+  LicenseKeyInstanceListResponse,
   Flatten,
   UserResponse,
 } from "@terminalzero/lemonsqueezy/types";
@@ -61,6 +63,13 @@ const discountRedemptions: Promise<DiscountRedemptionListResponse> =
   createClient({ apiKey: "type-contract" }).discountRedemptions.list({
     filter: { discountId: 1, orderId: 2 },
   });
+const licenseKeys: Promise<LicenseKeyListResponse> = createClient({
+  apiKey: "type-contract",
+}).licenseKeys.list({ filter: { status: "active" } });
+const licenseKeyInstances: Promise<LicenseKeyInstanceListResponse> =
+  createClient({ apiKey: "type-contract" }).licenseKeyInstances.list({
+    filter: { licenseKeyId: 1 },
+  });
 
 void value;
 void response;
@@ -75,3 +84,5 @@ void subscriptionItems;
 void usageRecords;
 void discounts;
 void discountRedemptions;
+void licenseKeys;
+void licenseKeyInstances;

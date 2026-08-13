@@ -11,6 +11,7 @@ import {
   type DiscountRedemption,
   type User,
   type AffiliateResponse,
+  type LicenseKeyResponse,
 } from "@terminalzero/lemonsqueezy";
 import type {
   AffiliateStatus,
@@ -48,6 +49,10 @@ import type {
   FileListResponse,
   FileResponse,
   JSONValue,
+  LicenseKeyInstanceListResponse,
+  LicenseKeyInstanceResponse,
+  LicenseKeyListResponse,
+  LicenseKeyStatus,
   ListCustomersParams,
   PriceListResponse,
   PriceResponse,
@@ -56,6 +61,7 @@ import type {
   StoreListResponse,
   StoreResponse,
   UserResponse,
+  UpdateLicenseKeyInput,
   VariantListResponse,
   VariantResponse,
 } from "@terminalzero/lemonsqueezy/types";
@@ -202,6 +208,34 @@ const discountRedemptions: Promise<DiscountRedemptionListResponse> =
     filter: { discountId: 1, orderId: 2 },
   });
 const deletedDiscountEnvelope = deleteDiscount(1);
+const licenseKey: Promise<LicenseKeyResponse> = client.licenseKeys.get(1, {
+  include: ["store", "license-key-instances"],
+});
+const licenseKeys: Promise<LicenseKeyListResponse> = client.licenseKeys.list({
+  filter: {
+    storeId: 1,
+    orderId: 2,
+    orderItemId: 3,
+    productId: 4,
+    status: "active",
+  },
+  page: { number: 1, size: 10 },
+});
+const updateLicenseKeyInput: UpdateLicenseKeyInput = {
+  activationLimit: null,
+  expiresAt: null,
+  disabled: false,
+};
+const updatedLicenseKey: Promise<LicenseKeyResponse> =
+  client.licenseKeys.update(1, updateLicenseKeyInput);
+const licenseKeyInstance: Promise<LicenseKeyInstanceResponse> =
+  client.licenseKeyInstances.get(1, { include: ["license-key"] });
+const licenseKeyInstances: Promise<LicenseKeyInstanceListResponse> =
+  client.licenseKeyInstances.list({
+    filter: { licenseKeyId: 1 },
+    page: { number: 1, size: 10 },
+  });
+const futureLicenseKeyStatus: LicenseKeyStatus = "future_status";
 declare const canonicalDiscountResponse: DiscountResponse;
 declare const compatibilityDiscount: Discount;
 declare const canonicalDiscountRedemptionResponse: DiscountRedemptionResponse;
@@ -305,6 +339,12 @@ void deletedDiscount;
 void discountRedemption;
 void discountRedemptions;
 void deletedDiscountEnvelope;
+void licenseKey;
+void licenseKeys;
+void updatedLicenseKey;
+void licenseKeyInstance;
+void licenseKeyInstances;
+void futureLicenseKeyStatus;
 void futureCanonicalDiscountStatus;
 void futureCompatibilityDiscountStatus;
 void futureCanonicalDiscountAmountType;
@@ -408,6 +448,16 @@ client.discounts.create({
 client.discounts.get(1, { include: ["orders"] });
 // @ts-expect-error Discount Redemptions expose only get and list
 client.discountRedemptions.create({});
+// @ts-expect-error License Key request status is a closed documented enum
+client.licenseKeys.list({ filter: { status: "future_status" } });
+// @ts-expect-error License Key updates accept only reviewed attributes
+client.licenseKeys.update(1, { arbitrary: true });
+// @ts-expect-error License Key disabled input is boolean, not a wire integer
+client.licenseKeys.update(1, { disabled: 0 });
+// @ts-expect-error License Key Instance includes are limited to license-key
+client.licenseKeyInstances.get(1, { include: ["store"] });
+// @ts-expect-error Authenticated License Key management is not the License API namespace
+client.licenseKeys.activate({ licenseKey: "business-license-key" });
 // @ts-expect-error Compatibility delete returns an envelope, not Client void
 const facadeDeleteAsVoid: Promise<void> = deleteDiscount(1);
 // @ts-expect-error Client delete returns void, not a Compatibility envelope

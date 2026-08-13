@@ -16,6 +16,8 @@ import { createSubscriptionItemsNamespace } from "../../namespaces/subscription-
 import { createUsageRecordsNamespace } from "../../namespaces/usage-records/namespace";
 import { createDiscountsNamespace } from "../../namespaces/discounts/namespace";
 import { createDiscountRedemptionsNamespace } from "../../namespaces/discount-redemptions/namespace";
+import { createLicenseKeysNamespace } from "../../namespaces/license-keys/namespace";
+import { createLicenseKeyInstancesNamespace } from "../../namespaces/license-key-instances/namespace";
 import { createResourceRuntime } from "./runtime";
 import {
   DEFAULT_TIMEOUT_MS,
@@ -53,5 +55,7 @@ export function createClientWithTransport(
     usageRecords: createUsageRecordsNamespace(runtime),
     discounts: createDiscountsNamespace(runtime),
     discountRedemptions: createDiscountRedemptionsNamespace(runtime),
+    licenseKeys: createLicenseKeysNamespace(runtime),
+    licenseKeyInstances: createLicenseKeyInstancesNamespace(runtime),
   });
 }

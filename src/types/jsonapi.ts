@@ -62,7 +62,9 @@ export type KnownLemonSqueezyResource =
   | import("../namespaces/subscription-items/types").SubscriptionItemResource
   | import("../namespaces/usage-records/types").UsageRecordResource
   | import("../namespaces/discounts/types").DiscountResource
-  | import("../namespaces/discount-redemptions/types").DiscountRedemptionResource;
+  | import("../namespaces/discount-redemptions/types").DiscountRedemptionResource
+  | import("../namespaces/license-keys/types").LicenseKeyResource
+  | import("../namespaces/license-key-instances/types").LicenseKeyInstanceResource;
 export type LemonSqueezyResource =
   | KnownLemonSqueezyResource
   | UnknownJSONAPIResource;

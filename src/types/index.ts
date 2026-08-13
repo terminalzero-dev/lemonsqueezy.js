@@ -168,6 +168,27 @@ export type {
   GetDiscountRedemptionParams as CanonicalGetDiscountRedemptionParams,
   ListDiscountRedemptionsParams as CanonicalListDiscountRedemptionsParams,
 } from "../namespaces/discount-redemptions/types";
+export type {
+  GetLicenseKeyParams as CanonicalGetLicenseKeyParams,
+  KnownLicenseKeyStatus,
+  LicenseKeyAttributes,
+  LicenseKeyListResponse,
+  LicenseKeyRelationships,
+  LicenseKeyResource,
+  LicenseKeyResponse,
+  LicenseKeyStatus,
+  ListLicenseKeysParams as CanonicalListLicenseKeysParams,
+  UpdateLicenseKeyInput,
+} from "../namespaces/license-keys/types";
+export type {
+  GetLicenseKeyInstanceParams as CanonicalGetLicenseKeyInstanceParams,
+  LicenseKeyInstanceAttributes,
+  LicenseKeyInstanceListResponse,
+  LicenseKeyInstanceRelationships,
+  LicenseKeyInstanceResource,
+  LicenseKeyInstanceResponse,
+  ListLicenseKeyInstancesParams as CanonicalListLicenseKeyInstancesParams,
+} from "../namespaces/license-key-instances/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";
