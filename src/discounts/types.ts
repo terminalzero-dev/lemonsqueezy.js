@@ -5,6 +5,7 @@ import type {
   Meta,
   Params,
   Relationships,
+  OpenString,
 } from "../types";
 
 type AmountType = "percent" | "fixed";
@@ -29,7 +30,7 @@ type Attributes = {
   /**
    * The type of the amount. Either `percent` or `fixed`.
    */
-  amount_type: AmountType;
+  amount_type: OpenString<AmountType>;
   /**
    * Has the value `true` if the discount can only be applied to certain products/variants.
    */
@@ -57,7 +58,7 @@ type Attributes = {
    * - `repeating` - The discount will be applied to a certain number of payments (use in combination with `duration_in_months`.
    * - `forever` - The discount will apply to all payments.
    */
-  duration: Duration;
+  duration: OpenString<Duration>;
   /**
    * If `duration` is `repeating`, this specifies how many months the discount should apply.
    */
@@ -65,7 +66,7 @@ type Attributes = {
   /**
    * The status of the discount. Either `draft` or `published`.
    */
-  status: "published" | "draft";
+  status: OpenString<"published" | "draft">;
   /**
    * The formatted status of the discount.
    */
@@ -184,7 +185,7 @@ type NewDiscountWithoutVariants = NewDiscountBase & {
   /**
    * Not required.
    */
-  variantIds?: Array<number | string>;
+  variantIds?: never;
 };
 
 export type NewDiscount = NewDiscountWithVariants | NewDiscountWithoutVariants;

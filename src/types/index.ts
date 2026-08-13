@@ -145,6 +145,29 @@ export type {
   UsageRecordResource,
   UsageRecordResponse,
 } from "../namespaces/usage-records/types";
+export type {
+  CreateDiscountInput,
+  DiscountAmountType,
+  DiscountAttributes,
+  DiscountDuration,
+  DiscountListResponse,
+  DiscountRelationships,
+  DiscountResource,
+  DiscountResponse,
+  DiscountStatus,
+  GetDiscountParams as CanonicalGetDiscountParams,
+  KnownDiscountStatus,
+  ListDiscountsParams as CanonicalListDiscountsParams,
+} from "../namespaces/discounts/types";
+export type {
+  DiscountRedemptionAttributes,
+  DiscountRedemptionListResponse,
+  DiscountRedemptionRelationships,
+  DiscountRedemptionResource,
+  DiscountRedemptionResponse,
+  GetDiscountRedemptionParams as CanonicalGetDiscountRedemptionParams,
+  ListDiscountRedemptionsParams as CanonicalListDiscountRedemptionsParams,
+} from "../namespaces/discount-redemptions/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";

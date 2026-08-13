@@ -5,6 +5,7 @@ import type {
   Meta,
   Params,
   Relationships,
+  OpenString,
 } from "../types";
 
 type Attributes = {
@@ -31,7 +32,7 @@ type Attributes = {
   /**
    * The type of the discount_amount. Either `percent` or `fixed`.
    */
-  discount_amount_type: "percent" | "fixed";
+  discount_amount_type: OpenString<"percent" | "fixed">;
   /**
    * A positive integer in cents representing the amount of the discount that was applied to the order (in the order currency).
    */

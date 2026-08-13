@@ -16,6 +16,9 @@ import type {
   SubscriptionItemCurrentUsageResponse,
   SubscriptionItemResponse,
   UsageRecordResponse,
+  CreateDiscountInput,
+  DiscountResponse,
+  DiscountRedemptionResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -59,6 +62,18 @@ const usageRecord: Promise<UsageRecordResponse> = client.usageRecords.create({
   subscriptionItemId: 1,
   quantity: 5,
 });
+const discountInput: CreateDiscountInput = {
+  storeId: 1,
+  name: "Ten percent off",
+  amount: 10,
+  amountType: "percent",
+};
+const discount: Promise<DiscountResponse> =
+  client.discounts.create(discountInput);
+const deletedDiscount: Promise<void> = client.discounts.delete(1);
+const discountRedemption: Promise<DiscountRedemptionResponse> =
+  client.discountRedemptions.get(1);
+const deletedDiscountEnvelope = sdk.deleteDiscount(1);
 const numericSubscriptionItemEnvelope = sdk.updateSubscriptionItem(1, 3);
 const subscriptionInvoiceEnvelope = sdk.generateSubscriptionInvoice(1);
 const fullSubscriptionInvoiceRefundEnvelope =
@@ -79,6 +94,10 @@ void generatedSubscriptionInvoice;
 void subscriptionItem;
 void currentUsage;
 void usageRecord;
+void discount;
+void deletedDiscount;
+void discountRedemption;
+void deletedDiscountEnvelope;
 void numericSubscriptionItemEnvelope;
 void subscriptionInvoiceEnvelope;
 void fullSubscriptionInvoiceRefundEnvelope;
@@ -88,3 +107,6 @@ import("@terminalzero/lemonsqueezy/internal");
 // @ts-expect-error Compatibility facade returns an envelope, not a direct body
 const directFacadeBody: Promise<UserResponse> = sdk.getAuthenticatedUser();
 void directFacadeBody;
+// @ts-expect-error Compatibility delete returns an envelope, not Client void
+const directDelete: Promise<void> = sdk.deleteDiscount(1);
+void directDelete;
