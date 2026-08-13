@@ -39,10 +39,10 @@ test("pnpm has the repository's only committed dependency lockfile", () => {
   }
 });
 
-test("pnpm only permits required dependency build scripts", () => {
+test("pnpm enforces the repository dependency policies", () => {
   assert.equal(
     readFileSync(new URL("../../pnpm-workspace.yaml", import.meta.url), "utf8"),
-    "allowBuilds:\n  esbuild: true\n",
+    "allowBuilds:\n  esbuild: true\nminimumReleaseAge: 1440\n",
   );
 });
 
