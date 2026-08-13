@@ -1,10 +1,20 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-  convertKeys,
-} from "../internal";
+  generateSubscriptionInvoiceOperation,
+  getSubscriptionInvoiceOperation,
+  listSubscriptionInvoicesOperation,
+  refundSubscriptionInvoiceOperation,
+} from "../namespaces/subscription-invoices/contract";
+import type {
+  GenerateSubscriptionInvoiceInput,
+  GenerateSubscriptionInvoiceResponse,
+  GetSubscriptionInvoiceParams as CanonicalGetSubscriptionInvoiceParams,
+  ListSubscriptionInvoicesParams as CanonicalListSubscriptionInvoicesParams,
+  RefundSubscriptionInvoiceInput,
+  SubscriptionInvoiceListResponse,
+  SubscriptionInvoiceResponse,
+} from "../namespaces/subscription-invoices/types";
 import type {
   GetSubscriptionInvoiceParams,
   ListSubscriptionInvoices,
@@ -26,10 +36,14 @@ export function getSubscriptionInvoice(
   subscriptionInvoiceId: number | string,
   params: GetSubscriptionInvoiceParams = {},
 ) {
-  requiredCheck({ subscriptionInvoiceId });
-  return $fetch<SubscriptionInvoice>({
-    path: `/v1/subscription-invoices/${subscriptionInvoiceId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetSubscriptionInvoiceParams],
+    SubscriptionInvoiceResponse,
+    SubscriptionInvoice
+  >(getSubscriptionInvoiceOperation, [
+    subscriptionInvoiceId,
+    params,
+  ]) as Promise<FetchResponse<SubscriptionInvoice>>;
 }
 
 /**
@@ -50,9 +64,13 @@ export function getSubscriptionInvoice(
 export function listSubscriptionInvoices(
   params: ListSubscriptionInvoicesParams = {},
 ) {
-  return $fetch<ListSubscriptionInvoices>({
-    path: `/v1/subscription-invoices${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListSubscriptionInvoicesParams],
+    SubscriptionInvoiceListResponse,
+    ListSubscriptionInvoices
+  >(listSubscriptionInvoicesOperation, [params]) as Promise<
+    FetchResponse<ListSubscriptionInvoices>
+  >;
 }
 
 /**
@@ -72,44 +90,44 @@ export function listSubscriptionInvoices(
  */
 export function generateSubscriptionInvoice(
   subscriptionInvoiceId: number | string,
-  params: GenerateSubscriptionInvoiceParams,
+  params?: GenerateSubscriptionInvoiceParams,
 ) {
-  requiredCheck({ subscriptionInvoiceId });
-  const searchParams = convertKeys(params);
-  const queryString = new URLSearchParams(
-    searchParams as Record<string, any>,
-  ).toString();
-  const query = queryString ? `?${queryString}` : "";
-
-  return $fetch<GenerateSubscriptionInvoice>({
-    path: `/v1/subscription-invoices/${subscriptionInvoiceId}/generate-invoice${query}`,
-    method: "POST",
-  });
+  const input: GenerateSubscriptionInvoiceInput | undefined =
+    params === undefined
+      ? undefined
+      : {
+          ...params,
+          country:
+            params.country as GenerateSubscriptionInvoiceInput["country"],
+        };
+  return invokeDefaultCompatibility<
+    readonly [number | string, GenerateSubscriptionInvoiceInput | undefined],
+    GenerateSubscriptionInvoiceResponse,
+    GenerateSubscriptionInvoice
+  >(generateSubscriptionInvoiceOperation, [
+    subscriptionInvoiceId,
+    input,
+  ]) as Promise<FetchResponse<GenerateSubscriptionInvoice>>;
 }
 
 /**
- * Issues a partial refund for the subscription invoice.
+ * Issues a full or partial refund for the subscription invoice.
  *
  * @param subscriptionInvoiceId The subscription invoice id.
- * @param amount The amount in cents that you want to refund for a subscription invoice.
+ * @param amount The optional amount in cents to refund. Omit it for a full refund.
  */
 export function issueSubscriptionInvoiceRefund(
   subscriptionInvoiceId: number | string,
-  amount: number,
+  amount?: number,
 ) {
-  requiredCheck({ subscriptionInvoiceId, amount });
-
-  const attributes = { amount };
-
-  return $fetch<SubscriptionInvoice>({
-    path: `/v1/subscription-invoices/${subscriptionInvoiceId}/refund`,
-    method: "POST",
-    body: {
-      data: {
-        type: "subscription-invoices",
-        id: subscriptionInvoiceId.toString(),
-        attributes: convertKeys(attributes),
-      },
-    },
-  });
+  const input: RefundSubscriptionInvoiceInput | undefined =
+    amount === undefined ? undefined : { amount };
+  return invokeDefaultCompatibility<
+    readonly [number | string, RefundSubscriptionInvoiceInput | undefined],
+    SubscriptionInvoiceResponse,
+    SubscriptionInvoice
+  >(refundSubscriptionInvoiceOperation, [
+    subscriptionInvoiceId,
+    input,
+  ]) as Promise<FetchResponse<SubscriptionInvoice>>;
 }

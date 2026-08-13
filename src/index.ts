@@ -87,6 +87,20 @@ export type {
   SubscriptionStatus,
   SubscriptionUrls,
   UpdateSubscriptionInput,
+  SubscriptionInvoicesNamespace,
+  GenerateSubscriptionInvoiceInput,
+  GenerateSubscriptionInvoiceResponse,
+  KnownSubscriptionInvoiceBillingReason,
+  KnownSubscriptionInvoiceStatus,
+  RefundSubscriptionInvoiceInput,
+  SubscriptionInvoiceAttributes,
+  SubscriptionInvoiceBillingReason,
+  SubscriptionInvoiceCardBrand,
+  SubscriptionInvoiceListResponse,
+  SubscriptionInvoiceRelationships,
+  SubscriptionInvoiceResource,
+  SubscriptionInvoiceResponse,
+  SubscriptionInvoiceStatus,
 } from "./client";
 
 // Setup

@@ -1,6 +1,8 @@
 import {
   createClient,
+  generateSubscriptionInvoice,
   getAuthenticatedUser,
+  issueSubscriptionInvoiceRefund,
   isLemonSqueezyError,
   type LemonSqueezyError,
   type User,
@@ -21,6 +23,12 @@ import type {
   OrderStatus,
   RefundOrderInput,
   SubscriptionListResponse,
+  SubscriptionInvoiceBillingReason,
+  SubscriptionInvoiceListResponse,
+  SubscriptionInvoiceResponse,
+  SubscriptionInvoiceStatus,
+  GenerateSubscriptionInvoiceResponse,
+  RefundSubscriptionInvoiceInput,
   SubscriptionPaymentProcessor,
   SubscriptionResponse,
   FileListResponse,
@@ -134,6 +142,41 @@ const updatedSubscription: Promise<SubscriptionResponse> =
   );
 const cancelledSubscription: Promise<SubscriptionResponse> =
   client.subscriptions.cancel(1, { timeoutMs: 1_000 });
+const subscriptionInvoice: Promise<SubscriptionInvoiceResponse> =
+  client.subscriptionInvoices.get(1, { include: ["affiliate"] });
+const subscriptionInvoices: Promise<SubscriptionInvoiceListResponse> =
+  client.subscriptionInvoices.list(
+    {
+      filter: {
+        storeId: 1,
+        status: "partial_refund",
+        refunded: false,
+        subscriptionId: 2,
+      },
+      page: { number: 1, size: 10 },
+    },
+    { timeoutMs: 1_000 },
+  );
+const generatedSubscriptionInvoice: Promise<GenerateSubscriptionInvoiceResponse> =
+  client.subscriptionInvoices.generateInvoice(1);
+const refundSubscriptionInvoiceInput: RefundSubscriptionInvoiceInput = {
+  amount: 250,
+};
+const refundedSubscriptionInvoice: Promise<SubscriptionInvoiceResponse> =
+  client.subscriptionInvoices.refund(1, refundSubscriptionInvoiceInput);
+const generatedSubscriptionInvoiceEnvelope = generateSubscriptionInvoice(1);
+const fullSubscriptionInvoiceRefundEnvelope = issueSubscriptionInvoiceRefund(1);
+const futureSubscriptionInvoiceStatus: SubscriptionInvoiceStatus =
+  "future_status";
+const futureSubscriptionInvoiceBillingReason: SubscriptionInvoiceBillingReason =
+  "future_reason";
+declare const subscriptionInvoiceResponse: SubscriptionInvoiceResponse;
+const subscriptionInvoiceAffiliateId: number | null =
+  subscriptionInvoiceResponse.data.attributes.affiliate_id;
+const subscriptionInvoiceReferralAmount: number | null =
+  subscriptionInvoiceResponse.data.attributes.referral_amount;
+const subscriptionInvoiceAffiliate =
+  subscriptionInvoiceResponse.data.relationships.affiliate;
 const futurePaymentProcessor: SubscriptionPaymentProcessor = "future_processor";
 const futureOrderStatus: OrderStatus = "future_status";
 declare const customerRelationships: CustomerRelationships;
@@ -176,6 +219,17 @@ void subscription;
 void subscriptions;
 void updatedSubscription;
 void cancelledSubscription;
+void subscriptionInvoice;
+void subscriptionInvoices;
+void generatedSubscriptionInvoice;
+void refundedSubscriptionInvoice;
+void generatedSubscriptionInvoiceEnvelope;
+void fullSubscriptionInvoiceRefundEnvelope;
+void futureSubscriptionInvoiceStatus;
+void futureSubscriptionInvoiceBillingReason;
+void subscriptionInvoiceAffiliateId;
+void subscriptionInvoiceReferralAmount;
+void subscriptionInvoiceAffiliate;
 void futurePaymentProcessor;
 void futureOrderStatus;
 void affiliateRelationship;
@@ -220,6 +274,12 @@ client.subscriptions.update(1, {
   // @ts-expect-error Subscription pause mode is a closed request enum
   pause: { mode: "hold" },
 });
+// @ts-expect-error Subscription Invoice request status is a closed documented enum
+client.subscriptionInvoices.list({ filter: { status: "future_status" } });
+// @ts-expect-error Subscription Invoice includes are limited to reviewed relationships
+client.subscriptionInvoices.get(1, { include: ["future-relationship"] });
+// @ts-expect-error RequestOptions remain in the final position
+client.subscriptionInvoices.get(1, { timeoutMs: 1_000 });
 // @ts-expect-error RequestOptions remain in the final position
 client.subscriptions.get(1, { timeoutMs: 1_000 });
 client.prices.get(1, {

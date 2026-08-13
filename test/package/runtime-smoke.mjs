@@ -46,6 +46,7 @@ for (const namespace of [
   "orders",
   "orderItems",
   "subscriptions",
+  "subscriptionInvoices",
 ]) {
   assert.equal(Object.isFrozen(explicit[namespace]), true);
 }
@@ -61,6 +62,12 @@ assert.deepEqual(Object.keys(explicit.subscriptions).sort(), [
   "get",
   "list",
   "update",
+]);
+assert.deepEqual(Object.keys(explicit.subscriptionInvoices).sort(), [
+  "generateInvoice",
+  "get",
+  "list",
+  "refund",
 ]);
 assert.deepEqual(Object.keys(explicit.customers).sort(), [
   "archive",
@@ -128,11 +135,13 @@ globalThis.fetch = async (request) => {
     return Response.json(invoiceResponse);
   }
 
-  const type = url.pathname.includes("/order-items")
-    ? "order-items"
-    : url.pathname.includes("/subscriptions")
-      ? "subscriptions"
-      : "orders";
+  const type = url.pathname.includes("/subscription-invoices")
+    ? "subscription-invoices"
+    : url.pathname.includes("/order-items")
+      ? "order-items"
+      : url.pathname.includes("/subscriptions")
+        ? "subscriptions"
+        : "orders";
   return Response.json(
     url.pathname === `/v1/${type}` ? listResponse(type) : singleResponse(type),
   );
@@ -155,6 +164,21 @@ await explicit.subscriptions.update(1, {
   billingAnchor: 0,
 });
 await explicit.subscriptions.cancel(1);
+await explicit.subscriptionInvoices.get(1, { include: ["affiliate"] });
+await explicit.subscriptionInvoices.list({
+  filter: {
+    storeId: 1,
+    status: "partial_refund",
+    refunded: false,
+    subscriptionId: 2,
+  },
+});
+assert.deepEqual(
+  await explicit.subscriptionInvoices.generateInvoice(1),
+  invoiceResponse,
+);
+await explicit.subscriptionInvoices.refund(1);
+await explicit.subscriptionInvoices.refund(1, { amount: 250 });
 await assert.rejects(explicit.orders.refund(1, { amount: 0 }), {
   code: "validation",
 });
@@ -177,6 +201,18 @@ const compatibilityResults = await Promise.all([
     billingAnchor: 0,
   }),
   root.cancelSubscription(1),
+  root.getSubscriptionInvoice(1, { include: ["affiliate"] }),
+  root.listSubscriptionInvoices({
+    filter: {
+      storeId: 1,
+      status: "partial_refund",
+      refunded: false,
+      subscriptionId: 2,
+    },
+  }),
+  root.generateSubscriptionInvoice(1),
+  root.issueSubscriptionInvoiceRefund(1),
+  root.issueSubscriptionInvoiceRefund(1, 250),
 ]);
 for (const result of compatibilityResults) {
   assert.equal(result.statusCode, 200);
@@ -184,6 +220,9 @@ for (const result of compatibilityResults) {
   assert.equal(result.error, null);
 }
 await assert.rejects(root.issueOrderRefund(1, 0), { code: "validation" });
+await assert.rejects(root.issueSubscriptionInvoiceRefund(1, 0), {
+  code: "validation",
+});
 
 const orderLists = installedRequests.filter(
   (request) => new URL(request.url).pathname === "/v1/orders",
@@ -211,7 +250,7 @@ for (const request of orderItemLists) {
 const invoiceRequests = installedRequests.filter((request) =>
   new URL(request.url).pathname.endsWith("/generate-invoice"),
 );
-assert.equal(invoiceRequests.length, 2);
+assert.equal(invoiceRequests.length, 4);
 for (const request of invoiceRequests) {
   assert.equal(new URL(request.url).search, "");
 }
@@ -223,9 +262,36 @@ const refundBodies = await Promise.all(
 assert.deepEqual(refundBodies, [
   { data: { type: "orders", id: "1", attributes: {} } },
   { data: { type: "orders", id: "1", attributes: { amount: 250 } } },
+  { data: { type: "subscription-invoices", id: "1", attributes: {} } },
+  {
+    data: {
+      type: "subscription-invoices",
+      id: "1",
+      attributes: { amount: 250 },
+    },
+  },
   { data: { type: "orders", id: "1", attributes: {} } },
   { data: { type: "orders", id: "1", attributes: { amount: 250 } } },
+  { data: { type: "subscription-invoices", id: "1", attributes: {} } },
+  {
+    data: {
+      type: "subscription-invoices",
+      id: "1",
+      attributes: { amount: 250 },
+    },
+  },
 ]);
+
+const subscriptionInvoiceLists = installedRequests.filter(
+  (request) => new URL(request.url).pathname === "/v1/subscription-invoices",
+);
+assert.equal(subscriptionInvoiceLists.length, 2);
+for (const request of subscriptionInvoiceLists) {
+  const url = new URL(request.url);
+  assert.equal(url.searchParams.get("filter[status]"), "partial_refund");
+  assert.equal(url.searchParams.get("filter[refunded]"), "false");
+  assert.equal(url.searchParams.get("filter[subscription_id]"), "2");
+}
 
 const subscriptionRequests = installedRequests.filter((request) =>
   new URL(request.url).pathname.startsWith("/v1/subscriptions"),

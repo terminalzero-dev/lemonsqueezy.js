@@ -7,6 +7,7 @@ import type {
   OrderListResponse,
   OrderItemListResponse,
   SubscriptionListResponse,
+  SubscriptionInvoiceListResponse,
   Flatten,
   UserResponse,
 } from "@terminalzero/lemonsqueezy/types";
@@ -38,6 +39,11 @@ const orderItems: Promise<OrderItemListResponse> = createClient({
 const subscriptions: Promise<SubscriptionListResponse> = createClient({
   apiKey: "type-contract",
 }).subscriptions.list({}, { timeoutMs: 1_000 });
+const subscriptionInvoices: Promise<SubscriptionInvoiceListResponse> =
+  createClient({ apiKey: "type-contract" }).subscriptionInvoices.list(
+    { filter: { status: "paid", refunded: false } },
+    { timeoutMs: 1_000 },
+  );
 
 void value;
 void response;
@@ -47,3 +53,4 @@ void checkout;
 void orders;
 void orderItems;
 void subscriptions;
+void subscriptionInvoices;

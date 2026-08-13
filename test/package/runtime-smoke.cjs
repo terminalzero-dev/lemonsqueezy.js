@@ -43,6 +43,7 @@ for (const namespace of [
   "orders",
   "orderItems",
   "subscriptions",
+  "subscriptionInvoices",
 ]) {
   assert.equal(Object.isFrozen(explicit[namespace]), true);
 }
@@ -58,6 +59,12 @@ assert.deepEqual(Object.keys(explicit.subscriptions).sort(), [
   "get",
   "list",
   "update",
+]);
+assert.deepEqual(Object.keys(explicit.subscriptionInvoices).sort(), [
+  "generateInvoice",
+  "get",
+  "list",
+  "refund",
 ]);
 assert.deepEqual(Object.keys(explicit.customers).sort(), [
   "archive",

@@ -106,6 +106,23 @@ export type {
   SubscriptionUrls,
   UpdateSubscriptionInput,
 } from "../namespaces/subscriptions/types";
+export type {
+  GenerateSubscriptionInvoiceInput,
+  GenerateSubscriptionInvoiceResponse,
+  GetSubscriptionInvoiceParams as CanonicalGetSubscriptionInvoiceParams,
+  KnownSubscriptionInvoiceBillingReason,
+  KnownSubscriptionInvoiceStatus,
+  ListSubscriptionInvoicesParams as CanonicalListSubscriptionInvoicesParams,
+  RefundSubscriptionInvoiceInput,
+  SubscriptionInvoiceAttributes,
+  SubscriptionInvoiceBillingReason,
+  SubscriptionInvoiceCardBrand,
+  SubscriptionInvoiceListResponse,
+  SubscriptionInvoiceRelationships,
+  SubscriptionInvoiceResource,
+  SubscriptionInvoiceResponse,
+  SubscriptionInvoiceStatus,
+} from "../namespaces/subscription-invoices/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";
