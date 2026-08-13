@@ -1,9 +1,17 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  createUsageRecordOperation,
+  getUsageRecordOperation,
+  listUsageRecordsOperation,
+} from "../namespaces/usage-records/contract";
+import type {
+  CreateUsageRecordInput,
+  GetUsageRecordParams as CanonicalGetUsageRecordParams,
+  ListUsageRecordsParams as CanonicalListUsageRecordsParams,
+  UsageRecordListResponse,
+  UsageRecordResponse,
+} from "../namespaces/usage-records/types";
 import type {
   GetUsageRecordParams,
   ListUsageRecords,
@@ -24,10 +32,13 @@ export function getUsageRecord(
   usageRecordId: number | string,
   params: GetUsageRecordParams = {},
 ) {
-  requiredCheck({ usageRecordId });
-  return $fetch<UsageRecord>({
-    path: `/v1/usage-records/${usageRecordId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetUsageRecordParams],
+    UsageRecordResponse,
+    UsageRecord
+  >(getUsageRecordOperation, [usageRecordId, params]) as Promise<
+    FetchResponse<UsageRecord>
+  >;
 }
 
 /**
@@ -43,9 +54,13 @@ export function getUsageRecord(
  * @returns A paginated list of usage record objects ordered by `created_at` (descending).
  */
 export function listUsageRecords(params: ListUsageRecordsParams = {}) {
-  return $fetch<ListUsageRecords>({
-    path: `/v1/usage-records${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListUsageRecordsParams],
+    UsageRecordListResponse,
+    ListUsageRecords
+  >(listUsageRecordsOperation, [params]) as Promise<
+    FetchResponse<ListUsageRecords>
+  >;
 }
 
 /**
@@ -58,27 +73,10 @@ export function listUsageRecords(params: ListUsageRecordsParams = {}) {
  * @returns A usage record object.
  */
 export function createUsageRecord(usageRecord: NewUsageRecord) {
-  const { quantity, action = "increment", subscriptionItemId } = usageRecord;
-  requiredCheck({ quantity, subscriptionItemId });
-  return $fetch<UsageRecord>({
-    path: "/v1/usage-records",
-    method: "POST",
-    body: {
-      data: {
-        type: "usage-records",
-        attributes: {
-          quantity,
-          action,
-        },
-        relationships: {
-          "subscription-item": {
-            data: {
-              type: "subscription-items",
-              id: subscriptionItemId.toString(),
-            },
-          },
-        },
-      },
-    },
-  });
+  const input: CreateUsageRecordInput = usageRecord;
+  return invokeDefaultCompatibility<
+    readonly [CreateUsageRecordInput],
+    UsageRecordResponse,
+    UsageRecord
+  >(createUsageRecordOperation, [input]) as Promise<FetchResponse<UsageRecord>>;
 }

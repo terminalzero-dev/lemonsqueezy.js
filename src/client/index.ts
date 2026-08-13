@@ -13,6 +13,8 @@ import type { OrdersNamespace } from "../namespaces/orders/namespace";
 import type { OrderItemsNamespace } from "../namespaces/order-items/namespace";
 import type { SubscriptionsNamespace } from "../namespaces/subscriptions/namespace";
 import type { SubscriptionInvoicesNamespace } from "../namespaces/subscription-invoices/namespace";
+import type { SubscriptionItemsNamespace } from "../namespaces/subscription-items/namespace";
+import type { UsageRecordsNamespace } from "../namespaces/usage-records/namespace";
 
 export {
   isLemonSqueezyError,
@@ -49,6 +51,10 @@ export type { SubscriptionsNamespace } from "../namespaces/subscriptions/namespa
 export type * from "../namespaces/subscriptions/types";
 export type { SubscriptionInvoicesNamespace } from "../namespaces/subscription-invoices/namespace";
 export type * from "../namespaces/subscription-invoices/types";
+export type { SubscriptionItemsNamespace } from "../namespaces/subscription-items/namespace";
+export type * from "../namespaces/subscription-items/types";
+export type { UsageRecordsNamespace } from "../namespaces/usage-records/namespace";
+export type * from "../namespaces/usage-records/types";
 export type {
   GetStoreParams,
   ListStoresParams,
@@ -78,6 +84,8 @@ export interface LemonSqueezyClient {
   readonly orderItems: OrderItemsNamespace;
   readonly subscriptions: SubscriptionsNamespace;
   readonly subscriptionInvoices: SubscriptionInvoicesNamespace;
+  readonly subscriptionItems: SubscriptionItemsNamespace;
+  readonly usageRecords: UsageRecordsNamespace;
 }
 
 export function createClient(options: ClientOptions = {}): LemonSqueezyClient {

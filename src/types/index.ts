@@ -123,6 +123,28 @@ export type {
   SubscriptionInvoiceResponse,
   SubscriptionInvoiceStatus,
 } from "../namespaces/subscription-invoices/types";
+export type {
+  GetSubscriptionItemParams as CanonicalGetSubscriptionItemParams,
+  ListSubscriptionItemsParams as CanonicalListSubscriptionItemsParams,
+  SubscriptionItemAttributes,
+  SubscriptionItemCurrentUsageResponse,
+  SubscriptionItemListResponse,
+  SubscriptionItemRelationships,
+  SubscriptionItemResource,
+  SubscriptionItemResponse,
+  UpdateSubscriptionItemInput,
+} from "../namespaces/subscription-items/types";
+export type {
+  CreateUsageRecordInput,
+  GetUsageRecordParams as CanonicalGetUsageRecordParams,
+  ListUsageRecordsParams as CanonicalListUsageRecordsParams,
+  UsageRecordAction,
+  UsageRecordAttributes,
+  UsageRecordListResponse,
+  UsageRecordRelationships,
+  UsageRecordResource,
+  UsageRecordResponse,
+} from "../namespaces/usage-records/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";

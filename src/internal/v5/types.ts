@@ -41,6 +41,7 @@ export type SuccessContract =
       readonly kind: "jsonapi-single" | "jsonapi-list";
       readonly resourceType: string;
     }
+  | { readonly kind: "meta-only" }
   | { readonly kind: "invoice" };
 
 declare const operationResult: unique symbol;

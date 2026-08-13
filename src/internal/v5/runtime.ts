@@ -45,6 +45,7 @@ export function createResourceRuntime(
 
 function isValidResponse(body: unknown, success: SuccessContract): boolean {
   if (success.kind === "invoice") return isValidInvoiceResponse(body);
+  if (success.kind === "meta-only") return isValidMetaOnlyResponse(body);
   if (!isRecord(body)) return false;
   const resources = success.kind === "jsonapi-list" ? body.data : [body.data];
   if (!Array.isArray(resources)) return false;
@@ -57,6 +58,15 @@ function isValidResponse(body: unknown, success: SuccessContract): boolean {
     isOptionalRecord(body.links) &&
     isOptionalRecord(body.meta) &&
     isOptionalArray(body.included)
+  );
+}
+
+function isValidMetaOnlyResponse(body: unknown): boolean {
+  return (
+    isRecord(body) &&
+    isRecord(body.meta) &&
+    isOptionalRecord(body.jsonapi) &&
+    isOptionalRecord(body.links)
   );
 }
 
