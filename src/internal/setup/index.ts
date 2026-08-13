@@ -1,4 +1,5 @@
 import { CONFIG_KEY, setKV } from "../utils";
+import { configureDefaultClient } from "../v5/default-client";
 import type { Config } from "./types";
 
 /**
@@ -8,7 +9,8 @@ import type { Config } from "./types";
  * @returns User configuration.
  */
 export function lemonSqueezySetup(config: Config) {
-  const { apiKey, onError } = config;
-  setKV(CONFIG_KEY, { apiKey, onError });
+  const { apiKey, timeoutMs, onError } = config;
+  setKV(CONFIG_KEY, { apiKey, timeoutMs, onError });
+  configureDefaultClient(config);
   return config;
 }

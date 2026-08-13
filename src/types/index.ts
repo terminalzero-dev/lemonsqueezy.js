@@ -1,6 +1,8 @@
 export type * from "./response";
 export type * from "./common";
 export type * from "./iso";
+export type * from "./jsonapi";
+export type * from "../namespaces/users/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";

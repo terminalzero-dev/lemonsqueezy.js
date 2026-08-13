@@ -1,4 +1,6 @@
-import { $fetch } from "../internal";
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import { getAuthenticatedUserOperation } from "../namespaces/users/contract";
+import type { UserResponse } from "../namespaces/users/types";
 import type { User } from "./types";
 
 /**
@@ -7,7 +9,8 @@ import type { User } from "./types";
  * @returns A user object.
  */
 export function getAuthenticatedUser() {
-  return $fetch<User>({
-    path: "/v1/users/me",
-  });
+  return invokeDefaultCompatibility<readonly [], UserResponse, User>(
+    getAuthenticatedUserOperation,
+    [],
+  );
 }
