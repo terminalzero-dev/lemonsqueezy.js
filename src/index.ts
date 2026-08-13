@@ -55,6 +55,23 @@ export type {
   VariantResource,
   VariantResponse,
   VariantsNamespace,
+  OrdersNamespace,
+  OrderItemsNamespace,
+  GenerateOrderInvoiceInput,
+  GenerateOrderInvoiceResponse,
+  OrderAttributes,
+  OrderFirstItem,
+  OrderListResponse,
+  OrderRelationships,
+  OrderResource,
+  OrderResponse,
+  OrderStatus,
+  RefundOrderInput,
+  OrderItemAttributes,
+  OrderItemListResponse,
+  OrderItemRelationships,
+  OrderItemResource,
+  OrderItemResponse,
 } from "./client";
 
 // Setup

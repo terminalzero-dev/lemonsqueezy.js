@@ -4,6 +4,8 @@ import type {
   AffiliateListResponse,
   CheckoutResponse,
   CustomerResponse,
+  OrderListResponse,
+  OrderItemListResponse,
   Flatten,
   UserResponse,
 } from "@terminalzero/lemonsqueezy/types";
@@ -26,9 +28,17 @@ const checkout: Promise<CheckoutResponse> = createClient({
   variantId: 2,
   checkoutData: { custom: { camelCase: "preserved" } },
 });
+const orders: Promise<OrderListResponse> = createClient({
+  apiKey: "type-contract",
+}).orders.list({ filter: { orderNumber: 42 } });
+const orderItems: Promise<OrderItemListResponse> = createClient({
+  apiKey: "type-contract",
+}).orderItems.list({ filter: { orderId: 42 } });
 
 void value;
 void response;
 void affiliates;
 void customer;
 void checkout;
+void orders;
+void orderItems;

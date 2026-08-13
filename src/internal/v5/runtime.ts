@@ -5,6 +5,7 @@ import type {
   RequestOptions,
   ResourceRuntime,
   RuntimeConfig,
+  SuccessContract,
   TransportAdapter,
 } from "./types";
 
@@ -42,13 +43,8 @@ export function createResourceRuntime(
   });
 }
 
-function isValidResponse(
-  body: unknown,
-  success: {
-    readonly kind: "jsonapi-single" | "jsonapi-list";
-    readonly resourceType: string;
-  },
-): boolean {
+function isValidResponse(body: unknown, success: SuccessContract): boolean {
+  if (success.kind === "invoice") return isValidInvoiceResponse(body);
   if (!isRecord(body)) return false;
   const resources = success.kind === "jsonapi-list" ? body.data : [body.data];
   if (!Array.isArray(resources)) return false;
@@ -61,6 +57,17 @@ function isValidResponse(
     isOptionalRecord(body.links) &&
     isOptionalRecord(body.meta) &&
     isOptionalArray(body.included)
+  );
+}
+
+function isValidInvoiceResponse(body: unknown): boolean {
+  return (
+    isRecord(body) &&
+    isRecord(body.jsonapi) &&
+    typeof body.jsonapi.version === "string" &&
+    isRecord(body.meta) &&
+    isRecord(body.meta.urls) &&
+    typeof body.meta.urls.download_invoice === "string"
   );
 }
 

@@ -144,21 +144,22 @@ README 的推荐不改变 facade 的支持等级。`./compat` 也不能被描述
 
 `MIGRATION.md` 必须提供可签收表格，至少覆盖兼容契约已经确认的 13 类修正。正式指南使用对应实现和 fixtures 的链接，不只给抽象说明。
 
-| 区域                       | v4 可观察行为或冲突                                            | v5 Compatibility 行为                                         | 消费者检查                            |
-| -------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------- |
-| `204 No Content`           | 可能因 `response.json()` 失败而返回 parse error，并丢失 status | 成功 envelope：`statusCode: 204`、`data: null`、`error: null` | 删除/空响应逻辑不得依赖 error 分支    |
-| 非 JSON HTTP error         | parse failure 可遮蔽真实 status/response                       | 保留真实 HTTP status 与可用响应信息                           | 重新核对 status-based handling 与日志 |
-| 默认 list query            | 可发送空 `?include=`                                           | 未提供 include 时不发送空 query                               | 若 proxy/cache 依赖错误 URL，修正测试 |
-| `updateLicenseKey`         | 未提供时可隐式发送 `disabled: false`                           | 只发送调用方明确字段                                          | 检查是否误依赖隐式启用                |
-| `updateSubscriptionItem`   | 未提供时可隐式发送两个 `false` 字段                            | 只发送调用方明确字段                                          | 显式表达真正需要的 boolean mutation   |
-| Invoice params             | runtime 允许省略，declaration 要求必传                         | 参数可省略                                                    | 可删除只为满足旧类型的空对象          |
-| Subscription Item overload | runtime 接受数字，declaration 未公开                           | 数字与对象形式都受支持                                        | 删除本地 cast/augmentation            |
-| falsy validation           | `0`、`false`、空字符串可能一律视为缺失                         | 按字段语义验证，不用 truthiness 代替 requiredness             | 核对依赖本地预校验的边界用例          |
-| 参数失败时机               | 同类错误在 sync throw 与 Promise rejection 间漂移              | facade 参数错误统一 Promise rejection                         | async tests 必须 `await` rejection    |
-| `onError` 次数             | callback 可能被调用两次                                        | 只对 error envelope 调用一次                                  | 移除按重复回调计数的副作用            |
-| `onError` 异常             | callback throw 可替换 SDK 结果                                 | observer failure 被隔离                                       | 不依赖 callback throw 控制主流程      |
-| 非 2xx error data 类型     | error body 可被声明成业务 success `T`                          | error branch 不伪装成成功数据                                 | 删除对错误分支业务 data 的不安全访问  |
-| export/type proof          | 数量测试和默认 typecheck 不能证明真实公共名称/有效调用         | exact name 与 consumer fixtures 证明 surface                  | 删除本地 shim 前编译完整用法          |
+| 区域                       | v4 可观察行为或冲突                                                                     | v5 Compatibility 行为                                                | 消费者检查                                                        |
+| -------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `204 No Content`           | 可能因 `response.json()` 失败而返回 parse error，并丢失 status                          | 成功 envelope：`statusCode: 204`、`data: null`、`error: null`        | 删除/空响应逻辑不得依赖 error 分支                                |
+| 非 JSON HTTP error         | parse failure 可遮蔽真实 status/response                                                | 保留真实 HTTP status 与可用响应信息                                  | 重新核对 status-based handling 与日志                             |
+| 默认 list query            | 可发送空 `?include=`                                                                    | 未提供 include 时不发送空 query                                      | 若 proxy/cache 依赖错误 URL，修正测试                             |
+| `updateLicenseKey`         | 未提供时可隐式发送 `disabled: false`                                                    | 只发送调用方明确字段                                                 | 检查是否误依赖隐式启用                                            |
+| `updateSubscriptionItem`   | 未提供时可隐式发送两个 `false` 字段                                                     | 只发送调用方明确字段                                                 | 显式表达真正需要的 boolean mutation                               |
+| Invoice params             | runtime 允许省略，declaration 要求必传                                                  | 参数可省略                                                           | 可删除只为满足旧类型的空对象                                      |
+| wire-native timestamps     | `Order.refunded_at` 声明为 `Date \| null`，但 transport 不做日期转换                    | `Order.refunded_at` 保持 API 返回的 `string \| null`                 | 删除依赖 `Date` 方法的调用；在应用边界显式解析时间戳              |
+| Subscription Item overload | runtime 接受数字，declaration 未公开                                                    | 数字与对象形式都受支持                                               | 删除本地 cast/augmentation                                        |
+| falsy validation           | `0`、`false`、空字符串可能一律视为缺失；Order refund 省略 amount 会在 v4 preflight 失败 | 按字段语义验证；Order refund 省略 amount 表示全额退款，显式 `0` 拒绝 | 检查 refund 调用没有意外省略 amount；核对依赖本地预校验的边界用例 |
+| 参数失败时机               | 同类错误在 sync throw 与 Promise rejection 间漂移                                       | facade 参数错误统一 Promise rejection                                | async tests 必须 `await` rejection                                |
+| `onError` 次数             | callback 可能被调用两次                                                                 | 只对 error envelope 调用一次                                         | 移除按重复回调计数的副作用                                        |
+| `onError` 异常             | callback throw 可替换 SDK 结果                                                          | observer failure 被隔离                                              | 不依赖 callback throw 控制主流程                                  |
+| 非 2xx error data 类型     | error body 可被声明成业务 success `T`                                                   | error branch 不伪装成成功数据                                        | 删除对错误分支业务 data 的不安全访问                              |
+| export/type proof          | 数量测试和默认 typecheck 不能证明真实公共名称/有效调用                                  | exact name 与 consumer fixtures 证明 surface                         | 删除本地 shim 前编译完整用法                                      |
 
 Audit 还必须提示：Canonical Client types 不是 facade 类型的可替换别名；response 保持 wire-native，但 Client 直接返回 body、facade 返回 Compatibility envelope。
 

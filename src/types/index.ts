@@ -69,6 +69,25 @@ export type {
   CheckoutResponse,
   CreateCheckoutInput,
 } from "../namespaces/checkouts/types";
+export type {
+  GenerateOrderInvoiceInput,
+  GenerateOrderInvoiceResponse,
+  OrderAttributes,
+  OrderFirstItem,
+  OrderListResponse,
+  OrderRelationships,
+  OrderResource,
+  OrderResponse,
+  OrderStatus,
+  RefundOrderInput,
+} from "../namespaces/orders/types";
+export type {
+  OrderItemAttributes,
+  OrderItemListResponse,
+  OrderItemRelationships,
+  OrderItemResource,
+  OrderItemResponse,
+} from "../namespaces/order-items/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";

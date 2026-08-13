@@ -24,6 +24,7 @@ type RelationshipKeys =
   | "product"
   | "variant"
   | "customer"
+  | "affiliate"
   | "order"
   | "order-item"
   | "subscription"

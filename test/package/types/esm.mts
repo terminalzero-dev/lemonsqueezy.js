@@ -13,6 +13,13 @@ import type {
   CreateCustomerInput,
   CustomerResponse,
   CustomerRelationships,
+  GenerateOrderInvoiceResponse,
+  OrderItemListResponse,
+  OrderItemResponse,
+  OrderListResponse,
+  OrderResponse,
+  OrderStatus,
+  RefundOrderInput,
   FileListResponse,
   FileResponse,
   JSONValue,
@@ -90,6 +97,23 @@ const checkout: Promise<CheckoutResponse> =
 const checkouts = client.checkouts.list({
   filter: { storeId: 1, variantId: 2 },
 });
+const order: Promise<OrderResponse> = client.orders.get(1, {
+  include: ["affiliate"],
+});
+const orders: Promise<OrderListResponse> = client.orders.list({
+  filter: { storeId: 1, userEmail: "", orderNumber: 42 },
+});
+const invoice: Promise<GenerateOrderInvoiceResponse> =
+  client.orders.generateInvoice(1);
+const refundInput: RefundOrderInput = { amount: 250 };
+const refund: Promise<OrderResponse> = client.orders.refund(1, refundInput);
+const orderItem: Promise<OrderItemResponse> = client.orderItems.get(1, {
+  include: ["order", "product", "variant"],
+});
+const orderItems: Promise<OrderItemListResponse> = client.orderItems.list({
+  filter: { orderId: 1, productId: 2, variantId: 3 },
+});
+const futureOrderStatus: OrderStatus = "future_status";
 declare const customerRelationships: CustomerRelationships;
 const affiliateRelationship = customerRelationships.affiliates;
 const futureAffiliateStatus: AffiliateStatus = "reviewing";
@@ -120,6 +144,13 @@ void customers;
 void archived;
 void checkout;
 void checkouts;
+void order;
+void orders;
+void invoice;
+void refund;
+void orderItem;
+void orderItems;
+void futureOrderStatus;
 void affiliateRelationship;
 void futureAffiliateStatus;
 void affiliateProducts;
@@ -150,6 +181,12 @@ client.checkouts.create({
   // @ts-expect-error Checkout locale is a closed request enum
   checkoutOptions: { locale: "xx" },
 });
+// @ts-expect-error Orders expose only reviewed operations
+client.orders.create({});
+// @ts-expect-error Order filters do not infer affiliateId
+client.orders.list({ filter: { affiliateId: 1 } });
+// @ts-expect-error Order Item includes are limited to reviewed relationships
+client.orderItems.get(1, { include: ["store"] });
 client.prices.get(1, {
   include: ["variant", "subscription-items", "usage-records"],
 });
