@@ -8,10 +8,11 @@ import type {
   VariantListResponse,
   VariantResponse,
 } from "./types";
+import { knownVariantStatuses } from "./types";
 
 const objectEvidence =
   "https://docs.lemonsqueezy.com/api/variants/the-variant-object";
-const knownStatuses = new Set(["pending", "draft", "published"]);
+const knownStatuses = new Set<string>(knownVariantStatuses);
 
 export const getVariantOperation = {
   key: "variants.get",

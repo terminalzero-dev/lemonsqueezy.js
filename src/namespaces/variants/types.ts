@@ -9,7 +9,8 @@ import type {
   OpenString,
 } from "../../types/jsonapi";
 
-export type KnownVariantStatus = "pending" | "draft" | "published";
+export const knownVariantStatuses = ["pending", "draft", "published"] as const;
+export type KnownVariantStatus = (typeof knownVariantStatuses)[number];
 export type VariantStatus = OpenString<KnownVariantStatus>;
 
 export interface VariantAttributes {
