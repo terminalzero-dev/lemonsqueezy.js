@@ -56,7 +56,8 @@ export type KnownLemonSqueezyResource =
   | import("../namespaces/customers/types").CustomerResource
   | import("../namespaces/checkouts/types").CheckoutResource
   | import("../namespaces/orders/types").OrderResource
-  | import("../namespaces/order-items/types").OrderItemResource;
+  | import("../namespaces/order-items/types").OrderItemResource
+  | import("../namespaces/subscriptions/types").SubscriptionResource;
 export type LemonSqueezyResource =
   | KnownLemonSqueezyResource
   | UnknownJSONAPIResource;

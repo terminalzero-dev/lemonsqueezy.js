@@ -72,6 +72,21 @@ export type {
   OrderItemRelationships,
   OrderItemResource,
   OrderItemResponse,
+  KnownSubscriptionStatus,
+  SubscriptionsNamespace,
+  SubscriptionAttributes,
+  SubscriptionCardBrand,
+  SubscriptionFirstItem,
+  SubscriptionListResponse,
+  SubscriptionPause,
+  SubscriptionPauseMode,
+  SubscriptionPaymentProcessor,
+  SubscriptionRelationships,
+  SubscriptionResource,
+  SubscriptionResponse,
+  SubscriptionStatus,
+  SubscriptionUrls,
+  UpdateSubscriptionInput,
 } from "./client";
 
 // Setup

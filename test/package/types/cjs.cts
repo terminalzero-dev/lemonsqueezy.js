@@ -10,6 +10,7 @@ import type {
   GenerateOrderInvoiceResponse,
   OrderItemResponse,
   OrderResponse,
+  SubscriptionResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -37,6 +38,10 @@ const order: Promise<OrderResponse> = client.orders.refund(1);
 const invoice: Promise<GenerateOrderInvoiceResponse> =
   client.orders.generateInvoice(1);
 const orderItem: Promise<OrderItemResponse> = client.orderItems.get(1);
+const subscription: Promise<SubscriptionResponse> = client.subscriptions.cancel(
+  1,
+  { timeoutMs: 1_000 },
+);
 
 void userPromise;
 void directUser;
@@ -47,6 +52,7 @@ void filters;
 void order;
 void invoice;
 void orderItem;
+void subscription;
 
 // @ts-expect-error internal package paths are closed
 import("@terminalzero/lemonsqueezy/internal");
