@@ -1,10 +1,19 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-  convertKeys,
-} from "../internal";
+  getSubscriptionItemCurrentUsageOperation,
+  getSubscriptionItemOperation,
+  listSubscriptionItemsOperation,
+  updateSubscriptionItemOperation,
+} from "../namespaces/subscription-items/contract";
+import type {
+  GetSubscriptionItemParams as CanonicalGetSubscriptionItemParams,
+  ListSubscriptionItemsParams as CanonicalListSubscriptionItemsParams,
+  SubscriptionItemCurrentUsageResponse,
+  SubscriptionItemListResponse,
+  SubscriptionItemResponse,
+  UpdateSubscriptionItemInput,
+} from "../namespaces/subscription-items/types";
 
 import type {
   GetSubscriptionItemParams,
@@ -27,10 +36,13 @@ export function getSubscriptionItem(
   subscriptionItemId: number | string,
   params: GetSubscriptionItemParams = {},
 ) {
-  requiredCheck({ subscriptionItemId });
-  return $fetch<SubscriptionItem>({
-    path: `/v1/subscription-items/${subscriptionItemId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetSubscriptionItemParams],
+    SubscriptionItemResponse,
+    SubscriptionItem
+  >(getSubscriptionItemOperation, [subscriptionItemId, params]) as Promise<
+    FetchResponse<SubscriptionItem>
+  >;
 }
 
 /**
@@ -44,10 +56,13 @@ export function getSubscriptionItem(
 export function getSubscriptionItemCurrentUsage(
   subscriptionItemId: number | string,
 ) {
-  requiredCheck({ subscriptionItemId });
-  return $fetch<SubscriptionItemCurrentUsage>({
-    path: `/v1/subscription-items/${subscriptionItemId}/current-usage`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string],
+    SubscriptionItemCurrentUsageResponse,
+    SubscriptionItemCurrentUsage
+  >(getSubscriptionItemCurrentUsageOperation, [subscriptionItemId]) as Promise<
+    FetchResponse<SubscriptionItemCurrentUsage>
+  >;
 }
 
 /**
@@ -65,9 +80,13 @@ export function getSubscriptionItemCurrentUsage(
 export function listSubscriptionItems(
   params: ListSubscriptionItemsParams = {},
 ) {
-  return $fetch<ListSubscriptionItems>({
-    path: `/v1/subscription-items${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListSubscriptionItemsParams],
+    SubscriptionItemListResponse,
+    ListSubscriptionItems
+  >(listSubscriptionItemsOperation, [params]) as Promise<
+    FetchResponse<ListSubscriptionItems>
+  >;
 }
 
 /**
@@ -87,6 +106,11 @@ export function listSubscriptionItems(
 export function updateSubscriptionItem(
   subscriptionItemId: string | number,
   updateSubscriptionItem: UpdateSubscriptionItem,
+): ReturnType<typeof _updateSubscriptionItem>;
+
+export function updateSubscriptionItem(
+  subscriptionItemId: string | number,
+  quantity: number,
 ): ReturnType<typeof _updateSubscriptionItem>;
 
 /**
@@ -114,35 +138,15 @@ async function _updateSubscriptionItem(
   subscriptionItemId: string | number,
   updateSubscriptionItem: number | UpdateSubscriptionItem,
 ) {
-  requiredCheck({ subscriptionItemId });
-
-  let attributes;
-  if (typeof updateSubscriptionItem === "number") {
-    attributes = {
-      quantity: updateSubscriptionItem,
-    };
-  } else {
-    const {
-      quantity,
-      invoiceImmediately = false,
-      disableProrations = false,
-    } = updateSubscriptionItem;
-    attributes = convertKeys({
-      quantity,
-      invoiceImmediately,
-      disableProrations,
-    });
-  }
-
-  return $fetch<SubscriptionItem>({
-    path: `/v1/subscription-items/${subscriptionItemId}`,
-    method: "PATCH",
-    body: {
-      data: {
-        type: "subscription-items",
-        id: subscriptionItemId.toString(),
-        attributes,
-      },
-    },
-  });
+  const input: UpdateSubscriptionItemInput =
+    typeof updateSubscriptionItem === "number"
+      ? { quantity: updateSubscriptionItem }
+      : updateSubscriptionItem;
+  return invokeDefaultCompatibility<
+    readonly [number | string, UpdateSubscriptionItemInput],
+    SubscriptionItemResponse,
+    SubscriptionItem
+  >(updateSubscriptionItemOperation, [subscriptionItemId, input]) as Promise<
+    FetchResponse<SubscriptionItem>
+  >;
 }

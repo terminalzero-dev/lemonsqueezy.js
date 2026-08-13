@@ -13,6 +13,9 @@ import type {
   SubscriptionResponse,
   GenerateSubscriptionInvoiceResponse,
   SubscriptionInvoiceResponse,
+  SubscriptionItemCurrentUsageResponse,
+  SubscriptionItemResponse,
+  UsageRecordResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -48,6 +51,15 @@ const subscriptionInvoice: Promise<SubscriptionInvoiceResponse> =
   client.subscriptionInvoices.refund(1);
 const generatedSubscriptionInvoice: Promise<GenerateSubscriptionInvoiceResponse> =
   client.subscriptionInvoices.generateInvoice(1);
+const subscriptionItem: Promise<SubscriptionItemResponse> =
+  client.subscriptionItems.update(1, { quantity: 3 });
+const currentUsage: Promise<SubscriptionItemCurrentUsageResponse> =
+  client.subscriptionItems.currentUsage(1);
+const usageRecord: Promise<UsageRecordResponse> = client.usageRecords.create({
+  subscriptionItemId: 1,
+  quantity: 5,
+});
+const numericSubscriptionItemEnvelope = sdk.updateSubscriptionItem(1, 3);
 const subscriptionInvoiceEnvelope = sdk.generateSubscriptionInvoice(1);
 const fullSubscriptionInvoiceRefundEnvelope =
   sdk.issueSubscriptionInvoiceRefund(1);
@@ -64,6 +76,10 @@ void orderItem;
 void subscription;
 void subscriptionInvoice;
 void generatedSubscriptionInvoice;
+void subscriptionItem;
+void currentUsage;
+void usageRecord;
+void numericSubscriptionItemEnvelope;
 void subscriptionInvoiceEnvelope;
 void fullSubscriptionInvoiceRefundEnvelope;
 

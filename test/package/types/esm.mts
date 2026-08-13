@@ -4,6 +4,7 @@ import {
   getAuthenticatedUser,
   issueSubscriptionInvoiceRefund,
   isLemonSqueezyError,
+  updateSubscriptionItem,
   type LemonSqueezyError,
   type User,
   type AffiliateResponse,
@@ -31,6 +32,11 @@ import type {
   RefundSubscriptionInvoiceInput,
   SubscriptionPaymentProcessor,
   SubscriptionResponse,
+  SubscriptionItemCurrentUsageResponse,
+  SubscriptionItemListResponse,
+  SubscriptionItemResponse,
+  UsageRecordListResponse,
+  UsageRecordResponse,
   FileListResponse,
   FileResponse,
   JSONValue,
@@ -142,6 +148,29 @@ const updatedSubscription: Promise<SubscriptionResponse> =
   );
 const cancelledSubscription: Promise<SubscriptionResponse> =
   client.subscriptions.cancel(1, { timeoutMs: 1_000 });
+const subscriptionItem: Promise<SubscriptionItemResponse> =
+  client.subscriptionItems.get(1, { include: ["price"] });
+const subscriptionItems: Promise<SubscriptionItemListResponse> =
+  client.subscriptionItems.list({ filter: { subscriptionId: 1, priceId: 2 } });
+const currentUsage: Promise<SubscriptionItemCurrentUsageResponse> =
+  client.subscriptionItems.currentUsage(1, { timeoutMs: 1_000 });
+const updatedSubscriptionItem: Promise<SubscriptionItemResponse> =
+  client.subscriptionItems.update(1, { quantity: 3 });
+const numericSubscriptionItemEnvelope = updateSubscriptionItem(1, 3);
+const objectSubscriptionItemEnvelope = updateSubscriptionItem(1, {
+  quantity: 3,
+  invoiceImmediately: false,
+});
+const usageRecord: Promise<UsageRecordResponse> = client.usageRecords.create({
+  subscriptionItemId: 1,
+  quantity: 5,
+  action: "set",
+});
+const usageRecords: Promise<UsageRecordListResponse> = client.usageRecords.list(
+  {
+    filter: { subscriptionItemId: 1 },
+  },
+);
 const subscriptionInvoice: Promise<SubscriptionInvoiceResponse> =
   client.subscriptionInvoices.get(1, { include: ["affiliate"] });
 const subscriptionInvoices: Promise<SubscriptionInvoiceListResponse> =
@@ -219,6 +248,14 @@ void subscription;
 void subscriptions;
 void updatedSubscription;
 void cancelledSubscription;
+void subscriptionItem;
+void subscriptionItems;
+void currentUsage;
+void updatedSubscriptionItem;
+void numericSubscriptionItemEnvelope;
+void objectSubscriptionItemEnvelope;
+void usageRecord;
+void usageRecords;
 void subscriptionInvoice;
 void subscriptionInvoices;
 void generatedSubscriptionInvoice;
@@ -282,6 +319,20 @@ client.subscriptionInvoices.get(1, { include: ["future-relationship"] });
 client.subscriptionInvoices.get(1, { timeoutMs: 1_000 });
 // @ts-expect-error RequestOptions remain in the final position
 client.subscriptions.get(1, { timeoutMs: 1_000 });
+// @ts-expect-error Canonical Subscription Item updates require object input
+client.subscriptionItems.update(1, 3);
+client.usageRecords.create({
+  subscriptionItemId: 1,
+  quantity: 5,
+  // @ts-expect-error Usage Record create has no generic attributes escape hatch
+  attributes: { arbitrary: true },
+});
+client.usageRecords.create({
+  subscriptionItemId: 1,
+  quantity: 5,
+  // @ts-expect-error Usage Record action is a closed request enum
+  action: "replace",
+});
 client.prices.get(1, {
   include: ["variant", "subscription-items", "usage-records"],
 });

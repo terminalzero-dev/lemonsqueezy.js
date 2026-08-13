@@ -101,6 +101,22 @@ export type {
   SubscriptionInvoiceResource,
   SubscriptionInvoiceResponse,
   SubscriptionInvoiceStatus,
+  SubscriptionItemsNamespace,
+  SubscriptionItemAttributes,
+  SubscriptionItemCurrentUsageResponse,
+  SubscriptionItemListResponse,
+  SubscriptionItemRelationships,
+  SubscriptionItemResource,
+  SubscriptionItemResponse,
+  UpdateSubscriptionItemInput,
+  UsageRecordsNamespace,
+  CreateUsageRecordInput,
+  UsageRecordAction,
+  UsageRecordAttributes,
+  UsageRecordListResponse,
+  UsageRecordRelationships,
+  UsageRecordResource,
+  UsageRecordResponse,
 } from "./client";
 
 // Setup

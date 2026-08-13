@@ -47,6 +47,8 @@ for (const namespace of [
   "orderItems",
   "subscriptions",
   "subscriptionInvoices",
+  "subscriptionItems",
+  "usageRecords",
 ]) {
   assert.equal(Object.isFrozen(explicit[namespace]), true);
 }
@@ -68,6 +70,17 @@ assert.deepEqual(Object.keys(explicit.subscriptionInvoices).sort(), [
   "get",
   "list",
   "refund",
+]);
+assert.deepEqual(Object.keys(explicit.subscriptionItems).sort(), [
+  "currentUsage",
+  "get",
+  "list",
+  "update",
+]);
+assert.deepEqual(Object.keys(explicit.usageRecords).sort(), [
+  "create",
+  "get",
+  "list",
 ]);
 assert.deepEqual(Object.keys(explicit.customers).sort(), [
   "archive",
@@ -127,6 +140,16 @@ const invoiceResponse = {
   jsonapi: { version: "1.0" },
   meta: { urls: { download_invoice: "https://example.com/invoice.pdf" } },
 };
+const currentUsageResponse = {
+  jsonapi: { version: "1.0" },
+  meta: {
+    period_start: "2026-08-01T00:00:00.000000Z",
+    period_end: "2026-09-01T00:00:00.000000Z",
+    quantity: 5,
+    interval_unit: "month",
+    interval_quantity: 1,
+  },
+};
 
 globalThis.fetch = async (request) => {
   installedRequests.push(request);
@@ -134,16 +157,25 @@ globalThis.fetch = async (request) => {
   if (url.pathname.endsWith("/generate-invoice")) {
     return Response.json(invoiceResponse);
   }
+  if (url.pathname.endsWith("/current-usage")) {
+    return Response.json(currentUsageResponse);
+  }
 
   const type = url.pathname.includes("/subscription-invoices")
     ? "subscription-invoices"
-    : url.pathname.includes("/order-items")
-      ? "order-items"
-      : url.pathname.includes("/subscriptions")
-        ? "subscriptions"
-        : "orders";
+    : url.pathname.includes("/subscription-items")
+      ? "subscription-items"
+      : url.pathname.includes("/usage-records")
+        ? "usage-records"
+        : url.pathname.includes("/order-items")
+          ? "order-items"
+          : url.pathname.includes("/subscriptions")
+            ? "subscriptions"
+            : "orders";
   return Response.json(
-    url.pathname === `/v1/${type}` ? listResponse(type) : singleResponse(type),
+    request.method === "GET" && url.pathname === `/v1/${type}`
+      ? listResponse(type)
+      : singleResponse(type),
   );
 };
 
@@ -179,6 +211,20 @@ assert.deepEqual(
 );
 await explicit.subscriptionInvoices.refund(1);
 await explicit.subscriptionInvoices.refund(1, { amount: 250 });
+await explicit.subscriptionItems.get(1, { include: ["price"] });
+await explicit.subscriptionItems.list({ filter: { subscriptionId: 2 } });
+await explicit.subscriptionItems.update(1, { quantity: 3 });
+assert.deepEqual(
+  await explicit.subscriptionItems.currentUsage(1),
+  currentUsageResponse,
+);
+await explicit.usageRecords.create({
+  subscriptionItemId: 1,
+  quantity: 5,
+  action: "set",
+});
+await explicit.usageRecords.get(1, { include: ["subscription-item"] });
+await explicit.usageRecords.list({ filter: { subscriptionItemId: 1 } });
 await assert.rejects(explicit.orders.refund(1, { amount: 0 }), {
   code: "validation",
 });
@@ -213,6 +259,21 @@ const compatibilityResults = await Promise.all([
   root.generateSubscriptionInvoice(1),
   root.issueSubscriptionInvoiceRefund(1),
   root.issueSubscriptionInvoiceRefund(1, 250),
+  root.getSubscriptionItem(1, { include: ["price"] }),
+  root.listSubscriptionItems({ filter: { subscriptionId: 2 } }),
+  root.updateSubscriptionItem(1, 3),
+  root.updateSubscriptionItem(1, {
+    quantity: 4,
+    disableProrations: false,
+  }),
+  root.getSubscriptionItemCurrentUsage(1),
+  root.createUsageRecord({
+    subscriptionItemId: 1,
+    quantity: 5,
+    action: "set",
+  }),
+  root.getUsageRecord(1, { include: ["subscription-item"] }),
+  root.listUsageRecords({ filter: { subscriptionItemId: 1 } }),
 ]);
 for (const result of compatibilityResults) {
   assert.equal(result.statusCode, 200);
@@ -314,6 +375,60 @@ for (const request of subscriptionUpdates) {
         pause: null,
         cancelled: false,
         billing_anchor: 0,
+      },
+    },
+  });
+}
+
+const subscriptionItemUpdates = installedRequests.filter(
+  (request) =>
+    new URL(request.url).pathname === "/v1/subscription-items/1" &&
+    request.method === "PATCH",
+);
+assert.deepEqual(
+  await Promise.all(
+    subscriptionItemUpdates.map((request) => request.clone().json()),
+  ),
+  [
+    {
+      data: {
+        type: "subscription-items",
+        id: "1",
+        attributes: { quantity: 3 },
+      },
+    },
+    {
+      data: {
+        type: "subscription-items",
+        id: "1",
+        attributes: { quantity: 3 },
+      },
+    },
+    {
+      data: {
+        type: "subscription-items",
+        id: "1",
+        attributes: { quantity: 4, disable_prorations: false },
+      },
+    },
+  ],
+);
+
+const usageRecordCreates = installedRequests.filter(
+  (request) =>
+    new URL(request.url).pathname === "/v1/usage-records" &&
+    request.method === "POST",
+);
+assert.equal(usageRecordCreates.length, 2);
+for (const request of usageRecordCreates) {
+  assert.deepEqual(await request.clone().json(), {
+    data: {
+      type: "usage-records",
+      attributes: { quantity: 5, action: "set" },
+      relationships: {
+        "subscription-item": {
+          data: { type: "subscription-items", id: "1" },
+        },
       },
     },
   });
