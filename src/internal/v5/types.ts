@@ -33,6 +33,7 @@ export interface CoreRequest {
   readonly method: "GET" | "POST" | "PATCH" | "DELETE";
   readonly path: `/v1/${string}`;
   readonly query?: URLSearchParams;
+  readonly body?: unknown;
 }
 
 export type SuccessContract = {

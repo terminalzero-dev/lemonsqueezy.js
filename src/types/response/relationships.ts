@@ -16,7 +16,8 @@ type Types =
   | "license-keys"
   | "license-key-instances"
   | "checkouts"
-  | "webhooks";
+  | "webhooks"
+  | "affiliates";
 
 type RelationshipKeys =
   | "store"

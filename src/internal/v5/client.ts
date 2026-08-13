@@ -6,6 +6,8 @@ import { createVariantsNamespace } from "../../namespaces/variants/namespace";
 import { createPricesNamespace } from "../../namespaces/prices/namespace";
 import { createFilesNamespace } from "../../namespaces/files/namespace";
 import { createAffiliatesNamespace } from "../../namespaces/affiliates/namespace";
+import { createCustomersNamespace } from "../../namespaces/customers/namespace";
+import { createCheckoutsNamespace } from "../../namespaces/checkouts/namespace";
 import { createResourceRuntime } from "./runtime";
 import {
   DEFAULT_TIMEOUT_MS,
@@ -33,5 +35,7 @@ export function createClientWithTransport(
     prices: createPricesNamespace(runtime),
     files: createFilesNamespace(runtime),
     affiliates: createAffiliatesNamespace(runtime),
+    customers: createCustomersNamespace(runtime),
+    checkouts: createCheckoutsNamespace(runtime),
   });
 }

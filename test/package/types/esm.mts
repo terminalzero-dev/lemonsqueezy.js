@@ -8,6 +8,11 @@ import {
 } from "@terminalzero/lemonsqueezy";
 import type {
   AffiliateStatus,
+  CheckoutResponse,
+  CreateCheckoutInput,
+  CreateCustomerInput,
+  CustomerResponse,
+  CustomerRelationships,
   FileListResponse,
   FileResponse,
   JSONValue,
@@ -59,6 +64,34 @@ const affiliates = client.affiliates.list({
   filter: { storeId: 1, userEmail: "affiliate@example.com" },
   page: { number: 1, size: 10 },
 });
+const createCustomerInput: CreateCustomerInput = {
+  storeId: 1,
+  name: "Ada",
+  email: "ada@example.com",
+};
+const customer: Promise<CustomerResponse> =
+  client.customers.create(createCustomerInput);
+const customers = client.customers.list({
+  filter: { storeId: 1, email: "" },
+  include: ["affiliates"],
+});
+const archived: Promise<CustomerResponse> = client.customers.archive(1);
+const createCheckoutInput: CreateCheckoutInput = {
+  storeId: 1,
+  variantId: 2,
+  checkoutOptions: { embed: false, locale: "en" },
+  checkoutData: {
+    custom: { userId: 1, snake_case: true, nested: { camelCase: "kept" } },
+  },
+  expiresAt: null,
+};
+const checkout: Promise<CheckoutResponse> =
+  client.checkouts.create(createCheckoutInput);
+const checkouts = client.checkouts.list({
+  filter: { storeId: 1, variantId: 2 },
+});
+declare const customerRelationships: CustomerRelationships;
+const affiliateRelationship = customerRelationships.affiliates;
 const futureAffiliateStatus: AffiliateStatus = "reviewing";
 declare const affiliateResponse: AffiliateResponse;
 const affiliateProducts: JSONValue | null =
@@ -82,6 +115,12 @@ void file;
 void files;
 void affiliate;
 void affiliates;
+void customer;
+void customers;
+void archived;
+void checkout;
+void checkouts;
+void affiliateRelationship;
 void futureAffiliateStatus;
 void affiliateProducts;
 void filters;
@@ -97,6 +136,20 @@ client.affiliates.create({});
 client.affiliates.get(1, { include: ["products"] });
 // @ts-expect-error Variant request status is a closed documented enum
 client.variants.list({ filter: { status: "archived" } });
+// @ts-expect-error Customer creation owns its store relationship
+client.customers.create({ name: "Ada", email: "ada@example.com" });
+// @ts-expect-error Customer updates accept only reviewed attributes
+client.customers.update(1, { arbitrary: true });
+// @ts-expect-error Checkout creation owns both relationship IDs
+client.checkouts.create({ storeId: 1 });
+// @ts-expect-error Checkout input has no generic JSON:API body escape hatch
+client.checkouts.create({ storeId: 1, variantId: 2, body: {} });
+client.checkouts.create({
+  storeId: 1,
+  variantId: 2,
+  // @ts-expect-error Checkout locale is a closed request enum
+  checkoutOptions: { locale: "xx" },
+});
 client.prices.get(1, {
   include: ["variant", "subscription-items", "usage-records"],
 });

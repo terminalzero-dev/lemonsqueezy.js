@@ -1,9 +1,20 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  archiveCustomerOperation,
+  createCustomerOperation,
+  getCustomerOperation,
+  listCustomersOperation,
+  updateCustomerOperation,
+} from "../namespaces/customers/contract";
+import type {
+  CreateCustomerInput,
+  CustomerListResponse,
+  CustomerResponse,
+  GetCustomerParams as CanonicalGetCustomerParams,
+  ListCustomersParams as CanonicalListCustomersParams,
+  UpdateCustomerInput,
+} from "../namespaces/customers/types";
 import type {
   Customer,
   GetCustomerParams,
@@ -29,25 +40,13 @@ export function createCustomer(
   storeId: number | string,
   customer: NewCustomer,
 ) {
-  requiredCheck({ storeId });
-  return $fetch<Customer>({
-    path: "/v1/customers",
-    method: "POST",
-    body: {
-      data: {
-        type: "customers",
-        attributes: customer,
-        relationships: {
-          store: {
-            data: {
-              type: "stores",
-              id: storeId.toString(),
-            },
-          },
-        },
-      },
-    },
-  });
+  return invokeDefaultCompatibility<
+    readonly [CreateCustomerInput],
+    CustomerResponse,
+    Customer
+  >(createCustomerOperation, [{ ...customer, storeId }]) as Promise<
+    FetchResponse<Customer>
+  >;
 }
 
 /**
@@ -67,18 +66,13 @@ export function updateCustomer(
   customerId: string | number,
   customer: UpdateCustomer,
 ) {
-  requiredCheck({ customerId });
-  return $fetch<Customer>({
-    path: `/v1/customers/${customerId}`,
-    method: "PATCH",
-    body: {
-      data: {
-        type: "customers",
-        id: customerId.toString(),
-        attributes: customer,
-      },
-    },
-  });
+  return invokeDefaultCompatibility<
+    readonly [string | number, UpdateCustomerInput],
+    CustomerResponse,
+    Customer
+  >(updateCustomerOperation, [customerId, customer]) as Promise<
+    FetchResponse<Customer>
+  >;
 }
 
 /**
@@ -88,20 +82,11 @@ export function updateCustomer(
  * @returns A customer object.
  */
 export function archiveCustomer(customerId: string | number) {
-  requiredCheck({ customerId });
-  return $fetch<Customer>({
-    path: `/v1/customers/${customerId}`,
-    method: "PATCH",
-    body: {
-      data: {
-        type: "customers",
-        id: customerId.toString(),
-        attributes: {
-          status: "archived",
-        },
-      },
-    },
-  });
+  return invokeDefaultCompatibility<
+    readonly [string | number],
+    CustomerResponse,
+    Customer
+  >(archiveCustomerOperation, [customerId]) as Promise<FetchResponse<Customer>>;
 }
 
 /**
@@ -116,10 +101,13 @@ export function getCustomer(
   customerId: string | number,
   params: GetCustomerParams = {},
 ) {
-  requiredCheck({ customerId });
-  return $fetch<Customer>({
-    path: `/v1/customers/${customerId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [string | number, CanonicalGetCustomerParams],
+    CustomerResponse,
+    Customer
+  >(getCustomerOperation, [customerId, params]) as Promise<
+    FetchResponse<Customer>
+  >;
 }
 
 /**
@@ -136,7 +124,9 @@ export function getCustomer(
  * @returns A paginated list of customer objects ordered by `created_at` (descending).
  */
 export function listCustomers(params: ListCustomersParams = {}) {
-  return $fetch<ListCustomers>({
-    path: `/v1/customers${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListCustomersParams],
+    CustomerListResponse,
+    ListCustomers
+  >(listCustomersOperation, [params]) as Promise<FetchResponse<ListCustomers>>;
 }
