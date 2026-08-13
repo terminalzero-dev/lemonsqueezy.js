@@ -47,7 +47,12 @@ export async function sendJsonApiRequest(
   const received = await receiveOnce(
     transport,
     url.href,
-    { method: request.method, headers },
+    {
+      method: request.method,
+      headers,
+      body:
+        request.body === undefined ? undefined : JSON.stringify(request.body),
+    },
     timeoutMs,
     options?.signal,
   );

@@ -1,10 +1,17 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertKeys,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  createCheckoutOperation,
+  getCheckoutOperation,
+  listCheckoutsOperation,
+} from "../namespaces/checkouts/contract";
+import type {
+  CheckoutListResponse,
+  CheckoutResponse,
+  CreateCheckoutInput,
+  GetCheckoutParams as CanonicalGetCheckoutParams,
+  ListCheckoutsParams as CanonicalListCheckoutsParams,
+} from "../namespaces/checkouts/types";
 import type {
   Checkout,
   GetCheckoutParams,
@@ -28,59 +35,13 @@ export function createCheckout(
   variantId: number | string,
   checkout: NewCheckout = {},
 ) {
-  requiredCheck({ storeId, variantId });
-
-  const {
-    customPrice,
-    productOptions,
-    checkoutOptions,
-    checkoutData,
-    expiresAt,
-    preview,
-    testMode,
-  } = checkout;
-
-  const relationships = {
-    store: {
-      data: {
-        type: "stores",
-        id: storeId.toString(),
-      },
-    },
-    variant: {
-      data: {
-        type: "variants",
-        id: variantId.toString(),
-      },
-    },
-  };
-
-  const attributes = {
-    customPrice,
-    expiresAt,
-    preview,
-    testMode,
-    productOptions,
-    checkoutOptions,
-    checkoutData: {
-      ...checkoutData,
-      variantQuantities: checkoutData?.variantQuantities?.map((item) =>
-        convertKeys(item),
-      ),
-    },
-  };
-
-  return $fetch<Checkout>({
-    path: "/v1/checkouts",
-    method: "POST",
-    body: {
-      data: {
-        type: "checkouts",
-        attributes: convertKeys(attributes),
-        relationships,
-      },
-    },
-  });
+  return invokeDefaultCompatibility<
+    readonly [CreateCheckoutInput],
+    CheckoutResponse,
+    Checkout
+  >(createCheckoutOperation, [{ ...checkout, storeId, variantId }]) as Promise<
+    FetchResponse<Checkout>
+  >;
 }
 
 /**
@@ -95,10 +56,13 @@ export function getCheckout(
   checkoutId: number | string,
   params: GetCheckoutParams = {},
 ) {
-  requiredCheck({ checkoutId });
-  return $fetch<Checkout>({
-    path: `/v1/checkouts/${checkoutId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetCheckoutParams],
+    CheckoutResponse,
+    Checkout
+  >(getCheckoutOperation, [checkoutId, params]) as Promise<
+    FetchResponse<Checkout>
+  >;
 }
 
 /**
@@ -115,7 +79,9 @@ export function getCheckout(
  * @returns A paginated list of checkout objects ordered by `created_at` (descending).
  */
 export function listCheckouts(params: ListCheckoutsParams = {}) {
-  return $fetch<ListCheckouts>({
-    path: `/v1/checkouts${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListCheckoutsParams],
+    CheckoutListResponse,
+    ListCheckouts
+  >(listCheckoutsOperation, [params]) as Promise<FetchResponse<ListCheckouts>>;
 }

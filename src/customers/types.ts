@@ -97,7 +97,10 @@ type Attributes = {
 };
 type CustomerData = Data<
   Attributes,
-  Pick<Relationships, "store" | "orders" | "subscriptions" | "license-keys">
+  Pick<
+    Relationships,
+    "store" | "affiliates" | "orders" | "subscriptions" | "license-keys"
+  >
 >;
 
 export type GetCustomerParams = Pick<

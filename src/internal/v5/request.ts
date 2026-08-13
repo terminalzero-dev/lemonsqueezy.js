@@ -2,11 +2,15 @@ import { LemonSqueezyError } from "../../client/error";
 import type { Id } from "../../types/jsonapi";
 
 export function compilePathId(name: string, value: Id): string {
+  return encodeURIComponent(compileResourceId(name, value));
+}
+
+export function compileResourceId(name: string, value: Id): string {
   if (
     (typeof value === "string" && value.length > 0) ||
     (typeof value === "number" && Number.isFinite(value) && value > 0)
   ) {
-    return encodeURIComponent(String(value));
+    return String(value);
   }
 
   throw new LemonSqueezyError(

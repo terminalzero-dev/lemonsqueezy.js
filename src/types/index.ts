@@ -44,6 +44,31 @@ export type {
   FileResponse,
 } from "../namespaces/files/types";
 export type * from "../namespaces/affiliates/types";
+export type {
+  CreateCustomerInput,
+  CustomerAttributes,
+  CustomerListResponse,
+  CustomerRelationships,
+  CustomerResource,
+  CustomerResponse,
+  CustomerStatus,
+  UpdateCustomerInput,
+} from "../namespaces/customers/types";
+export type {
+  CheckoutAttributes,
+  CheckoutData,
+  CheckoutDataInput,
+  CheckoutListResponse,
+  CheckoutLocale,
+  CheckoutOptionsInput,
+  CheckoutOptions,
+  CheckoutProductOptionsInput,
+  CheckoutProductOptions,
+  CheckoutRelationships,
+  CheckoutResource,
+  CheckoutResponse,
+  CreateCheckoutInput,
+} from "../namespaces/checkouts/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";

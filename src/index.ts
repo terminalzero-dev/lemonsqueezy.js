@@ -16,6 +16,8 @@ export type {
   AffiliateResource,
   AffiliateResponse,
   AffiliateStatus,
+  CheckoutsNamespace,
+  CustomersNamespace,
   FilesNamespace,
   FileAttributes,
   FileListResponse,
