@@ -4,6 +4,7 @@ import {
   compileResourceId,
 } from "../../internal/v5/request";
 import { LemonSqueezyError } from "../../client/error";
+import { sanitizeLicenseManagementErrorDetail } from "../../internal/v5/redaction";
 import type { OperationContract } from "../../internal/v5/types";
 import type { Id } from "../../types/jsonapi";
 import type {
@@ -35,7 +36,7 @@ export const getLicenseKeyOperation = {
   }),
   success: { kind: "jsonapi-single", resourceType: "license-keys" },
   evidence: [evidence.get, evidence.object],
-  redactErrorDetails: true,
+  sanitizeErrorDetail: sanitizeLicenseManagementErrorDetail,
 } as const satisfies OperationContract<
   readonly [Id, GetLicenseKeyParams],
   LicenseKeyResponse
@@ -65,7 +66,7 @@ export const updateLicenseKeyOperation = {
   },
   success: { kind: "jsonapi-single", resourceType: "license-keys" },
   evidence: [evidence.update, evidence.object],
-  redactErrorDetails: true,
+  sanitizeErrorDetail: sanitizeLicenseManagementErrorDetail,
 } as const satisfies OperationContract<
   readonly [Id, UpdateLicenseKeyInput],
   LicenseKeyResponse
@@ -125,7 +126,7 @@ export const listLicenseKeysOperation = {
   },
   success: { kind: "jsonapi-list", resourceType: "license-keys" },
   evidence: [evidence.list, evidence.object],
-  redactErrorDetails: true,
+  sanitizeErrorDetail: sanitizeLicenseManagementErrorDetail,
 } as const satisfies OperationContract<
   readonly [ListLicenseKeysParams],
   LicenseKeyListResponse

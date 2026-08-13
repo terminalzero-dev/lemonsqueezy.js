@@ -52,7 +52,7 @@ export interface OperationContract<Args extends readonly unknown[], Result> {
   readonly compile: (args: Args) => CoreRequest;
   readonly success: SuccessContract;
   readonly evidence: readonly string[];
-  readonly redactErrorDetails?: boolean;
+  readonly sanitizeErrorDetail?: (value: unknown) => unknown;
   readonly [operationResult]?: Result;
 }
 

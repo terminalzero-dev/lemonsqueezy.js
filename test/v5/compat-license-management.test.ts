@@ -146,12 +146,7 @@ describe("license management Compatibility projections", () => {
     setDefaultAdapter(async () =>
       Response.json(
         {
-          errors: [
-            {
-              title: `Invalid License Key ${businessLicenseKey}`,
-              meta: { key: businessLicenseKey },
-            },
-          ],
+          errors: [{ title: `Invalid License Key ${businessLicenseKey}` }],
         },
         { status: 422 },
       ),
@@ -168,15 +163,56 @@ describe("license management Compatibility projections", () => {
     expect(result).toMatchObject({
       statusCode: 422,
       data: null,
-      error: { code: "http", responseBody: null },
+      error: {
+        code: "http",
+        responseBody: {
+          errors: [
+            {
+              title: "[REDACTED]",
+            },
+          ],
+        },
+        apiErrors: [
+          {
+            title: "[REDACTED]",
+          },
+        ],
+      },
     });
-    expect(observedError).toMatchObject({
-      code: "http",
-      responseBody: null,
-    });
+    expect(observedError).toBe(result.error);
     expect(JSON.stringify({ result, observedError })).not.toContain(
       businessLicenseKey,
     );
+  });
+
+  it("redacts a business License Key from facade network causes", async () => {
+    const businessLicenseKey = "network-cause-business-key-that-must-not-leak";
+    let observedError: unknown;
+    setDefaultAdapter(async () => {
+      throw new Error(businessLicenseKey);
+    });
+    lemonSqueezySetup({
+      apiKey: "facade-api-key",
+      onError(error) {
+        observedError = error;
+      },
+    });
+
+    const result = await getLicenseKey(42);
+
+    expect(result).toMatchObject({
+      error: { code: "network", cause: expect.any(Error) },
+    });
+    expect(result.error && String(result.error.cause)).toBe(
+      "Error: [REDACTED]",
+    );
+    expect(observedError).toBe(result.error);
+    expect(
+      JSON.stringify({
+        result,
+        cause: result.error && String(result.error.cause),
+      }),
+    ).not.toContain(businessLicenseKey);
   });
 });
 

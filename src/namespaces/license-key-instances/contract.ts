@@ -1,4 +1,5 @@
 import { compilePathId, compileReadQuery } from "../../internal/v5/request";
+import { sanitizeLicenseManagementErrorDetail } from "../../internal/v5/redaction";
 import type { OperationContract } from "../../internal/v5/types";
 import type { Id } from "../../types/jsonapi";
 import type {
@@ -25,7 +26,7 @@ export const getLicenseKeyInstanceOperation = {
   }),
   success: { kind: "jsonapi-single", resourceType: "license-key-instances" },
   evidence: [evidence.get, evidence.object],
-  redactErrorDetails: true,
+  sanitizeErrorDetail: sanitizeLicenseManagementErrorDetail,
 } as const satisfies OperationContract<
   readonly [Id, GetLicenseKeyInstanceParams],
   LicenseKeyInstanceResponse
@@ -43,7 +44,7 @@ export const listLicenseKeyInstancesOperation = {
   }),
   success: { kind: "jsonapi-list", resourceType: "license-key-instances" },
   evidence: [evidence.list, evidence.object],
-  redactErrorDetails: true,
+  sanitizeErrorDetail: sanitizeLicenseManagementErrorDetail,
 } as const satisfies OperationContract<
   readonly [ListLicenseKeyInstancesParams],
   LicenseKeyInstanceListResponse

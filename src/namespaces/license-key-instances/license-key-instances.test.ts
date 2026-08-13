@@ -148,7 +148,16 @@ describe("licenseKeyInstances namespace", () => {
     expect(error).toMatchObject({
       code: "invalid_response",
       statusCode: 200,
-      responseBody: null,
+      responseBody: {
+        data: { type: "[REDACTED]", id: "[REDACTED]", attributes: {} },
+        included: [
+          {
+            type: "[REDACTED]",
+            id: "[REDACTED]",
+            attributes: { key: "[REDACTED]" },
+          },
+        ],
+      },
     });
     expect(
       JSON.stringify({

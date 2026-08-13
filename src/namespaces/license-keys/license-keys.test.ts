@@ -215,12 +215,7 @@ describe("licenseKeys namespace", () => {
       async () =>
         Response.json(
           {
-            errors: [
-              {
-                title: `Invalid License Key ${businessLicenseKey}`,
-                meta: { key: businessLicenseKey },
-              },
-            ],
+            errors: [{ title: `Invalid License Key ${businessLicenseKey}` }],
             data: {
               type: "license-keys",
               id: "42",
@@ -236,9 +231,24 @@ describe("licenseKeys namespace", () => {
     expect(error).toMatchObject({
       code: "http",
       statusCode: 422,
-      responseBody: null,
+      responseBody: {
+        errors: [
+          {
+            title: "[REDACTED]",
+          },
+        ],
+        data: {
+          type: "[REDACTED]",
+          id: "[REDACTED]",
+          attributes: { key: "[REDACTED]" },
+        },
+      },
+      apiErrors: [
+        {
+          title: "[REDACTED]",
+        },
+      ],
     });
-    expect(error.apiErrors).toBeUndefined();
     expect(
       JSON.stringify({
         message: String(error),
@@ -246,6 +256,26 @@ describe("licenseKeys namespace", () => {
         apiErrors: error.apiErrors,
         cause: error.cause,
       }),
+    ).not.toContain(businessLicenseKey);
+  });
+
+  it("redacts business License Keys from abort causes", async () => {
+    const businessLicenseKey = "abort-cause-business-key-that-must-not-leak";
+    const controller = new AbortController();
+    controller.abort(new Error(businessLicenseKey));
+    const client = createClientWithAdapter(
+      { apiKey: "management-api-key" },
+      async () => Response.json(licenseKeyResponse),
+    );
+
+    const error = await client.licenseKeys
+      .get(42, {}, { signal: controller.signal })
+      .catch((reason) => reason);
+
+    expect(error).toMatchObject({ code: "aborted", cause: expect.any(Error) });
+    expect(String(error.cause)).toBe("Error: [REDACTED]");
+    expect(
+      JSON.stringify({ message: String(error), cause: String(error.cause) }),
     ).not.toContain(businessLicenseKey);
   });
 });
