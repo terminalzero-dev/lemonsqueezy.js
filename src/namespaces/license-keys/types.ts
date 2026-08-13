@@ -8,11 +8,13 @@ import type {
   OpenString,
 } from "../../types/jsonapi";
 
-export type KnownLicenseKeyStatus =
-  | "inactive"
-  | "active"
-  | "expired"
-  | "disabled";
+export const knownLicenseKeyStatuses = [
+  "inactive",
+  "active",
+  "expired",
+  "disabled",
+] as const;
+export type KnownLicenseKeyStatus = (typeof knownLicenseKeyStatuses)[number];
 export type LicenseKeyStatus = OpenString<KnownLicenseKeyStatus>;
 
 export interface LicenseKeyAttributes {

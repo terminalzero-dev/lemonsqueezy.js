@@ -207,4 +207,45 @@ describe("licenseKeys namespace", () => {
     expect(String(error)).not.toContain("business-license-key");
     expect(attempts).toBe(0);
   });
+
+  it("redacts business License Keys from failed response errors", async () => {
+    const businessLicenseKey = "business-license-key-that-must-not-leak";
+    const client = createClientWithAdapter(
+      { apiKey: "management-api-key" },
+      async () =>
+        Response.json(
+          {
+            errors: [
+              {
+                title: `Invalid License Key ${businessLicenseKey}`,
+                meta: { key: businessLicenseKey },
+              },
+            ],
+            data: {
+              type: "license-keys",
+              id: "42",
+              attributes: { key: businessLicenseKey },
+            },
+          },
+          { status: 422 },
+        ),
+    );
+
+    const error = await client.licenseKeys.get(42).catch((reason) => reason);
+
+    expect(error).toMatchObject({
+      code: "http",
+      statusCode: 422,
+      responseBody: null,
+    });
+    expect(error.apiErrors).toBeUndefined();
+    expect(
+      JSON.stringify({
+        message: String(error),
+        responseBody: error.responseBody,
+        apiErrors: error.apiErrors,
+        cause: error.cause,
+      }),
+    ).not.toContain(businessLicenseKey);
+  });
 });

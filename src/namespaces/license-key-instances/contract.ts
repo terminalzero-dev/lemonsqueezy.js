@@ -25,6 +25,7 @@ export const getLicenseKeyInstanceOperation = {
   }),
   success: { kind: "jsonapi-single", resourceType: "license-key-instances" },
   evidence: [evidence.get, evidence.object],
+  redactErrorDetails: true,
 } as const satisfies OperationContract<
   readonly [Id, GetLicenseKeyInstanceParams],
   LicenseKeyInstanceResponse
@@ -42,6 +43,7 @@ export const listLicenseKeyInstancesOperation = {
   }),
   success: { kind: "jsonapi-list", resourceType: "license-key-instances" },
   evidence: [evidence.list, evidence.object],
+  redactErrorDetails: true,
 } as const satisfies OperationContract<
   readonly [ListLicenseKeyInstancesParams],
   LicenseKeyInstanceListResponse

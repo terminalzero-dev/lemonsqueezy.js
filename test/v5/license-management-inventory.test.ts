@@ -39,5 +39,8 @@ describe("license management Contract inventory", () => {
       "jsonapi-single",
       "jsonapi-list",
     ]);
+    expect(operations.every((operation) => operation.redactErrorDetails)).toBe(
+      true,
+    );
   });
 });

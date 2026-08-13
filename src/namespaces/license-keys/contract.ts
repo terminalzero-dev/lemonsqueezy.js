@@ -13,13 +13,9 @@ import type {
   ListLicenseKeysParams,
   UpdateLicenseKeyInput,
 } from "./types";
+import { knownLicenseKeyStatuses } from "./types";
 
-const knownLicenseKeyStatuses = new Set([
-  "inactive",
-  "active",
-  "expired",
-  "disabled",
-]);
+const knownLicenseKeyStatusSet = new Set(knownLicenseKeyStatuses);
 
 const evidence = {
   object:
@@ -39,6 +35,7 @@ export const getLicenseKeyOperation = {
   }),
   success: { kind: "jsonapi-single", resourceType: "license-keys" },
   evidence: [evidence.get, evidence.object],
+  redactErrorDetails: true,
 } as const satisfies OperationContract<
   readonly [Id, GetLicenseKeyParams],
   LicenseKeyResponse
@@ -68,6 +65,7 @@ export const updateLicenseKeyOperation = {
   },
   success: { kind: "jsonapi-single", resourceType: "license-keys" },
   evidence: [evidence.update, evidence.object],
+  redactErrorDetails: true,
 } as const satisfies OperationContract<
   readonly [Id, UpdateLicenseKeyInput],
   LicenseKeyResponse
@@ -104,7 +102,7 @@ export const listLicenseKeysOperation = {
     if (
       status !== undefined &&
       status !== null &&
-      !knownLicenseKeyStatuses.has(status)
+      !knownLicenseKeyStatusSet.has(status)
     ) {
       throw new LemonSqueezyError(
         "status must be a documented License Key status.",
@@ -127,6 +125,7 @@ export const listLicenseKeysOperation = {
   },
   success: { kind: "jsonapi-list", resourceType: "license-keys" },
   evidence: [evidence.list, evidence.object],
+  redactErrorDetails: true,
 } as const satisfies OperationContract<
   readonly [ListLicenseKeysParams],
   LicenseKeyListResponse

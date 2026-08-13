@@ -123,4 +123,40 @@ describe("licenseKeyInstances namespace", () => {
 
     expect(attempts).toBe(0);
   });
+
+  it("redacts included business License Keys from invalid response errors", async () => {
+    const businessLicenseKey = "included-business-key-that-must-not-leak";
+    const client = createClientWithAdapter(
+      { apiKey: "management-api-key" },
+      async () =>
+        Response.json({
+          data: { type: "orders", id: "51", attributes: {} },
+          included: [
+            {
+              type: "license-keys",
+              id: "42",
+              attributes: { key: businessLicenseKey },
+            },
+          ],
+        }),
+    );
+
+    const error = await client.licenseKeyInstances
+      .get(51, { include: ["license-key"] })
+      .catch((reason) => reason);
+
+    expect(error).toMatchObject({
+      code: "invalid_response",
+      statusCode: 200,
+      responseBody: null,
+    });
+    expect(
+      JSON.stringify({
+        message: String(error),
+        responseBody: error.responseBody,
+        apiErrors: error.apiErrors,
+        cause: error.cause,
+      }),
+    ).not.toContain(businessLicenseKey);
+  });
 });

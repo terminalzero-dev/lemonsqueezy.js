@@ -1,4 +1,4 @@
-import { LemonSqueezyError } from "../../client/error";
+import { isLemonSqueezyError, LemonSqueezyError } from "../../client/error";
 import { sendJsonApiRequest } from "./http";
 import type {
   OperationContract,
@@ -20,12 +20,17 @@ export function createResourceRuntime(
       options?: RequestOptions,
     ) {
       const compiled = operation.compile(args);
-      const result = await sendJsonApiRequest(
-        compiled,
-        config,
-        transport,
-        options,
-      );
+      let result;
+      try {
+        result = await sendJsonApiRequest(compiled, config, transport, options);
+      } catch (error) {
+        if (operation.redactErrorDetails && isLemonSqueezyError(error)) {
+          throw new LemonSqueezyError(error.message, error.code, {
+            statusCode: error.statusCode,
+          });
+        }
+        throw error;
+      }
 
       if (!isValidResponse(result.body, operation.success)) {
         throw new LemonSqueezyError(
@@ -33,7 +38,7 @@ export function createResourceRuntime(
           "invalid_response",
           {
             statusCode: result.statusCode,
-            responseBody: result.body,
+            responseBody: operation.redactErrorDetails ? null : result.body,
           },
         );
       }

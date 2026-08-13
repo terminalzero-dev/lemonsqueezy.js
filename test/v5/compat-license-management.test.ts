@@ -103,6 +103,7 @@ const cases: readonly {
 afterEach(() => {
   vi.unstubAllGlobals();
   setDefaultAdapter((request) => fetch(request));
+  lemonSqueezySetup({});
 });
 
 describe("license management Compatibility projections", () => {
@@ -136,6 +137,45 @@ describe("license management Compatibility projections", () => {
     expect(explicitRequests).toHaveLength(1);
     await expect(requestSnapshot(facadeRequests[0]!)).resolves.toEqual(
       await requestSnapshot(explicitRequests[0]!),
+    );
+  });
+
+  it("redacts a business License Key before the envelope and Error observer", async () => {
+    const businessLicenseKey = "business-license-key-that-must-not-leak";
+    let observedError: unknown;
+    setDefaultAdapter(async () =>
+      Response.json(
+        {
+          errors: [
+            {
+              title: `Invalid License Key ${businessLicenseKey}`,
+              meta: { key: businessLicenseKey },
+            },
+          ],
+        },
+        { status: 422 },
+      ),
+    );
+    lemonSqueezySetup({
+      apiKey: "facade-api-key",
+      onError(error) {
+        observedError = error;
+      },
+    });
+
+    const result = await getLicenseKey(42);
+
+    expect(result).toMatchObject({
+      statusCode: 422,
+      data: null,
+      error: { code: "http", responseBody: null },
+    });
+    expect(observedError).toMatchObject({
+      code: "http",
+      responseBody: null,
+    });
+    expect(JSON.stringify({ result, observedError })).not.toContain(
+      businessLicenseKey,
     );
   });
 });
