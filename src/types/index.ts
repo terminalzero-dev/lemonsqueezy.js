@@ -88,6 +88,24 @@ export type {
   OrderItemResource,
   OrderItemResponse,
 } from "../namespaces/order-items/types";
+export type {
+  GetSubscriptionParams as CanonicalGetSubscriptionParams,
+  KnownSubscriptionStatus,
+  ListSubscriptionsParams as CanonicalListSubscriptionsParams,
+  SubscriptionAttributes,
+  SubscriptionCardBrand,
+  SubscriptionFirstItem,
+  SubscriptionListResponse,
+  SubscriptionPause,
+  SubscriptionPauseMode,
+  SubscriptionPaymentProcessor,
+  SubscriptionRelationships,
+  SubscriptionResource,
+  SubscriptionResponse,
+  SubscriptionStatus,
+  SubscriptionUrls,
+  UpdateSubscriptionInput,
+} from "../namespaces/subscriptions/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";

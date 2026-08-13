@@ -20,6 +20,9 @@ import type {
   OrderResponse,
   OrderStatus,
   RefundOrderInput,
+  SubscriptionListResponse,
+  SubscriptionPaymentProcessor,
+  SubscriptionResponse,
   FileListResponse,
   FileResponse,
   JSONValue,
@@ -113,6 +116,25 @@ const orderItem: Promise<OrderItemResponse> = client.orderItems.get(1, {
 const orderItems: Promise<OrderItemListResponse> = client.orderItems.list({
   filter: { orderId: 1, productId: 2, variantId: 3 },
 });
+const subscription: Promise<SubscriptionResponse> = client.subscriptions.get(
+  1,
+  { include: ["subscription-items"] },
+  { timeoutMs: 1_000 },
+);
+const subscriptions: Promise<SubscriptionListResponse> =
+  client.subscriptions.list(
+    { filter: { status: "active" } },
+    { timeoutMs: 1_000 },
+  );
+const updatedSubscription: Promise<SubscriptionResponse> =
+  client.subscriptions.update(
+    1,
+    { pause: null, cancelled: false, billingAnchor: 0 },
+    { timeoutMs: 1_000 },
+  );
+const cancelledSubscription: Promise<SubscriptionResponse> =
+  client.subscriptions.cancel(1, { timeoutMs: 1_000 });
+const futurePaymentProcessor: SubscriptionPaymentProcessor = "future_processor";
 const futureOrderStatus: OrderStatus = "future_status";
 declare const customerRelationships: CustomerRelationships;
 const affiliateRelationship = customerRelationships.affiliates;
@@ -150,6 +172,11 @@ void invoice;
 void refund;
 void orderItem;
 void orderItems;
+void subscription;
+void subscriptions;
+void updatedSubscription;
+void cancelledSubscription;
+void futurePaymentProcessor;
 void futureOrderStatus;
 void affiliateRelationship;
 void futureAffiliateStatus;
@@ -187,6 +214,14 @@ client.orders.create({});
 client.orders.list({ filter: { affiliateId: 1 } });
 // @ts-expect-error Order Item includes are limited to reviewed relationships
 client.orderItems.get(1, { include: ["store"] });
+// @ts-expect-error Subscription request status is a closed documented enum
+client.subscriptions.list({ filter: { status: "future_status" } });
+client.subscriptions.update(1, {
+  // @ts-expect-error Subscription pause mode is a closed request enum
+  pause: { mode: "hold" },
+});
+// @ts-expect-error RequestOptions remain in the final position
+client.subscriptions.get(1, { timeoutMs: 1_000 });
 client.prices.get(1, {
   include: ["variant", "subscription-items", "usage-records"],
 });

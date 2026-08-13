@@ -1,10 +1,18 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertKeys,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  cancelSubscriptionOperation,
+  getSubscriptionOperation,
+  listSubscriptionsOperation,
+  updateSubscriptionOperation,
+} from "../namespaces/subscriptions/contract";
+import type {
+  GetSubscriptionParams as CanonicalGetSubscriptionParams,
+  ListSubscriptionsParams as CanonicalListSubscriptionsParams,
+  SubscriptionListResponse,
+  SubscriptionResponse,
+  UpdateSubscriptionInput,
+} from "../namespaces/subscriptions/types";
 import type {
   GetSubscriptionParams,
   ListSubscriptions,
@@ -25,10 +33,13 @@ export function getSubscription(
   subscriptionId: number | string,
   params: GetSubscriptionParams = {},
 ) {
-  requiredCheck({ subscriptionId });
-  return $fetch<Subscription>({
-    path: `/v1/subscriptions/${subscriptionId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetSubscriptionParams],
+    SubscriptionResponse,
+    Subscription
+  >(getSubscriptionOperation, [subscriptionId, params]) as Promise<
+    FetchResponse<Subscription>
+  >;
 }
 
 /**
@@ -42,38 +53,14 @@ export function updateSubscription(
   subscriptionId: string | number,
   updateSubscription: UpdateSubscription,
 ) {
-  requiredCheck({ subscriptionId });
-  const {
-    variantId,
-    cancelled,
-    billingAnchor,
-    invoiceImmediately,
-    disableProrations,
-    pause,
-    trialEndsAt,
-  } = updateSubscription;
-
-  const attributes = convertKeys({
-    variantId,
-    cancelled,
-    billingAnchor,
-    invoiceImmediately,
-    disableProrations,
-    pause,
-    trialEndsAt,
-  });
-
-  return $fetch<Subscription>({
-    path: `/v1/subscriptions/${subscriptionId}`,
-    method: "PATCH",
-    body: {
-      data: {
-        type: "subscriptions",
-        id: subscriptionId.toString(),
-        attributes,
-      },
-    },
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, UpdateSubscriptionInput],
+    SubscriptionResponse,
+    Subscription
+  >(updateSubscriptionOperation, [
+    subscriptionId,
+    updateSubscription,
+  ]) as Promise<FetchResponse<Subscription>>;
 }
 
 /**
@@ -83,12 +70,13 @@ export function updateSubscription(
  * @returns The Subscription object in a cancelled state.
  */
 export function cancelSubscription(subscriptionId: string | number) {
-  requiredCheck({ subscriptionId });
-
-  return $fetch<Subscription>({
-    path: `/v1/subscriptions/${subscriptionId}`,
-    method: "DELETE",
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string],
+    SubscriptionResponse,
+    Subscription
+  >(cancelSubscriptionOperation, [subscriptionId]) as Promise<
+    FetchResponse<Subscription>
+  >;
 }
 
 /**
@@ -109,7 +97,11 @@ export function cancelSubscription(subscriptionId: string | number) {
  * @returns A paginated list of subscription objects ordered by `created_at` (descending).
  */
 export function listSubscriptions(params: ListSubscriptionsParams = {}) {
-  return $fetch<ListSubscriptions>({
-    path: `/v1/subscriptions${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListSubscriptionsParams],
+    SubscriptionListResponse,
+    ListSubscriptions
+  >(listSubscriptionsOperation, [params]) as Promise<
+    FetchResponse<ListSubscriptions>
+  >;
 }

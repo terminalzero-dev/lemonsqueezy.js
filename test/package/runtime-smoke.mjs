@@ -45,6 +45,7 @@ for (const namespace of [
   "checkouts",
   "orders",
   "orderItems",
+  "subscriptions",
 ]) {
   assert.equal(Object.isFrozen(explicit[namespace]), true);
 }
@@ -55,6 +56,12 @@ assert.deepEqual(Object.keys(explicit.orders).sort(), [
   "refund",
 ]);
 assert.deepEqual(Object.keys(explicit.orderItems).sort(), ["get", "list"]);
+assert.deepEqual(Object.keys(explicit.subscriptions).sort(), [
+  "cancel",
+  "get",
+  "list",
+  "update",
+]);
 assert.deepEqual(Object.keys(explicit.customers).sort(), [
   "archive",
   "create",
@@ -121,7 +128,11 @@ globalThis.fetch = async (request) => {
     return Response.json(invoiceResponse);
   }
 
-  const type = url.pathname.includes("/order-items") ? "order-items" : "orders";
+  const type = url.pathname.includes("/order-items")
+    ? "order-items"
+    : url.pathname.includes("/subscriptions")
+      ? "subscriptions"
+      : "orders";
   return Response.json(
     url.pathname === `/v1/${type}` ? listResponse(type) : singleResponse(type),
   );
@@ -134,6 +145,16 @@ await explicit.orders.refund(1);
 await explicit.orders.refund(1, { amount: 250 });
 await explicit.orderItems.get(1, { include: ["product"] });
 await explicit.orderItems.list({ filter: { orderId: 1, variantId: 2 } });
+await explicit.subscriptions.get(1, { include: ["subscription-items"] });
+await explicit.subscriptions.list({
+  filter: { storeId: 1, userEmail: "", status: "active" },
+});
+await explicit.subscriptions.update(1, {
+  pause: null,
+  cancelled: false,
+  billingAnchor: 0,
+});
+await explicit.subscriptions.cancel(1);
 await assert.rejects(explicit.orders.refund(1, { amount: 0 }), {
   code: "validation",
 });
@@ -146,6 +167,16 @@ const compatibilityResults = await Promise.all([
   root.issueOrderRefund(1, 250),
   root.getOrderItem(1, { include: ["product"] }),
   root.listOrderItems({ filter: { orderId: 1, variantId: 2 } }),
+  root.getSubscription(1, { include: ["subscription-items"] }),
+  root.listSubscriptions({
+    filter: { storeId: 1, userEmail: "", status: "active" },
+  }),
+  root.updateSubscription(1, {
+    pause: null,
+    cancelled: false,
+    billingAnchor: 0,
+  }),
+  root.cancelSubscription(1),
 ]);
 for (const result of compatibilityResults) {
   assert.equal(result.statusCode, 200);
@@ -195,6 +226,32 @@ assert.deepEqual(refundBodies, [
   { data: { type: "orders", id: "1", attributes: {} } },
   { data: { type: "orders", id: "1", attributes: { amount: 250 } } },
 ]);
+
+const subscriptionRequests = installedRequests.filter((request) =>
+  new URL(request.url).pathname.startsWith("/v1/subscriptions"),
+);
+assert.equal(subscriptionRequests.length, 8);
+assert.equal(
+  subscriptionRequests.filter((request) => request.method === "DELETE").length,
+  2,
+);
+const subscriptionUpdates = subscriptionRequests.filter(
+  (request) => request.method === "PATCH",
+);
+assert.equal(subscriptionUpdates.length, 2);
+for (const request of subscriptionUpdates) {
+  assert.deepEqual(await request.clone().json(), {
+    data: {
+      type: "subscriptions",
+      id: "1",
+      attributes: {
+        pause: null,
+        cancelled: false,
+        billing_anchor: 0,
+      },
+    },
+  });
+}
 
 const require = createRequire(import.meta.url);
 const cjsRoot = require("@terminalzero/lemonsqueezy");

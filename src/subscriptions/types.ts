@@ -10,7 +10,6 @@ type SubscriptionStatus =
   | "on_trial"
   | "active"
   | "paused"
-  | "pause"
   | "past_due"
   | "unpaid"
   | "cancelled"
