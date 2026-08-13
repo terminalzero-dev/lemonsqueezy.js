@@ -9,7 +9,13 @@ import type {
   Relationships,
 } from "../types";
 
-type OrderStatus = "pending" | "failed" | "paid" | "refunded" | "fraudulent";
+type OrderStatus =
+  | "pending"
+  | "failed"
+  | "paid"
+  | "refunded"
+  | "partial_refund"
+  | "fraudulent";
 
 type FirstOrderItem = {
   /**
@@ -75,6 +81,10 @@ type Attributes = {
    * The ID of the customer this order belongs to.
    */
   customer_id: number;
+  /** The referring affiliate ID, or null for non-affiliate orders. */
+  affiliate_id: number | null;
+  /** The affiliate commission in order-currency cents, or null. */
+  referral_amount: number | null;
   /**
    * The unique identifier (UUID) for this order.
    */
@@ -184,7 +194,7 @@ type Attributes = {
   /**
    * If the order has been refunded, this will be an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) formatted date-time string indicating when the order was refunded.
    */
-  refunded_at: Date | null;
+  refunded_at: string | null;
   /**
    * A human-readable string representing the subtotal of the order in the order currency (e.g. `$9.99`).
    */
@@ -254,6 +264,7 @@ type OrderData = Data<
     Relationships,
     | "store"
     | "customer"
+    | "affiliate"
     | "order-items"
     | "subscriptions"
     | "license-keys"
@@ -268,22 +279,22 @@ export type GetOrderParams = Pick<
 
 export type ListOrdersParams = Params<
   GetOrderParams["include"],
-  { storeId?: string | number; userEmail?: string }
+  { storeId?: string | number; userEmail?: string; orderNumber?: number }
 >;
 
 export type GenerateOrderInvoiceParams = {
   /**
    * The full name of the customer.
    */
-  name: string;
+  name?: string;
   /**
    * The street address of the customer.
    */
-  address: string;
+  address?: string;
   /**
    * The city of the customer.
    */
-  city: string;
+  city?: string;
   /**
    * The state of the customer. Required if the country is the United States or Canada.
    */
@@ -291,11 +302,11 @@ export type GenerateOrderInvoiceParams = {
   /**
    * The ZIP code of the customer.
    */
-  zipCode: number;
+  zipCode?: string | number;
   /**
    * The country of the customer.
    */
-  country: string;
+  country?: string;
   /**
    * Optional. Any additional notes to include on the invoice.
    */

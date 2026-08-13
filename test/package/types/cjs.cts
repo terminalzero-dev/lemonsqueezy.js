@@ -7,6 +7,9 @@ import type {
   AffiliateResponse,
   CheckoutResponse,
   CustomerResponse,
+  GenerateOrderInvoiceResponse,
+  OrderItemResponse,
+  OrderResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -30,6 +33,10 @@ const customer: Promise<CustomerResponse> = client.customers.update(1, {
 });
 const checkout: Promise<CheckoutResponse> = client.checkouts.get(1);
 const filters: ListCustomersParams = { filter: { storeId: 1 } };
+const order: Promise<OrderResponse> = client.orders.refund(1);
+const invoice: Promise<GenerateOrderInvoiceResponse> =
+  client.orders.generateInvoice(1);
+const orderItem: Promise<OrderItemResponse> = client.orderItems.get(1);
 
 void userPromise;
 void directUser;
@@ -37,6 +44,9 @@ void affiliate;
 void customer;
 void checkout;
 void filters;
+void order;
+void invoice;
+void orderItem;
 
 // @ts-expect-error internal package paths are closed
 import("@terminalzero/lemonsqueezy/internal");

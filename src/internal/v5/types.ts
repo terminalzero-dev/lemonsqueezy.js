@@ -36,10 +36,12 @@ export interface CoreRequest {
   readonly body?: unknown;
 }
 
-export type SuccessContract = {
-  readonly kind: "jsonapi-single" | "jsonapi-list";
-  readonly resourceType: string;
-};
+export type SuccessContract =
+  | {
+      readonly kind: "jsonapi-single" | "jsonapi-list";
+      readonly resourceType: string;
+    }
+  | { readonly kind: "invoice" };
 
 declare const operationResult: unique symbol;
 

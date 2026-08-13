@@ -582,7 +582,6 @@ describe("Retrieve an order", () => {
 describe("Generate order invoice", () => {
   it("Throw an error about a parameter that must be provided", async () => {
     try {
-      // @ts-expect-error Exercise the runtime guard for a missing identifier.
       await generateOrderInvoice("");
     } catch (error) {
       expect((error as Error).message).toMatch(
@@ -596,7 +595,6 @@ describe("Generate order invoice", () => {
       statusCode,
       error,
       data: _data,
-      // @ts-expect-error Preserve the v4 runtime case with omitted invoice fields.
     } = await generateOrderInvoice(orderId);
     expect(statusCode).toEqual(200);
     expect(error).toBeNull();
