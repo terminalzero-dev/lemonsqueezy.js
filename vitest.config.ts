@@ -7,6 +7,7 @@ export default defineConfig({
       "test/index.test.ts",
       "test/internal/configure.test.ts",
       "test/internal/utils.test.ts",
+      "test/v5/**/*.test.ts",
     ],
     setupFiles: ["test/vitest-compat.ts"],
   },

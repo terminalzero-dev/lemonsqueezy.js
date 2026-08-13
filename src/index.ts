@@ -1,3 +1,16 @@
+export { createClient, isLemonSqueezyError, LemonSqueezyError } from "./client";
+export type {
+  AbortSignal,
+  ClientOptions,
+  LemonSqueezyClient,
+  LemonSqueezyErrorCode,
+  RequestOptions,
+  UserAttributes,
+  UserResource,
+  UserResponse,
+  UsersNamespace,
+} from "./client";
+
 // Setup
 export { lemonSqueezySetup } from "./internal";
 export type { Flatten } from "./types";

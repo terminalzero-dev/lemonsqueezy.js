@@ -37,8 +37,8 @@ describe("Retrieve the authenticated user", () => {
       color,
       avatar_url,
       has_custom_avatar,
-      createdAt,
-      updatedAt,
+      created_at,
+      updated_at,
     } = attributes;
     const items = [
       name,
@@ -46,8 +46,8 @@ describe("Retrieve the authenticated user", () => {
       color,
       avatar_url,
       has_custom_avatar,
-      createdAt,
-      updatedAt,
+      created_at,
+      updated_at,
     ];
     for (const item of items) expect(item).toBeDefined();
     expect(Object.keys(attributes).length).toEqual(items.length);

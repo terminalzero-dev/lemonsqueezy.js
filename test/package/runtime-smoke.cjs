@@ -8,14 +8,29 @@ const root = require("@terminalzero/lemonsqueezy");
 const expected = JSON.parse(
   readFileSync(join(__dirname, "expected-runtime-exports.json"), "utf8"),
 );
+const expectedClient = [
+  "LemonSqueezyError",
+  "createClient",
+  "isLemonSqueezyError",
+];
+const compareNames = (left, right) => left.localeCompare(right);
 
-assert.deepEqual(Object.keys(root).sort(), expected);
+assert.deepEqual(
+  Object.keys(root).sort(compareNames),
+  [...expected, ...expectedClient].sort(compareNames),
+);
 assert.deepEqual(Object.keys(compat).sort(), expected);
-assert.deepEqual(Object.keys(client), []);
+assert.deepEqual(
+  Object.keys(client).sort(compareNames),
+  [...expectedClient].sort(compareNames),
+);
 assert.equal(
   root.lemonSqueezySetup({ apiKey: "package-smoke" }).apiKey,
   "package-smoke",
 );
+const explicit = client.createClient({ apiKey: "package-smoke" });
+assert.equal(Object.isFrozen(explicit), true);
+assert.equal(Object.isFrozen(explicit.users), true);
 
 const isClosedExportError = (error) =>
   ["ERR_PACKAGE_PATH_NOT_EXPORTED", "MODULE_NOT_FOUND"].includes(error.code);
@@ -26,5 +41,9 @@ assert.throws(
 );
 assert.throws(
   () => require("@terminalzero/lemonsqueezy/internal"),
+  isClosedExportError,
+);
+assert.throws(
+  () => require("@terminalzero/lemonsqueezy/testing"),
   isClosedExportError,
 );
