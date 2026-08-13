@@ -1,4 +1,7 @@
-# The official Lemon Squeezy JavaScript SDK
+# Lemon Squeezy JavaScript SDK
+
+> Experimental community-maintained SDK maintained by Terminal Zero. Not
+> affiliated with or endorsed by Lemon Squeezy.
 
 [![NPM version](https://img.shields.io/npm/v/%40terminalzero%2Flemonsqueezy?label=&color=%230d9488)](https://www.npmjs.com/package/@terminalzero/lemonsqueezy)
 [![Functions usage](https://img.shields.io/badge/Wiki-%237c3aed)](https://github.com/lmsqueezy/lemonsqueezy.js/wiki)
@@ -9,7 +12,9 @@
 
 ## Introduction
 
-This is the official JavaScript SDK for [Lemon Squeezy](https://lemonsqueezy.com), making it easy to incorporate billing into your JavaScript application.
+This experimental community-maintained JavaScript SDK makes it easier to
+incorporate [Lemon Squeezy](https://lemonsqueezy.com) billing into JavaScript
+applications.
 
 - Read [API Reference](https://docs.lemonsqueezy.com/api) to understand how the Lemon Squeezy API works.
 - Visit [Wiki page](https://github.com/lmsqueezy/lemonsqueezy.js/wiki) for function usage.
@@ -154,7 +159,7 @@ For more functions usage, see [Wiki](https://github.com/lmsqueezy/lemonsqueezy.j
 
 ## Contributing
 
-See the [Contributing Guide](https://github.com/lmsqueezy/lemonsqueezy.js/blob/main/CONTRIBUTING.md).
+See the [Contributing Guide](https://github.com/terminalzero-dev/lemonsqueezy.js/blob/main/CONTRIBUTING.md).
 
 ## License
 

@@ -10,6 +10,8 @@ const binaries = [
 
 console.log(`Node ${process.version}`);
 run("corepack", ["pnpm", "--version"]);
+console.log("Bun");
+run("bun", ["--version"]);
 console.log("TypeScript");
 run(process.execPath, [
   join(root, "node_modules/typescript/bin/tsc"),

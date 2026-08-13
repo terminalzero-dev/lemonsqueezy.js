@@ -34,8 +34,9 @@ Artifact, and runs Type Contract and Installed-package Smoke tests against that
 exact tarball. It does not require Lemon Squeezy credentials or network access
 to the Lemon Squeezy API.
 
-`pnpm test:integration` is a separate, explicit Test Mode command. Do not run it
-against a normal store or Live Mode credentials.
+`pnpm test:integration` is reserved for the protected Test Mode canary. It fails
+closed until the dedicated-store preflight and exact-tarball canary land in
+Issue #32; the legacy source-level API tests must not be used as that gate.
 
 ## Changes and releases
 

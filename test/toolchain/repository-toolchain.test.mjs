@@ -86,3 +86,45 @@ test("repository scripts do not invoke an unapproved package manager or runner",
     );
   }
 });
+
+test("package positioning does not claim to be the official SDK", () => {
+  const readme = readFileSync(
+    new URL("../../README.md", import.meta.url),
+    "utf8",
+  );
+  const prose = readme.replace(/\n>\s*/g, " ");
+
+  assert.match(prose, /Experimental community-maintained/);
+  assert.match(prose, /Not affiliated with or endorsed by Lemon Squeezy/);
+  assert.doesNotMatch(readme, /official (?:Lemon Squeezy )?JavaScript SDK/i);
+});
+
+test("CI installs and records the minimum supported Bun runtime", () => {
+  const workflow = readFileSync(
+    new URL("../../.github/workflows/check.yml", import.meta.url),
+    "utf8",
+  );
+  const toolVersions = readFileSync(
+    new URL("../../scripts/tool-versions.mjs", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(workflow, /uses: oven-sh\/setup-bun@v2/);
+  assert.match(workflow, /bun-version: "1\.3\.14"/);
+  assert.match(toolVersions, /run\("bun", \["--version"\]\)/);
+});
+
+test("Test Mode integration stays fail-closed until its protected canary exists", () => {
+  assert.equal(
+    packageJson.scripts["test:integration"],
+    "node scripts/test-integration.mjs",
+  );
+  assert.equal(
+    existsSync(new URL("../../vitest.integration.config.ts", import.meta.url)),
+    false,
+  );
+  assert.equal(
+    existsSync(new URL("../integration-setup.ts", import.meta.url)),
+    false,
+  );
+});
