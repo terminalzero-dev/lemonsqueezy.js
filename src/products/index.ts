@@ -1,9 +1,15 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  getProductOperation,
+  listProductsOperation,
+} from "../namespaces/products/contract";
+import type {
+  GetProductParams as CanonicalGetProductParams,
+  ListProductsParams as CanonicalListProductsParams,
+  ProductListResponse,
+  ProductResponse,
+} from "../namespaces/products/types";
 import type {
   GetProductParams,
   ListProducts,
@@ -23,10 +29,13 @@ export function getProduct(
   productId: number | string,
   params: GetProductParams = {},
 ) {
-  requiredCheck({ productId });
-  return $fetch<Product>({
-    path: `/v1/products/${productId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetProductParams],
+    ProductResponse,
+    Product
+  >(getProductOperation, [productId, params]) as Promise<
+    FetchResponse<Product>
+  >;
 }
 
 /**
@@ -42,7 +51,9 @@ export function getProduct(
  * @returns A paginated list of product objects ordered by `name`.
  */
 export function listProducts(params: ListProductsParams = {}) {
-  return $fetch<ListProducts>({
-    path: `/v1/products${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListProductsParams],
+    ProductListResponse,
+    ListProducts
+  >(listProductsOperation, [params]) as Promise<FetchResponse<ListProducts>>;
 }

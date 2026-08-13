@@ -33,7 +33,27 @@ assert.equal(
 );
 const explicit = client.createClient({ apiKey: "package-smoke" });
 assert.equal(Object.isFrozen(explicit), true);
-assert.equal(Object.isFrozen(explicit.users), true);
+for (const namespace of [
+  "users",
+  "stores",
+  "products",
+  "variants",
+  "prices",
+  "files",
+  "affiliates",
+]) {
+  assert.equal(Object.isFrozen(explicit[namespace]), true);
+}
+for (const namespace of [
+  "stores",
+  "products",
+  "variants",
+  "prices",
+  "files",
+  "affiliates",
+]) {
+  assert.deepEqual(Object.keys(explicit[namespace]).sort(), ["get", "list"]);
+}
 
 const require = createRequire(import.meta.url);
 const cjsRoot = require("@terminalzero/lemonsqueezy");

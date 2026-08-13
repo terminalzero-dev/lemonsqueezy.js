@@ -1,9 +1,15 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import type { FetchResponse } from "../internal/fetch/types";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  getStoreOperation,
+  listStoresOperation,
+} from "../namespaces/stores/contract";
+import type {
+  GetStoreParams as CanonicalGetStoreParams,
+  ListStoresParams as CanonicalListStoresParams,
+  StoreListResponse,
+  StoreResponse,
+} from "../namespaces/stores/types";
 import type {
   GetStoreParams,
   ListStores,
@@ -23,10 +29,11 @@ export function getStore(
   storeId: number | string,
   params: GetStoreParams = {},
 ) {
-  requiredCheck({ storeId });
-  return $fetch<Store>({
-    path: `/v1/stores/${storeId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetStoreParams],
+    StoreResponse,
+    Store
+  >(getStoreOperation, [storeId, params]) as Promise<FetchResponse<Store>>;
 }
 
 /**
@@ -40,7 +47,9 @@ export function getStore(
  * @returns A paginated list of `store` objects ordered by name.
  */
 export function listStores(params: ListStoresParams = {}) {
-  return $fetch<ListStores>({
-    path: `/v1/stores${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListStoresParams],
+    StoreListResponse,
+    ListStores
+  >(listStoresOperation, [params]) as Promise<FetchResponse<ListStores>>;
 }

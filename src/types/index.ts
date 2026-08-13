@@ -3,6 +3,47 @@ export type * from "./common";
 export type * from "./iso";
 export type * from "./jsonapi";
 export type * from "../namespaces/users/types";
+export type {
+  StoreAttributes,
+  StoreListResponse,
+  StoreRelationships,
+  StoreResource,
+  StoreResponse,
+} from "../namespaces/stores/types";
+export type {
+  ProductAttributes,
+  ProductListResponse,
+  ProductRelationships,
+  ProductResource,
+  ProductResponse,
+} from "../namespaces/products/types";
+export type {
+  KnownVariantStatus,
+  VariantAttributes,
+  VariantListResponse,
+  VariantRelationships,
+  VariantResource,
+  VariantResponse,
+} from "../namespaces/variants/types";
+export type {
+  PriceAttributes,
+  PriceCategory,
+  PriceListResponse,
+  PriceRelationships,
+  PriceResource,
+  PriceResponse,
+  PriceScheme,
+  PriceTier,
+  PriceUsageAggregation,
+} from "../namespaces/prices/types";
+export type {
+  FileAttributes,
+  FileListResponse,
+  FileRelationships,
+  FileResource,
+  FileResponse,
+} from "../namespaces/files/types";
+export type * from "../namespaces/affiliates/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";

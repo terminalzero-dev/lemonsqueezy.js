@@ -42,9 +42,11 @@ export async function sendJsonApiRequest(
     Authorization: `Bearer ${config.apiKey}`,
     "Content-Type": "application/vnd.api+json",
   });
+  const url = new URL(`${API_BASE_URL}${request.path}`);
+  request.query?.forEach((value, key) => url.searchParams.append(key, value));
   const received = await receiveOnce(
     transport,
-    `${API_BASE_URL}${request.path}`,
+    url.href,
     { method: request.method, headers },
     timeoutMs,
     options?.signal,

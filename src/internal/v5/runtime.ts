@@ -26,11 +26,7 @@ export function createResourceRuntime(
         options,
       );
 
-      if (result.body === undefined) {
-        return { statusCode: result.statusCode, body: undefined as Result };
-      }
-
-      if (!isValidSingleResponse(result.body, operation.success.resourceType)) {
+      if (!isValidResponse(result.body, operation.success)) {
         throw new LemonSqueezyError(
           "Lemon Squeezy API returned an invalid response.",
           "invalid_response",
@@ -46,26 +42,37 @@ export function createResourceRuntime(
   });
 }
 
-function isValidSingleResponse(body: unknown, resourceType: string): boolean {
-  if (!isRecord(body) || !isRecord(body.data)) return false;
-
-  const { data } = body;
-  if (
-    data.type !== resourceType ||
-    typeof data.id !== "string" ||
-    !isRecord(data.attributes)
-  ) {
-    return false;
-  }
+function isValidResponse(
+  body: unknown,
+  success: {
+    readonly kind: "jsonapi-single" | "jsonapi-list";
+    readonly resourceType: string;
+  },
+): boolean {
+  if (!isRecord(body)) return false;
+  const resources = success.kind === "jsonapi-list" ? body.data : [body.data];
+  if (!Array.isArray(resources)) return false;
 
   return (
+    resources.every((resource) =>
+      isValidResource(resource, success.resourceType),
+    ) &&
     isOptionalRecord(body.jsonapi) &&
     isOptionalRecord(body.links) &&
     isOptionalRecord(body.meta) &&
-    isOptionalArray(body.included) &&
-    isOptionalRecord(data.relationships) &&
-    isOptionalRecord(data.links) &&
-    isOptionalRecord(data.meta)
+    isOptionalArray(body.included)
+  );
+}
+
+function isValidResource(value: unknown, resourceType: string): boolean {
+  return (
+    isRecord(value) &&
+    value.type === resourceType &&
+    typeof value.id === "string" &&
+    isRecord(value.attributes) &&
+    isOptionalRecord(value.relationships) &&
+    isOptionalRecord(value.links) &&
+    isOptionalRecord(value.meta)
   );
 }
 

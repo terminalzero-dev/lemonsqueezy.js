@@ -32,12 +32,13 @@ export interface CoreRequest {
   readonly protocol: "jsonapi";
   readonly method: "GET" | "POST" | "PATCH" | "DELETE";
   readonly path: `/v1/${string}`;
+  readonly query?: URLSearchParams;
 }
 
-export interface SuccessContract {
-  readonly kind: "jsonapi-single";
+export type SuccessContract = {
+  readonly kind: "jsonapi-single" | "jsonapi-list";
   readonly resourceType: string;
-}
+};
 
 declare const operationResult: unique symbol;
 
