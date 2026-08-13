@@ -61,7 +61,7 @@ export function createWebhook(storeId: number | string, webhook: NewWebhook) {
  */
 export function getWebhook(
   webhookId: number | string,
-  params: GetWebhookParams = {}
+  params: GetWebhookParams = {},
 ) {
   requiredCheck({ webhookId });
   return $fetch<Webhook>({
@@ -78,7 +78,7 @@ export function getWebhook(
  */
 export function updateWebhook(
   webhookId: number | string,
-  webhook: UpdateWebhook
+  webhook: UpdateWebhook,
 ) {
   requiredCheck({ webhookId });
 

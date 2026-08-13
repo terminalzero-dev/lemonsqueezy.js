@@ -27,14 +27,14 @@ export async function $fetch<T>(options: FetchOptions, needApiKey = true) {
     if (needApiKey && !apiKey) {
       response.error = createLemonError(
         "Please provide your Lemon Squeezy API key. Create a new API key: https://app.lemonsqueezy.com/settings/api",
-        "Missing API key"
+        "Missing API key",
       );
       onError?.(response.error);
       return response as FetchResponse<T>;
     }
 
     const { path, method = "GET", query, body } = options;
-    const _options: FetchRequestInit = {
+    const _options: RequestInit = {
       method,
     };
 
@@ -93,7 +93,7 @@ export async function $fetch<T>(options: FetchOptions, needApiKey = true) {
 
 function createLemonError(
   message: string,
-  cause: string | JSONAPIError[] = "unknown"
+  cause: string | JSONAPIError[] = "unknown",
 ) {
   const error = new Error(message);
   error.name = "Lemon Squeezy Error";

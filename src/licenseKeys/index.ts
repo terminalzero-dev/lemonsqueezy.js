@@ -23,7 +23,7 @@ import type {
  */
 export function getLicenseKey(
   licenseKeyId: number | string,
-  params: GetLicenseKeyParams = {}
+  params: GetLicenseKeyParams = {},
 ) {
   requiredCheck({ licenseKeyId });
   return $fetch<LicenseKey>({
@@ -64,7 +64,7 @@ export function listLicenseKeys(params: ListLicenseKeysParams = {}) {
  */
 export function updateLicenseKey(
   licenseKeyId: string | number,
-  licenseKey: UpdateLicenseKey
+  licenseKey: UpdateLicenseKey,
 ) {
   requiredCheck({ licenseKeyId });
 

@@ -114,7 +114,7 @@ export function listDiscounts(params: ListDiscountsParams = {}) {
  */
 export function getDiscount(
   discountId: number | string,
-  params: GetDiscountParams = {}
+  params: GetDiscountParams = {},
 ) {
   requiredCheck({ discountId });
   return $fetch<Discount>({

@@ -21,7 +21,7 @@ import type {
  */
 export function getDiscountRedemption(
   discountRedemptionId: number | string,
-  params: GetDiscountRedemptionParams = {}
+  params: GetDiscountRedemptionParams = {},
 ) {
   requiredCheck({ discountRedemptionId });
   return $fetch<DiscountRedemption>({
@@ -43,7 +43,7 @@ export function getDiscountRedemption(
  * @returns A paginated list of discount redemption objects ordered by `created_at` (descending).
  */
 export function listDiscountRedemptions(
-  params: ListDiscountRedemptionsParams = {}
+  params: ListDiscountRedemptionsParams = {},
 ) {
   return $fetch<ListDiscountRedemptions>({
     path: `/v1/discount-redemptions${convertListParamsToQueryString(params)}`,

@@ -22,7 +22,7 @@ import type {
  */
 export function getUsageRecord(
   usageRecordId: number | string,
-  params: GetUsageRecordParams = {}
+  params: GetUsageRecordParams = {},
 ) {
   requiredCheck({ usageRecordId });
   return $fetch<UsageRecord>({

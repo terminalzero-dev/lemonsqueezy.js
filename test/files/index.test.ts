@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { getFile, lemonSqueezySetup, listFiles } from "../../src";
 import { API_BASE_URL } from "../../src/internal";
 
@@ -52,7 +52,7 @@ describe("List all files", () => {
     expect(links.last).toBeDefined();
     expect(data).toBeArray();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "variants")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "variants")).toBe(true);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
     for (const item of [currentPage, from, lastPage, perPage, to, total]) {
@@ -83,7 +83,7 @@ describe("List all files", () => {
     expect(links.last).toBeDefined();
     expect(
       data.filter((item) => item.attributes.variant_id === Number(variantId))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -131,7 +131,7 @@ describe("Retrieve a file", () => {
       await getFile("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -204,7 +204,7 @@ describe("Retrieve a file", () => {
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${fileId}`);
     expect(data).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "variants")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "variants")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(fileId.toString());

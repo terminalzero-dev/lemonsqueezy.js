@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { getOrderItem, lemonSqueezySetup, listOrderItems } from "../../src";
 import { API_BASE_URL } from "../../src/internal";
 
@@ -53,7 +53,7 @@ describe("List all order items", () => {
     expect(links.last).toBeDefined();
     expect(data).toBeArray();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "products")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "products")).toBe(true);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
     for (const item of [currentPage, from, lastPage, perPage, to, total]) {
@@ -76,7 +76,8 @@ describe("List all order items", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.order_id === Number(orderId)).length
+      data.filter((item) => item.attributes.order_id === Number(orderId))
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -101,7 +102,7 @@ describe("List all order items", () => {
     expect(links.last).toBeDefined();
     expect(
       data.filter((item) => item.attributes.product_id === Number(productId))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -126,7 +127,7 @@ describe("List all order items", () => {
     expect(links.last).toBeDefined();
     expect(
       data.filter((item) => item.attributes.variant_id === Number(variantId))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -171,7 +172,7 @@ describe("Retrieve an order item", () => {
       await getOrderItem("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -243,7 +244,7 @@ describe("Retrieve an order item", () => {
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${orderItemId}`);
     expect(data).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "orders")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "orders")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(orderItemId.toString());

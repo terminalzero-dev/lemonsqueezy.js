@@ -22,7 +22,7 @@ SDK 不公开 verify-only、未验签 parser、泛型 receiver factory、框架 
 
 ```ts
 export function parseWebhookEvent(
-  input: ParseWebhookEventInput
+  input: ParseWebhookEventInput,
 ): InboundWebhookEvent;
 
 export class WebhookError extends Error {
@@ -102,8 +102,7 @@ export type UnknownInboundWebhookEvent = WebhookEventEnvelope<
 >;
 
 export type InboundWebhookEvent =
-  | KnownInboundWebhookEvent
-  | UnknownInboundWebhookEvent;
+  KnownInboundWebhookEvent | UnknownInboundWebhookEvent;
 ```
 
 `known` 与 `eventName` 是 SDK 派生的 ergonomic fields；签名 body 中的 `meta.event_name` 原样保留，并始终与 `eventName` 相等。显式 `known` 避免开放的 `string` fallback 吞掉 TypeScript literal narrowing。

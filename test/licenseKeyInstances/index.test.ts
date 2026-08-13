@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   getLicenseKeyInstance,
   lemonSqueezySetup,
@@ -68,9 +68,9 @@ describe("List all license key instances", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(included).toBeArray();
-    expect(
-      !!included?.filter((item) => item.type === "license-keys")
-    ).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "license-keys")).toBe(
+      true,
+    );
 
     const { currentPage, from, to, perPage, lastPage, total } = meta.page;
     const items = [currentPage, from, to, perPage, lastPage, total];
@@ -92,8 +92,8 @@ describe("List all license key instances", () => {
     expect(meta.page).toBeDefined();
     expect(
       data.filter(
-        (item) => item.attributes.license_key_id === Number(licenseKeyId)
-      )
+        (item) => item.attributes.license_key_id === Number(licenseKeyId),
+      ),
     ).toBeArray();
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -140,7 +140,7 @@ describe("Retrieve a license key instance", () => {
       await getLicenseKeyInstance("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -198,9 +198,9 @@ describe("Retrieve a license key instance", () => {
     expect(links).toBeDefined();
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${licenseKeyInstanceId}`);
     expect(included).toBeArray();
-    expect(
-      !!included?.filter((item) => item.type === "license-keys")
-    ).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "license-keys")).toBe(
+      true,
+    );
 
     const { type, id, attributes, relationships } = data;
     expect(id).toEqual(licenseKeyInstanceId.toString());

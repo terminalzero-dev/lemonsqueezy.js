@@ -124,22 +124,22 @@ issue 还要求签名验证能力。当前包没有接收 webhook 或验签的�
 
 ## 当前开放 issue / PR 逐项判定
 
-| 项目 | 判定 | 对 v5 beta 的影响 |
-| --- | --- | --- |
-| [#136 createDiscount wiki](https://github.com/lmsqueezy/lemonsqueezy.js/issues/136) | 有效文档/参数不变量信号；非运行时缺陷 | 决定显式 flag 与 `variantIds` 的兼容语义 |
-| [#137 incognito checkout](https://github.com/lmsqueezy/lemonsqueezy.js/issues/137) | Lemon.js/checkout 产品缺陷 | 排除出 API SDK v5 范围 |
-| [#139 license not received](https://github.com/lmsqueezy/lemonsqueezy.js/issues/139) | 误投客服 | 无 |
-| [#140 incoming webhook types](https://github.com/lmsqueezy/lemonsqueezy.js/issues/140) | 有效且高价值的类型/功能需求 | 决定 webhook 公共契约与验签范围 |
-| [#141 paid then cancelled](https://github.com/lmsqueezy/lemonsqueezy.js/issues/141) | 误投客服 | 无 |
-| [#142 Lama Cleaner installer](https://github.com/lmsqueezy/lemonsqueezy.js/issues/142) | 第三方软件客服 | 无 |
-| [#143 failed license installation](https://github.com/lmsqueezy/lemonsqueezy.js/issues/143) | 第三方软件/客服 | 无 |
-| [PR #145 plan changed event](https://github.com/lmsqueezy/lemonsqueezy.js/pull/145) | 兼容漂移信号；事件本身未被当前官方文档确认 | 决定事件权威来源与未知值策略 |
-| [#146 update flows order](https://github.com/lmsqueezy/lemonsqueezy.js/issues/146) | 服务端 API/集成行为，证据不足以归因 SDK | 明确跨请求不提供隐含原子性保证 |
-| [PR #147 interval comment](https://github.com/lmsqueezy/lemonsqueezy.js/pull/147) | 有效 TSDoc 修正；无运行时影响 | 文档校验输入 |
-| [#148 overlay height](https://github.com/lmsqueezy/lemonsqueezy.js/issues/148) | Lemon.js UI | 排除出 API SDK v5 范围 |
-| [#150 license change](https://github.com/lmsqueezy/lemonsqueezy.js/issues/150) | 误投客服 | 无 |
-| [#152 Is this repo maintained?](https://github.com/lmsqueezy/lemonsqueezy.js/issues/152) | 治理/维护风险信号；非 SDK 功能需求 | v5 不能依赖上游及时合并或发布 |
-| [#154 DELETE 204](https://github.com/lmsqueezy/lemonsqueezy.js/issues/154) | 已确认 SDK 运行时缺陷 | HTTP Core 成功/空 body 契约必须在 beta 前确定 |
+| 项目                                                                                        | 判定                                       | 对 v5 beta 的影响                             |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------- |
+| [#136 createDiscount wiki](https://github.com/lmsqueezy/lemonsqueezy.js/issues/136)         | 有效文档/参数不变量信号；非运行时缺陷      | 决定显式 flag 与 `variantIds` 的兼容语义      |
+| [#137 incognito checkout](https://github.com/lmsqueezy/lemonsqueezy.js/issues/137)          | Lemon.js/checkout 产品缺陷                 | 排除出 API SDK v5 范围                        |
+| [#139 license not received](https://github.com/lmsqueezy/lemonsqueezy.js/issues/139)        | 误投客服                                   | 无                                            |
+| [#140 incoming webhook types](https://github.com/lmsqueezy/lemonsqueezy.js/issues/140)      | 有效且高价值的类型/功能需求                | 决定 webhook 公共契约与验签范围               |
+| [#141 paid then cancelled](https://github.com/lmsqueezy/lemonsqueezy.js/issues/141)         | 误投客服                                   | 无                                            |
+| [#142 Lama Cleaner installer](https://github.com/lmsqueezy/lemonsqueezy.js/issues/142)      | 第三方软件客服                             | 无                                            |
+| [#143 failed license installation](https://github.com/lmsqueezy/lemonsqueezy.js/issues/143) | 第三方软件/客服                            | 无                                            |
+| [PR #145 plan changed event](https://github.com/lmsqueezy/lemonsqueezy.js/pull/145)         | 兼容漂移信号；事件本身未被当前官方文档确认 | 决定事件权威来源与未知值策略                  |
+| [#146 update flows order](https://github.com/lmsqueezy/lemonsqueezy.js/issues/146)          | 服务端 API/集成行为，证据不足以归因 SDK    | 明确跨请求不提供隐含原子性保证                |
+| [PR #147 interval comment](https://github.com/lmsqueezy/lemonsqueezy.js/pull/147)           | 有效 TSDoc 修正；无运行时影响              | 文档校验输入                                  |
+| [#148 overlay height](https://github.com/lmsqueezy/lemonsqueezy.js/issues/148)              | Lemon.js UI                                | 排除出 API SDK v5 范围                        |
+| [#150 license change](https://github.com/lmsqueezy/lemonsqueezy.js/issues/150)              | 误投客服                                   | 无                                            |
+| [#152 Is this repo maintained?](https://github.com/lmsqueezy/lemonsqueezy.js/issues/152)    | 治理/维护风险信号；非 SDK 功能需求         | v5 不能依赖上游及时合并或发布                 |
+| [#154 DELETE 204](https://github.com/lmsqueezy/lemonsqueezy.js/issues/154)                  | 已确认 SDK 运行时缺陷                      | HTTP Core 成功/空 body 契约必须在 beta 前确定 |
 
 ## Discussions 判定
 

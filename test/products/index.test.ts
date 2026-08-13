@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { getProduct, lemonSqueezySetup, listProducts } from "../../src";
 import { API_BASE_URL } from "../../src/internal";
 
@@ -57,7 +57,7 @@ describe("List all products", () => {
     expect(links).toBeDefined();
     expect(
       data.filter((item) => item.attributes.store_id === Number(STORE_ID))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { first, last } = links;
@@ -82,7 +82,7 @@ describe("List all products", () => {
     expect(data).toBeArray();
     expect(links).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.find((item) => item.type === "variants")).toBeTrue();
+    expect(!!included?.find((item) => item.type === "variants")).toBe(true);
 
     const { first, last } = links;
     expect(first).toBeString();
@@ -125,7 +125,7 @@ describe("Retrieve a product", () => {
       await getProduct("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -217,7 +217,7 @@ describe("Retrieve a product", () => {
     expect(links).toBeDefined();
     expect(links.self).toEqual(`${API_BASE_URL}/v1/${DATA_TYPE}/${productId}`);
     expect(included).toBeArray();
-    expect(!!included?.find((item) => item.type === "variants")).toBeTrue();
+    expect(!!included?.find((item) => item.type === "variants")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(productId.toString());

@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-useless-default-assignment": "off"
+  },
+  "ignorePatterns": [
+    ".artifacts/**",
+    "dist/**",
+    "node_modules/**",
+    "src/prototypes/**",
+    "test/package/types/**"
+  ]
+}

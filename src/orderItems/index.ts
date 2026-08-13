@@ -21,7 +21,7 @@ import type {
  */
 export function getOrderItem(
   orderItemId: number | string,
-  params: GetOrderItemParams = {}
+  params: GetOrderItemParams = {},
 ) {
   requiredCheck({ orderItemId });
   return $fetch<OrderItem>({

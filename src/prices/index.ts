@@ -21,7 +21,7 @@ import type {
  */
 export function getPrice(
   priceId: number | string,
-  params: GetPriceParams = {}
+  params: GetPriceParams = {},
 ) {
   requiredCheck({ priceId });
   return $fetch<Price>({

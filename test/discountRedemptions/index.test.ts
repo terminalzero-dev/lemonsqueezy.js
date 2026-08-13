@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   getDiscountRedemption,
   lemonSqueezySetup,
@@ -57,7 +57,7 @@ describe("List all discount redemptions", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "orders")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "orders")).toBe(true);
 
     const { currentPage, from, to, perPage, lastPage, total } = meta.page;
     const items = [currentPage, from, to, perPage, lastPage, total];
@@ -80,7 +80,7 @@ describe("List all discount redemptions", () => {
     const { meta, links, data } = _data!;
     expect(
       data.filter((item) => item.attributes.discount_id === Number(discountId))
-        .length
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -105,7 +105,8 @@ describe("List all discount redemptions", () => {
 
     const { meta, links, data } = _data!;
     expect(
-      data.filter((item) => item.attributes.order_id === Number(orderId)).length
+      data.filter((item) => item.attributes.order_id === Number(orderId))
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -152,7 +153,7 @@ describe("Retrieve a discount redemption", () => {
       await getDiscountRedemption("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -228,7 +229,7 @@ describe("Retrieve a discount redemption", () => {
     expect(links).toBeDefined();
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${discountRedemptionId}`);
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "orders")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "orders")).toBe(true);
 
     const { type, id, attributes, relationships } = data;
     expect(type).toEqual(DATA_TYPE);

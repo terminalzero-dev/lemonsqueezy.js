@@ -25,7 +25,7 @@ import type {
  */
 export function getSubscriptionItem(
   subscriptionItemId: number | string,
-  params: GetSubscriptionItemParams = {}
+  params: GetSubscriptionItemParams = {},
 ) {
   requiredCheck({ subscriptionItemId });
   return $fetch<SubscriptionItem>({
@@ -42,7 +42,7 @@ export function getSubscriptionItem(
  * @returns A meta object containing usage information.
  */
 export function getSubscriptionItemCurrentUsage(
-  subscriptionItemId: number | string
+  subscriptionItemId: number | string,
 ) {
   requiredCheck({ subscriptionItemId });
   return $fetch<SubscriptionItemCurrentUsage>({
@@ -63,7 +63,7 @@ export function getSubscriptionItemCurrentUsage(
  * @returns A paginated list of subscription item objects ordered by `created_at` (descending).
  */
 export function listSubscriptionItems(
-  params: ListSubscriptionItemsParams = {}
+  params: ListSubscriptionItemsParams = {},
 ) {
   return $fetch<ListSubscriptionItems>({
     path: `/v1/subscription-items${convertListParamsToQueryString(params)}`,
@@ -86,7 +86,7 @@ export function listSubscriptionItems(
  */
 export function updateSubscriptionItem(
   subscriptionItemId: string | number,
-  updateSubscriptionItem: UpdateSubscriptionItem
+  updateSubscriptionItem: UpdateSubscriptionItem,
 ): ReturnType<typeof _updateSubscriptionItem>;
 
 /**
@@ -105,14 +105,14 @@ export function updateSubscriptionItem(
  */
 export function updateSubscriptionItem(
   subscriptionItemId: string | number,
-  updateSubscriptionItem: number | UpdateSubscriptionItem
+  updateSubscriptionItem: number | UpdateSubscriptionItem,
 ) {
   return _updateSubscriptionItem(subscriptionItemId, updateSubscriptionItem);
 }
 
 async function _updateSubscriptionItem(
   subscriptionItemId: string | number,
-  updateSubscriptionItem: number | UpdateSubscriptionItem
+  updateSubscriptionItem: number | UpdateSubscriptionItem,
 ) {
   requiredCheck({ subscriptionItemId });
 

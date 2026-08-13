@@ -27,7 +27,7 @@ import type {
  */
 export function createCustomer(
   storeId: number | string,
-  customer: NewCustomer
+  customer: NewCustomer,
 ) {
   requiredCheck({ storeId });
   return $fetch<Customer>({
@@ -65,7 +65,7 @@ export function createCustomer(
  */
 export function updateCustomer(
   customerId: string | number,
-  customer: UpdateCustomer
+  customer: UpdateCustomer,
 ) {
   requiredCheck({ customerId });
   return $fetch<Customer>({
@@ -114,7 +114,7 @@ export function archiveCustomer(customerId: string | number) {
  */
 export function getCustomer(
   customerId: string | number,
-  params: GetCustomerParams = {}
+  params: GetCustomerParams = {},
 ) {
   requiredCheck({ customerId });
   return $fetch<Customer>({

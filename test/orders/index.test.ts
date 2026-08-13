@@ -1,4 +1,4 @@
-import { test, beforeAll, describe, expect, it } from "bun:test";
+import { test, beforeAll, describe, expect, it } from "vitest";
 import {
   getOrder,
   lemonSqueezySetup,
@@ -89,7 +89,7 @@ describe("List all orders", () => {
     expect(links.last).toBeDefined();
     expect(data).toBeArray();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "customers")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "customers")).toBe(true);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
     for (const item of [currentPage, from, lastPage, perPage, to, total]) {
@@ -131,7 +131,8 @@ describe("List all orders", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -174,7 +175,7 @@ describe("List all orders", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.user_email === userEmail).length
+      data.filter((item) => item.attributes.user_email === userEmail).length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -238,7 +239,7 @@ describe("Retrieve an order", () => {
       await getOrder("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -379,7 +380,7 @@ describe("Retrieve an order", () => {
       testMode,
     ];
     expect(Object.keys(first_order_item).length).toEqual(
-      firstOrderItems.length
+      firstOrderItems.length,
     );
     for (const item of firstOrderItems) {
       expect(item).toBeDefined();
@@ -422,7 +423,7 @@ describe("Retrieve an order", () => {
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${orderId}`);
     expect(data).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "customers")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "customers")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(orderId.toString());
@@ -548,7 +549,7 @@ describe("Retrieve an order", () => {
       testMode,
     ];
     expect(Object.keys(first_order_item).length).toEqual(
-      firstOrderItems.length
+      firstOrderItems.length,
     );
     for (const item of firstOrderItems) {
       expect(item).toBeDefined();
@@ -581,10 +582,11 @@ describe("Retrieve an order", () => {
 describe("Generate order invoice", () => {
   it("Throw an error about a parameter that must be provided", async () => {
     try {
+      // @ts-expect-error Exercise the runtime guard for a missing identifier.
       await generateOrderInvoice("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -594,6 +596,7 @@ describe("Generate order invoice", () => {
       statusCode,
       error,
       data: _data,
+      // @ts-expect-error Preserve the v4 runtime case with omitted invoice fields.
     } = await generateOrderInvoice(orderId);
     expect(statusCode).toEqual(200);
     expect(error).toBeNull();
@@ -603,7 +606,7 @@ describe("Generate order invoice", () => {
     expect(meta).toBeDefined();
     expect(meta.urls).toBeDefined();
     expect(meta.urls.download_invoice).toStartWith(
-      "https://app.lemonsqueezy.com/my-orders/"
+      "https://app.lemonsqueezy.com/my-orders/",
     );
   });
 
@@ -651,7 +654,7 @@ describe("Issue order refund", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter: orderId."
+        "Please provide the required parameter: orderId.",
       );
     }
   });
@@ -662,7 +665,7 @@ describe("Issue order refund", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter: amount."
+        "Please provide the required parameter: amount.",
       );
     }
   });
@@ -672,11 +675,11 @@ describe("Issue order refund", () => {
     async () => {
       const { statusCode, error, data } = await issueOrderRefund(
         refundableOrderId,
-        1
+        1,
       );
       expect(statusCode).toEqual(200);
       expect(error).toBeNull();
       expect(data).toBeDefined();
-    }
+    },
   );
 });

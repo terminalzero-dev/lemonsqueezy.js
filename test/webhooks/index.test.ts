@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   createWebhook,
   deleteWebhook,
@@ -25,7 +25,7 @@ describe("Create a webhook", () => {
       await createWebhook("", {} as any);
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -94,7 +94,7 @@ describe("Update a checkout", () => {
       await updateWebhook("", {});
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -169,7 +169,7 @@ describe("Retrieve a checkout", () => {
       await getWebhook("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -239,7 +239,7 @@ describe("Retrieve a checkout", () => {
     expect(data).toBeDefined();
     expect(links).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "stores")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "stores")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toBeDefined();
@@ -318,7 +318,7 @@ describe("List all webhooks", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "stores")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "stores")).toBe(true);
 
     const { currentPage, from, to, perPage, lastPage, total } = meta.page;
     const items = [currentPage, from, to, perPage, lastPage, total];
@@ -339,7 +339,8 @@ describe("List all webhooks", () => {
     const { meta, data, links } = _data!;
     expect(meta.page).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -386,7 +387,7 @@ describe("Delete a checkout", () => {
       await deleteWebhook("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

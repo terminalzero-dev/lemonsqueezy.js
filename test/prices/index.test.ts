@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { getPrice, lemonSqueezySetup, listPrices } from "../../src";
 import { API_BASE_URL } from "../../src/internal";
 
@@ -52,7 +52,7 @@ describe("List all prices", () => {
     expect(links.last).toBeDefined();
     expect(data).toBeArray();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "variants")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "variants")).toBe(true);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
     const items = [currentPage, from, lastPage, perPage, to, total];
@@ -79,7 +79,7 @@ describe("List all prices", () => {
     expect(links.last).toBeDefined();
     expect(
       data.filter((item) => item.attributes.variant_id === Number(variantId))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -127,7 +127,7 @@ describe("Retrieve a price", () => {
       await getPrice("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -212,7 +212,7 @@ describe("Retrieve a price", () => {
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${priceId}`);
     expect(data).toBeDefined();
     expect(included).toBeArray();
-    expect(!!included?.filter((item) => item.type === "variants")).toBeTrue();
+    expect(!!included?.filter((item) => item.type === "variants")).toBe(true);
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(priceId.toString());

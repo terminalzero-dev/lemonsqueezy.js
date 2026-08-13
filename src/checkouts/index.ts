@@ -26,7 +26,7 @@ import type {
 export function createCheckout(
   storeId: number | string,
   variantId: number | string,
-  checkout: NewCheckout = {}
+  checkout: NewCheckout = {},
 ) {
   requiredCheck({ storeId, variantId });
 
@@ -65,7 +65,7 @@ export function createCheckout(
     checkoutData: {
       ...checkoutData,
       variantQuantities: checkoutData?.variantQuantities?.map((item) =>
-        convertKeys(item)
+        convertKeys(item),
       ),
     },
   };
@@ -93,7 +93,7 @@ export function createCheckout(
  */
 export function getCheckout(
   checkoutId: number | string,
-  params: GetCheckoutParams = {}
+  params: GetCheckoutParams = {},
 ) {
   requiredCheck({ checkoutId });
   return $fetch<Checkout>({

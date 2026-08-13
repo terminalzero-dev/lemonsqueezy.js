@@ -12,15 +12,15 @@
 
 ## 结论摘要
 
-| 主题 | 已核实的硬约束 | 留给后续决策的变量 |
-| --- | --- | --- |
-| Node.js 22/24 | 两条版本线都原生支持 ESM 和稳定的 Fetch Web API；但 Node 22 的无 flag `require(ESM)` 从 22.12.0 才开始，22.13.0 才默认不警告，最新 22.x 文档仍标记为 Release candidate。Node 24 到 24.15.0 才把该能力标为非实验。 | 是否覆盖整个大版本、只覆盖受维护的最新次版本，或为 `require()` 提供独立 CJS 文件。 |
-| Bun | Bun 原生支持 ESM、CJS、`require(ESM)`、`exports`/subpath/条件解析和 WHATWG `fetch`；Node API 兼容页明确仍在向 100% 兼容推进。 | 最低 Bun 版本，以及是否只承诺 Web API 路径、是否使用 Bun 专用条件。 |
-| ESM/CJS | 双入口可以让 `import` 与 `require` 分流，但两个独立实现可能被同一进程同时加载，产生双包实例风险。ESM-only 给 `require()` 使用时受 Node 22 次版本与同步模块图限制。 | ESM-only、双构建，或共享单一实现的 wrapper 方案。 |
-| TypeScript 声明 | 当 ESM 与 CJS 指向不同模块种类时，每个入口必须有匹配模块种类的声明；`.d.ts`/`.d.mts` 与 `.d.cts` 不能被当作无差别副本。使用 `exports` 的每个公开 subpath 也必须能解析到类型。 | 最低 TypeScript 版本、声明布局和是否保留旧版 TypeScript fallback。 |
-| `exports` | `exports` 一旦存在，就封闭所有未显式映射的深层路径；条件按对象键顺序匹配，`types` 应最先、`default` 应最后。 | 只开放根入口还是增加显式 subpath；是否保留 `main`/`module`/`types` 兼容字段。 |
-| Tree-shaking | ESM 的静态结构是主流 bundler tree-shaking 的基础；CJS 不能提供同等保证。`sideEffects: false` 是强断言，错误标注会删除必要代码。 | 可摇树的验收阈值、要覆盖的 bundler、根 barrel 与 subpath 的组合。 |
-| Edge | “Edge”不是单一兼容目标。Next.js Edge 禁止直接 `require` 和原生 Node API；Cloudflare Workers 以 Web API 为基础，Node API 兼容需要显式 flag，部分 API 只是 stub。 | 是否承诺 Edge、具体承诺哪些提供商/模式，以及是否单独提供通用 Web 入口。 |
+| 主题            | 已核实的硬约束                                                                                                                                                                                                    | 留给后续决策的变量                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Node.js 22/24   | 两条版本线都原生支持 ESM 和稳定的 Fetch Web API；但 Node 22 的无 flag `require(ESM)` 从 22.12.0 才开始，22.13.0 才默认不警告，最新 22.x 文档仍标记为 Release candidate。Node 24 到 24.15.0 才把该能力标为非实验。 | 是否覆盖整个大版本、只覆盖受维护的最新次版本，或为 `require()` 提供独立 CJS 文件。 |
+| Bun             | Bun 原生支持 ESM、CJS、`require(ESM)`、`exports`/subpath/条件解析和 WHATWG `fetch`；Node API 兼容页明确仍在向 100% 兼容推进。                                                                                     | 最低 Bun 版本，以及是否只承诺 Web API 路径、是否使用 Bun 专用条件。                |
+| ESM/CJS         | 双入口可以让 `import` 与 `require` 分流，但两个独立实现可能被同一进程同时加载，产生双包实例风险。ESM-only 给 `require()` 使用时受 Node 22 次版本与同步模块图限制。                                                | ESM-only、双构建，或共享单一实现的 wrapper 方案。                                  |
+| TypeScript 声明 | 当 ESM 与 CJS 指向不同模块种类时，每个入口必须有匹配模块种类的声明；`.d.ts`/`.d.mts` 与 `.d.cts` 不能被当作无差别副本。使用 `exports` 的每个公开 subpath 也必须能解析到类型。                                     | 最低 TypeScript 版本、声明布局和是否保留旧版 TypeScript fallback。                 |
+| `exports`       | `exports` 一旦存在，就封闭所有未显式映射的深层路径；条件按对象键顺序匹配，`types` 应最先、`default` 应最后。                                                                                                      | 只开放根入口还是增加显式 subpath；是否保留 `main`/`module`/`types` 兼容字段。      |
+| Tree-shaking    | ESM 的静态结构是主流 bundler tree-shaking 的基础；CJS 不能提供同等保证。`sideEffects: false` 是强断言，错误标注会删除必要代码。                                                                                   | 可摇树的验收阈值、要覆盖的 bundler、根 barrel 与 subpath 的组合。                  |
+| Edge            | “Edge”不是单一兼容目标。Next.js Edge 禁止直接 `require` 和原生 Node API；Cloudflare Workers 以 Web API 为基础，Node API 兼容需要显式 flag，部分 API 只是 stub。                                                   | 是否承诺 Edge、具体承诺哪些提供商/模式，以及是否单独提供通用 Web 入口。            |
 
 ## 1. Node.js 22 与 24
 
@@ -192,18 +192,18 @@
 
 以下不是最终支持矩阵，而是从上述事实推导出的验证维度。后续选择任一支持范围时，应把相应格子变成可运行的 CI fixture。
 
-| 维度 | 最低验证点 | 证明什么 |
-| --- | --- | --- |
-| Node 22 ESM | 最低承诺次版本 + 最新 22.x，`import` 根入口及每个 subpath | ESM 语法、API 与条件入口真实可执行。 |
-| Node 22 CJS | 最低承诺次版本 + 22.12/22.13 边界 + 最新 22.x，`require` 根入口及每个 subpath | 没有误把后期 `require(ESM)` 行为当作整个 22 大版本能力。 |
-| Node 24 | 最低承诺次版本 + 24.15 边界 + 最新 24.x，分别 `import`/`require` | 覆盖 `require(ESM)` 稳定性变化及双入口。 |
-| Bun | 最低承诺版本 + 最新稳定版，分别 `import`/`require` | Bun 条件解析、Web API 与导出形状。 |
-| TypeScript ESM | 最低承诺 TS + 最新 TS，`module: nodenext` 与 `moduleResolution: bundler` | ESM JavaScript 与声明的匹配、两种宿主解析。 |
-| TypeScript CJS | `.cts`/CJS fixture，最低承诺 TS + 最新 TS | `require` 条件与 `.d.cts`/相应声明是否匹配。 |
-| subpath | 对每个公开 path 重复 runtime 与 type fixture；对未公开深层路径验证失败 | `exports` 是完整公共 API，而不是仅根入口可用。 |
-| tarball | `npm pack --dry-run`，从生成的 `.tgz` 安装后重复 smoke tests | 映射目标确实发布，未依赖仓库残留文件。 |
-| tree-shaking | webpack production、esbuild、Vite/Rollup、Bun bundler 各构建“仅使用一个导出”fixture | ESM 分支被选中、无错误副作用标注、未使用模块可删除。 |
-| Edge（若承诺） | 至少一个 Next.js Edge build/runtime fixture；Cloudflare Workers 指定 compatibility date，分别记录是否启用 `nodejs_compat` | 将“Edge”承诺绑定到可复现环境。 |
+| 维度           | 最低验证点                                                                                                                | 证明什么                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Node 22 ESM    | 最低承诺次版本 + 最新 22.x，`import` 根入口及每个 subpath                                                                 | ESM 语法、API 与条件入口真实可执行。                     |
+| Node 22 CJS    | 最低承诺次版本 + 22.12/22.13 边界 + 最新 22.x，`require` 根入口及每个 subpath                                             | 没有误把后期 `require(ESM)` 行为当作整个 22 大版本能力。 |
+| Node 24        | 最低承诺次版本 + 24.15 边界 + 最新 24.x，分别 `import`/`require`                                                          | 覆盖 `require(ESM)` 稳定性变化及双入口。                 |
+| Bun            | 最低承诺版本 + 最新稳定版，分别 `import`/`require`                                                                        | Bun 条件解析、Web API 与导出形状。                       |
+| TypeScript ESM | 最低承诺 TS + 最新 TS，`module: nodenext` 与 `moduleResolution: bundler`                                                  | ESM JavaScript 与声明的匹配、两种宿主解析。              |
+| TypeScript CJS | `.cts`/CJS fixture，最低承诺 TS + 最新 TS                                                                                 | `require` 条件与 `.d.cts`/相应声明是否匹配。             |
+| subpath        | 对每个公开 path 重复 runtime 与 type fixture；对未公开深层路径验证失败                                                    | `exports` 是完整公共 API，而不是仅根入口可用。           |
+| tarball        | `npm pack --dry-run`，从生成的 `.tgz` 安装后重复 smoke tests                                                              | 映射目标确实发布，未依赖仓库残留文件。                   |
+| tree-shaking   | webpack production、esbuild、Vite/Rollup、Bun bundler 各构建“仅使用一个导出”fixture                                       | ESM 分支被选中、无错误副作用标注、未使用模块可删除。     |
+| Edge（若承诺） | 至少一个 Next.js Edge build/runtime fixture；Cloudflare Workers 指定 compatibility date，分别记录是否启用 `nodejs_compat` | 将“Edge”承诺绑定到可复现环境。                           |
 
 ## 9. 仍待 Wayfinder 决定的问题
 

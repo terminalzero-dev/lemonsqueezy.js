@@ -114,7 +114,6 @@
 - [#48](https://github.com/lmsqueezy/lemonsqueezy.js/pull/48) [`fd20741`](https://github.com/lmsqueezy/lemonsqueezy.js/commit/fd20741b496a37d54981be5485ca9218126fc25a) Thanks [@keyding](https://github.com/keyding)! - BREAKING CHANGE: Completely rewritten the JS SDK for full type-safety and tree-shakeability.
 
   ## Notes:
-
   - **Bun**: Transitioned to Bun for repo management.
   - **Type-safe**: Written in TypeScript and documented with TSDoc.
   - **Tree-shakeable**: Use only functions that you need.

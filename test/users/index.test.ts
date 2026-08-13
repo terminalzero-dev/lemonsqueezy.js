@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "vitest";
 import { getAuthenticatedUser, lemonSqueezySetup } from "../../src";
 import { API_BASE_URL } from "../../src/internal";
 

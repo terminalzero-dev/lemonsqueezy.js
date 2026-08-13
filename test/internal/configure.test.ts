@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { CONFIG_KEY, getKV, lemonSqueezySetup } from "../../src/internal";
 
 describe("Lemon Squeezy Setup", () => {
@@ -12,6 +12,6 @@ describe("Lemon Squeezy Setup", () => {
 
     expect(config).toEqual(getKV(CONFIG_KEY));
     expect(config.apiKey).toEqual(API_KEY);
-    expect(config.onError).toBeFunction();
+    expect(config.onError).toBeTypeOf("function");
   });
 });
