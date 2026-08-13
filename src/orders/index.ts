@@ -24,7 +24,7 @@ import type {
  */
 export function getOrder(
   orderId: number | string,
-  params: GetOrderParams = {}
+  params: GetOrderParams = {},
 ) {
   requiredCheck({ orderId });
 
@@ -69,12 +69,12 @@ export function listOrders(params: ListOrdersParams = {}) {
  */
 export function generateOrderInvoice(
   orderId: number | string,
-  params: GenerateOrderInvoiceParams
+  params: GenerateOrderInvoiceParams,
 ) {
   requiredCheck({ orderId });
   const searchParams = convertKeys(params);
   const queryString = new URLSearchParams(
-    searchParams as Record<string, any>
+    searchParams as Record<string, any>,
   ).toString();
   const query = queryString ? `?${queryString}` : "";
 

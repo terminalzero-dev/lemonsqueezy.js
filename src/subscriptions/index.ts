@@ -23,7 +23,7 @@ import type {
  */
 export function getSubscription(
   subscriptionId: number | string,
-  params: GetSubscriptionParams = {}
+  params: GetSubscriptionParams = {},
 ) {
   requiredCheck({ subscriptionId });
   return $fetch<Subscription>({
@@ -40,7 +40,7 @@ export function getSubscription(
  */
 export function updateSubscription(
   subscriptionId: string | number,
-  updateSubscription: UpdateSubscription
+  updateSubscription: UpdateSubscription,
 ) {
   requiredCheck({ subscriptionId });
   const {

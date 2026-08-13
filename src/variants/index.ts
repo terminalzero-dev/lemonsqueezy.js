@@ -21,7 +21,7 @@ import type {
  */
 export function getVariant(
   variantId: number | string,
-  params: GetVariantParams = {}
+  params: GetVariantParams = {},
 ) {
   requiredCheck({ variantId });
   return $fetch<Variant>({

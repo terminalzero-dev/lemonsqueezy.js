@@ -76,7 +76,8 @@ describe("List all order items", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.order_id === Number(orderId)).length
+      data.filter((item) => item.attributes.order_id === Number(orderId))
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -101,7 +102,7 @@ describe("List all order items", () => {
     expect(links.last).toBeDefined();
     expect(
       data.filter((item) => item.attributes.product_id === Number(productId))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -126,7 +127,7 @@ describe("List all order items", () => {
     expect(links.last).toBeDefined();
     expect(
       data.filter((item) => item.attributes.variant_id === Number(variantId))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -171,7 +172,7 @@ describe("Retrieve an order item", () => {
       await getOrderItem("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

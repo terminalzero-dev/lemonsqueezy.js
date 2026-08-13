@@ -76,7 +76,7 @@ describe("List all stores", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(
-      included?.filter((item) => item.type === "orders").length
+      included?.filter((item) => item.type === "orders").length,
     ).toBeGreaterThan(0);
 
     const { currentPage, to, from, lastPage, perPage, total } = meta.page;
@@ -92,7 +92,7 @@ describe("Retrieve a store", () => {
       await getStore("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -187,7 +187,7 @@ describe("Retrieve a store", () => {
     expect(links).toBeDefined();
     expect(included).toBeArray();
     expect(
-      included?.filter((item) => item.type === "orders").length
+      included?.filter((item) => item.type === "orders").length,
     ).toBeGreaterThan(0);
 
     const { type, id, attributes, relationships } = data;

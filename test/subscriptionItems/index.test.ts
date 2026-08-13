@@ -35,14 +35,14 @@ describe("List all subscription items", () => {
     expect(data[0]).toBeDefined();
 
     const { id, attributes } = data.find(
-      (item) => item.attributes.is_usage_based
+      (item) => item.attributes.is_usage_based,
     )!;
 
     const { subscription_id, price_id } = attributes;
 
     subscriptionItemId = id;
     noUsageBasedSubscriptionItemId = data.find(
-      (item) => !item.attributes.is_usage_based
+      (item) => !item.attributes.is_usage_based,
     )!.id;
     subscriptionId = subscription_id;
     priceId = price_id;
@@ -66,9 +66,9 @@ describe("List all subscription items", () => {
     expect(data).toBeArray();
     expect(data[0]).toBeDefined();
     expect(included).toBeArray();
-    expect(
-      !!included?.filter((item) => item.type === "subscriptions")
-    ).toBe(true);
+    expect(!!included?.filter((item) => item.type === "subscriptions")).toBe(
+      true,
+    );
   });
 
   it("Should return a paginated list of subscription items filtered by subscription id", async () => {
@@ -87,7 +87,7 @@ describe("List all subscription items", () => {
     expect(links.last).toBeDefined();
     expect(
       data.filter((item) => item.attributes.subscription_id === subscriptionId)
-        .length
+        .length,
     ).toEqual(data.length);
   });
 
@@ -106,7 +106,7 @@ describe("List all subscription items", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.price_id === priceId).length
+      data.filter((item) => item.attributes.price_id === priceId).length,
     ).toEqual(data.length);
   });
 
@@ -207,9 +207,9 @@ describe("Retrieve a subscription item", () => {
     expect(data).toBeDefined();
     expect(links.self).toEqual(`${API_BASE_URL}${PATH}${subscriptionItemId}`);
     expect(included).toBeArray();
-    expect(
-      !!included?.filter((item) => item.type === "subscriptions")
-    ).toBe(true);
+    expect(!!included?.filter((item) => item.type === "subscriptions")).toBe(
+      true,
+    );
 
     const { id, type, attributes, relationships } = data;
     expect(id).toEqual(subscriptionItemId.toString());
@@ -254,7 +254,7 @@ describe(`Retrieve a subscription item's current usage`, () => {
       await getSubscriptionItem("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -292,7 +292,7 @@ describe(`Retrieve a subscription item's current usage`, () => {
 
   it("Should return a 404 Not Found response", async () => {
     const { error, statusCode, data } = await getSubscriptionItemCurrentUsage(
-      noUsageBasedSubscriptionItemId
+      noUsageBasedSubscriptionItemId,
     );
     expect(error).toBeDefined();
     expect(statusCode).toEqual(404);
@@ -308,7 +308,7 @@ describe("Update a subscription item", () => {
       });
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -329,7 +329,7 @@ describe("Update a subscription item", () => {
     const { links, data } = _data!;
     expect(data).toBeDefined();
     expect(links.self).toEqual(
-      `${API_BASE_URL}${PATH}${noUsageBasedSubscriptionItemId}`
+      `${API_BASE_URL}${PATH}${noUsageBasedSubscriptionItemId}`,
     );
 
     const { id, type, attributes, relationships } = data;
@@ -385,7 +385,7 @@ describe("Update a subscription item", () => {
     const { links, data } = _data!;
     expect(data).toBeDefined();
     expect(links.self).toEqual(
-      `${API_BASE_URL}${PATH}${noUsageBasedSubscriptionItemId}`
+      `${API_BASE_URL}${PATH}${noUsageBasedSubscriptionItemId}`,
     );
 
     const { id, type, attributes, relationships } = data;

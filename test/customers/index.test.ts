@@ -27,7 +27,7 @@ describe("Create a customer", () => {
       await createCustomer("", { name: "", email: "" });
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -128,7 +128,7 @@ describe("Update a customer", () => {
       await updateCustomer("", { name: "", email: "" });
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -396,7 +396,7 @@ describe("Retrieve a customer", () => {
       await getCustomer("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -590,7 +590,8 @@ describe("List all customers", () => {
     const { meta, data, links } = _data!;
     expect(meta.page).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -616,7 +617,7 @@ describe("List all customers", () => {
     const { meta, data, links } = _data!;
     expect(meta.page).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.email === newCustomerEmail).length
+      data.filter((item) => item.attributes.email === newCustomerEmail).length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();

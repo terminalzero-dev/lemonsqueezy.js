@@ -21,7 +21,7 @@ import type {
  */
 export function getStore(
   storeId: number | string,
-  params: GetStoreParams = {}
+  params: GetStoreParams = {},
 ) {
   requiredCheck({ storeId });
   return $fetch<Store>({

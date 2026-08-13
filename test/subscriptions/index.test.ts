@@ -96,7 +96,8 @@ describe("List all subscriptions", () => {
     expect(links.first).toBeString();
     expect(links.last).toBeString();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
   });
 
@@ -115,7 +116,8 @@ describe("List all subscriptions", () => {
     expect(links.first).toBeString();
     expect(links.last).toBeString();
     expect(
-      data.filter((item) => item.attributes.order_id === Number(orderId)).length
+      data.filter((item) => item.attributes.order_id === Number(orderId))
+        .length,
     ).toEqual(data.length);
   });
 
@@ -135,7 +137,7 @@ describe("List all subscriptions", () => {
     expect(links.last).toBeString();
     expect(
       data.filter((item) => item.attributes.product_id === Number(productId))
-        .length
+        .length,
     ).toEqual(data.length);
   });
 
@@ -155,8 +157,8 @@ describe("List all subscriptions", () => {
     expect(links.last).toBeString();
     expect(
       data.filter(
-        (item) => item.attributes.order_item_id === Number(orderItemId)
-      ).length
+        (item) => item.attributes.order_item_id === Number(orderItemId),
+      ).length,
     ).toEqual(data.length);
   });
 
@@ -176,7 +178,7 @@ describe("List all subscriptions", () => {
     expect(links.last).toBeString();
     expect(
       data.filter((item) => item.attributes.variant_id === Number(variantId))
-        .length
+        .length,
     ).toEqual(data.length);
   });
 
@@ -195,7 +197,7 @@ describe("List all subscriptions", () => {
     expect(links.first).toBeString();
     expect(links.last).toBeString();
     expect(
-      data.filter((item) => item.attributes.user_email === userEmail).length
+      data.filter((item) => item.attributes.user_email === userEmail).length,
     ).toEqual(data.length);
   });
 
@@ -235,7 +237,7 @@ describe("Retrieve a subscription", () => {
       await getSubscription("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -337,7 +339,7 @@ describe("Retrieve a subscription", () => {
         updated_at,
       ];
       expect(Object.keys(first_subscription_item).length).toEqual(
-        firstItems.length
+        firstItems.length,
       );
       for (const item of firstItems) expect(item).toBeDefined();
     } else expect(first_subscription_item).toBeNull();
@@ -479,7 +481,7 @@ describe("Retrieve a subscription", () => {
         updated_at,
       ];
       expect(Object.keys(first_subscription_item).length).toEqual(
-        firstItems.length
+        firstItems.length,
       );
       for (const item of firstItems) expect(item).toBeDefined();
     } else expect(first_subscription_item).toBeNull();
@@ -529,7 +531,7 @@ describe("Cancel a subscription", () => {
       await cancelSubscription("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -561,7 +563,7 @@ describe("Update a subscription", () => {
       await updateSubscription("", {});
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

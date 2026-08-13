@@ -10,7 +10,15 @@ const require = createRequire(import.meta.url);
 const esm = await import(`${esmPath.href}?normalize`);
 const cjs = require(fileURLToPath(cjsPath));
 
-assert.deepEqual(Object.keys(esm), [], "the type entry emitted ESM runtime exports");
-assert.deepEqual(Object.keys(cjs), [], "the type entry emitted CJS runtime exports");
+assert.deepEqual(
+  Object.keys(esm),
+  [],
+  "the type entry emitted ESM runtime exports",
+);
+assert.deepEqual(
+  Object.keys(cjs),
+  [],
+  "the type entry emitted CJS runtime exports",
+);
 
 await Promise.all([unlink(esmPath), unlink(cjsPath)]);

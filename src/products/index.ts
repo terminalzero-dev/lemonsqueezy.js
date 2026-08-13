@@ -21,7 +21,7 @@ import type {
  */
 export function getProduct(
   productId: number | string,
-  params: GetProductParams = {}
+  params: GetProductParams = {},
 ) {
   requiredCheck({ productId });
   return $fetch<Product>({

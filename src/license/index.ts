@@ -14,7 +14,7 @@ import type {
  */
 export async function activateLicense(
   licenseKey: string,
-  instanceName: string
+  instanceName: string,
 ) {
   requiredCheck({ licenseKey, instanceName });
   return $fetch<ActivateLicense>(
@@ -23,7 +23,7 @@ export async function activateLicense(
       method: "POST",
       body: convertKeys({ licenseKey, instanceName }),
     },
-    false
+    false,
   );
 }
 
@@ -45,7 +45,7 @@ export async function validateLicense(licenseKey: string, instanceId?: string) {
         instanceId,
       }),
     },
-    false
+    false,
   );
 }
 
@@ -58,7 +58,7 @@ export async function validateLicense(licenseKey: string, instanceId?: string) {
  */
 export async function deactivateLicense(
   licenseKey: string,
-  instanceId: string
+  instanceId: string,
 ) {
   requiredCheck({ licenseKey, instanceId });
   return $fetch<DeactivateLicense>(
@@ -70,6 +70,6 @@ export async function deactivateLicense(
         instanceId,
       }),
     },
-    false
+    false,
   );
 }

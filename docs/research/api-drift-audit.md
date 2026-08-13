@@ -34,10 +34,10 @@
 
 官方 changelog 在 2025-01-21 宣布 Affiliates endpoints。当前参考只列出两个只读 endpoint：
 
-| Endpoint | 行为 | 当前公开参数 |
-| --- | --- | --- |
-| `GET /v1/affiliates/:id` | 返回指定 Affiliate | 路径参数 `id` |
-| `GET /v1/affiliates` | 按 `created_at` 倒序返回分页列表 | filters：`store_id`、`user_email`；通用分页参数 |
+| Endpoint                 | 行为                             | 当前公开参数                                    |
+| ------------------------ | -------------------------------- | ----------------------------------------------- |
+| `GET /v1/affiliates/:id` | 返回指定 Affiliate               | 路径参数 `id`                                   |
+| `GET /v1/affiliates`     | 按 `created_at` 倒序返回分页列表 | filters：`store_id`、`user_email`；通用分页参数 |
 
 直接来源：[changelog](https://docs.lemonsqueezy.com/api/getting-started/changelog)、[Retrieve an Affiliate](https://docs.lemonsqueezy.com/api/affiliates/retrieve-affiliate)、[List All Affiliates](https://docs.lemonsqueezy.com/api/affiliates/list-all-affiliates)。
 
@@ -45,13 +45,13 @@
 
 Affiliate 对象的公开形状：
 
-| 项目 | 当前文档含义 |
-| --- | --- |
-| resource type | `affiliates` |
-| fields | `store_id`, `user_id`, `user_name`, `user_email`, `share_domain`, `status`, `application_note`, `products`, `total_earnings`, `unpaid_earnings`, `created_at`, `updated_at` |
-| `status` enum | `active`, `pending`, `disabled` |
-| relationships | `store`, `user` |
-| `products` | 文档只称其为 JSON 格式的启用产品列表，示例值为 `null`；没有公开元素 schema |
+| 项目          | 当前文档含义                                                                                                                                                                |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| resource type | `affiliates`                                                                                                                                                                |
+| fields        | `store_id`, `user_id`, `user_name`, `user_email`, `share_domain`, `status`, `application_note`, `products`, `total_earnings`, `unpaid_earnings`, `created_at`, `updated_at` |
+| `status` enum | `active`, `pending`, `disabled`                                                                                                                                             |
+| relationships | `store`, `user`                                                                                                                                                             |
+| `products`    | 文档只称其为 JSON 格式的启用产品列表，示例值为 `null`；没有公开元素 schema                                                                                                  |
 
 直接来源：[The Affiliate Object](https://docs.lemonsqueezy.com/api/affiliates/the-affiliate-object)、[Retrieve an Affiliate 的完整 JSON:API 示例](https://docs.lemonsqueezy.com/api/affiliates/retrieve-affiliate)。
 
@@ -81,15 +81,15 @@ v4 的 Subscription attributes 在 `card_last_four` 后直接进入 `pause`，�
 
 2026-07-22，`Order` 和 `SubscriptionInvoice` 新增 `affiliate_id` 和 `affiliate` relationship；`Customer` 新增复数 `affiliates` relationship。2026-07-29，`Order` 和 `SubscriptionInvoice` 又新增 `referral_amount`。
 
-| 对象 | 新字段/关系 | 当前语义 |
-| --- | --- | --- |
-| `Order` | `affiliate_id: number \| null` | 引荐该订单的 Affiliate ID；无引荐时为 `null` |
-| `Order` | `referral_amount: number \| null` | 订单币种下、以分为单位的联盟佣金；无引荐时为 `null` |
-| `Order` | `affiliate` relationship | related/self relationship links |
-| `SubscriptionInvoice` | `affiliate_id: number \| null` | 引荐该发票的 Affiliate ID；无引荐时为 `null` |
+| 对象                  | 新字段/关系                       | 当前语义                                            |
+| --------------------- | --------------------------------- | --------------------------------------------------- |
+| `Order`               | `affiliate_id: number \| null`    | 引荐该订单的 Affiliate ID；无引荐时为 `null`        |
+| `Order`               | `referral_amount: number \| null` | 订单币种下、以分为单位的联盟佣金；无引荐时为 `null` |
+| `Order`               | `affiliate` relationship          | related/self relationship links                     |
+| `SubscriptionInvoice` | `affiliate_id: number \| null`    | 引荐该发票的 Affiliate ID；无引荐时为 `null`        |
 | `SubscriptionInvoice` | `referral_amount: number \| null` | 发票币种下、以分为单位的联盟佣金；无引荐时为 `null` |
-| `SubscriptionInvoice` | `affiliate` relationship | related/self relationship links |
-| `Customer` | `affiliates` relationship | 客户可关联多个 Affiliates |
+| `SubscriptionInvoice` | `affiliate` relationship          | related/self relationship links                     |
+| `Customer`            | `affiliates` relationship         | 客户可关联多个 Affiliates                           |
 
 直接来源：[changelog](https://docs.lemonsqueezy.com/api/getting-started/changelog)、[Order object](https://docs.lemonsqueezy.com/api/orders/the-order-object)、[Retrieve an Order](https://docs.lemonsqueezy.com/api/orders/retrieve-order)、[Subscription Invoice object](https://docs.lemonsqueezy.com/api/subscription-invoices/the-subscription-invoice-object)、[Retrieve a Subscription Invoice](https://docs.lemonsqueezy.com/api/subscription-invoices/retrieve-subscription-invoice)、[Retrieve a Customer](https://docs.lemonsqueezy.com/api/customers/retrieve-customer)。
 
@@ -103,10 +103,10 @@ v4 对照：
 
 ### 4. Webhook 事件
 
-| 日期 | 新事件 | Data Sent | v4 状态 |
-| --- | --- | --- | --- |
+| 日期       | 新事件                | Data Sent        | v4 状态                  |
+| ---------- | --------------------- | ---------------- | ------------------------ |
 | 2025-01-21 | `affiliate_activated` | Affiliate object | v4 `Events` union 不包含 |
-| 2026-02-25 | `customer_updated` | Customer object | v4 `Events` union 不包含 |
+| 2026-02-25 | `customer_updated`    | Customer object  | v4 `Events` union 不包含 |
 
 直接来源：[API changelog](https://docs.lemonsqueezy.com/api/getting-started/changelog)、[官方完整 Event Types 表](https://docs.lemonsqueezy.com/help/webhooks/event-types)。v4 union 来源：[v4 Webhook 类型](https://github.com/lmsqueezy/lemonsqueezy.js/blob/v4.0.0/src/webhooks/types.ts#L10-L25)。
 

@@ -78,7 +78,8 @@ describe("List all subscription invoices", () => {
     expect(links.first).toBeString();
     expect(links.last).toBeString();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
   });
 
@@ -118,7 +119,8 @@ describe("List all subscription invoices", () => {
     expect(links.first).toBeString();
     expect(links.last).toBeString();
     expect(
-      data.filter((item) => item.attributes.refunded === invoiceRefunded).length
+      data.filter((item) => item.attributes.refunded === invoiceRefunded)
+        .length,
     ).toEqual(data.length);
   });
 
@@ -138,8 +140,8 @@ describe("List all subscription invoices", () => {
     expect(links.last).toBeString();
     expect(
       data.filter(
-        (item) => item.attributes.subscription_id === Number(subscriptionId)
-      ).length
+        (item) => item.attributes.subscription_id === Number(subscriptionId),
+      ).length,
     ).toEqual(data.length);
   });
 
@@ -180,7 +182,7 @@ describe("Retrieve a subscription invoice", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter: subscriptionInvoiceId."
+        "Please provide the required parameter: subscriptionInvoiceId.",
       );
     }
   });
@@ -198,7 +200,7 @@ describe("Retrieve a subscription invoice", () => {
     const { data, links } = _data!;
     expect(data).toBeDefined();
     expect(links.self).toEqual(
-      `${API_BASE_URL}${PATH}${subscriptionInvoiceId}`
+      `${API_BASE_URL}${PATH}${subscriptionInvoiceId}`,
     );
 
     const { type, id, attributes, relationships } = data;
@@ -288,7 +290,7 @@ describe("Retrieve a subscription invoice", () => {
     const { store, subscription, customer } = relationships;
     const relationshipItems = [store, subscription, customer];
     expect(Object.keys(relationshipItems).length).toEqual(
-      relationshipItems.length
+      relationshipItems.length,
     );
     for (const item of relationshipItems) expect(item.links).toBeDefined();
   });
@@ -308,11 +310,11 @@ describe("Retrieve a subscription invoice", () => {
     const { data, links, included } = _data!;
     expect(data).toBeDefined();
     expect(links.self).toEqual(
-      `${API_BASE_URL}${PATH}${subscriptionInvoiceId}`
+      `${API_BASE_URL}${PATH}${subscriptionInvoiceId}`,
     );
     expect(included).toBeArray();
     expect(
-      Boolean(included?.filter((item) => item.type === "subscriptions"))
+      Boolean(included?.filter((item) => item.type === "subscriptions")),
     ).toBe(true);
 
     const { type, id, attributes, relationships } = data;
@@ -401,7 +403,7 @@ describe("Retrieve a subscription invoice", () => {
     const { store, subscription, customer } = relationships;
     const relationshipItems = [store, subscription, customer];
     expect(Object.keys(relationshipItems).length).toEqual(
-      relationshipItems.length
+      relationshipItems.length,
     );
     for (const item of relationshipItems) expect(item.links).toBeDefined();
   });
@@ -414,7 +416,7 @@ describe("Generate subscription invoice", () => {
       await generateSubscriptionInvoice("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -434,7 +436,7 @@ describe("Generate subscription invoice", () => {
     expect(meta).toBeDefined();
     expect(meta.urls).toBeDefined();
     expect(meta.urls.download_invoice).toStartWith(
-      "https://app.lemonsqueezy.com/my-orders/"
+      "https://app.lemonsqueezy.com/my-orders/",
     );
   });
 
@@ -482,7 +484,7 @@ describe("Issue a subscription invoice refund", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter: subscriptionInvoiceId."
+        "Please provide the required parameter: subscriptionInvoiceId.",
       );
     }
   });
@@ -493,7 +495,7 @@ describe("Issue a subscription invoice refund", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter: amount."
+        "Please provide the required parameter: amount.",
       );
     }
   });

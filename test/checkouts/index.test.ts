@@ -29,7 +29,7 @@ describe("Create a checkout", () => {
       await createCheckout(storeId, "");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -123,7 +123,7 @@ describe("Create a checkout", () => {
     for (const item of productOptionItems) expect(item).toBeDefined();
 
     expect(Object.keys(product_options).length).toEqual(
-      productOptionItems.length
+      productOptionItems.length,
     );
 
     // checkout_options
@@ -153,7 +153,7 @@ describe("Create a checkout", () => {
     for (const item of checkoutOptionItems) expect(item).toBeDefined();
 
     expect(Object.keys(checkout_options).length).toEqual(
-      checkoutOptionItems.length
+      checkoutOptionItems.length,
     );
 
     // checkout_data
@@ -366,16 +366,16 @@ describe("Create a checkout", () => {
 
     for (const item of productOptionItems) expect(item).toBeDefined();
     expect(Object.keys(product_options).length).toEqual(
-      productOptionItems.length
+      productOptionItems.length,
     );
     expect(name).toEqual(newCheckout.productOptions.name);
     expect(description).toEqual(newCheckout.productOptions.description);
     expect(receipt_button_text).toEqual(
-      newCheckout.productOptions.receiptButtonText
+      newCheckout.productOptions.receiptButtonText,
     );
     expect(receipt_link_url).toEqual(newCheckout.productOptions.receiptLinkUrl);
     expect(receipt_thank_you_note).toEqual(
-      newCheckout.productOptions.receiptThankYouNote
+      newCheckout.productOptions.receiptThankYouNote,
     );
 
     // checkout_options
@@ -407,16 +407,16 @@ describe("Create a checkout", () => {
 
     for (const item of checkoutOptionItems) expect(item).toBeDefined();
     expect(Object.keys(checkout_options).length).toEqual(
-      checkoutOptionItems.length
+      checkoutOptionItems.length,
     );
     expect(logo).toEqual(newCheckout.checkoutOptions.logo);
     expect(desc).toEqual(newCheckout.checkoutOptions.desc);
     expect(background_color).toEqual(
-      newCheckout.checkoutOptions.backgroundColor
+      newCheckout.checkoutOptions.backgroundColor,
     );
     expect(button_color).toEqual(newCheckout.checkoutOptions.buttonColor);
     expect(subscription_preview).toEqual(
-      newCheckout.checkoutOptions.subscriptionPreview
+      newCheckout.checkoutOptions.subscriptionPreview,
     );
 
     // checkout_data
@@ -513,7 +513,7 @@ describe("Retrieve a checkout", () => {
       await getCheckout("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -604,7 +604,7 @@ describe("Retrieve a checkout", () => {
 
     for (const item of productOptionItems) expect(item).toBeDefined();
     expect(Object.keys(product_options).length).toEqual(
-      productOptionItems.length
+      productOptionItems.length,
     );
 
     // checkout_options
@@ -632,7 +632,7 @@ describe("Retrieve a checkout", () => {
 
     for (const item of checkoutOptionItems) expect(item).toBeDefined();
     expect(Object.keys(checkout_options).length).toEqual(
-      checkoutOptionItems.length
+      checkoutOptionItems.length,
     );
 
     // checkout_data
@@ -797,7 +797,7 @@ describe("Retrieve a checkout", () => {
 
     for (const item of productOptionItems) expect(item).toBeDefined();
     expect(Object.keys(product_options).length).toEqual(
-      productOptionItems.length
+      productOptionItems.length,
     );
 
     // checkout_options
@@ -825,7 +825,7 @@ describe("Retrieve a checkout", () => {
 
     for (const item of checkoutOptionItems) expect(item).toBeDefined();
     expect(Object.keys(checkout_options).length).toEqual(
-      checkoutOptionItems.length
+      checkoutOptionItems.length,
     );
 
     // checkout_data
@@ -958,7 +958,8 @@ describe("List all checkouts", () => {
     const { meta, data, links } = _data!;
     expect(meta).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -983,7 +984,7 @@ describe("List all checkouts", () => {
     expect(meta).toBeDefined();
     expect(
       data.filter((item) => item.attributes.variant_id === Number(variantId))
-        .length
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();

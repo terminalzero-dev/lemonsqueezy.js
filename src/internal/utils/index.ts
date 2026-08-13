@@ -32,7 +32,7 @@ export function camelToUnderscore(key: string) {
  */
 export function convertKeys(
   obj: Record<string, unknown>,
-  excludedValue: unknown = undefined
+  excludedValue: unknown = undefined,
 ) {
   const newObj: Record<string, unknown> = {};
 

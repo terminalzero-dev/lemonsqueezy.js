@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const dist = join(root, "dist");
-const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const packageJson = JSON.parse(
+  readFileSync(join(root, "package.json"), "utf8"),
+);
 
 const files = readdirSync(dist, { recursive: true, withFileTypes: true })
   .filter((entry) => entry.isFile())
@@ -16,7 +18,11 @@ const files = readdirSync(dist, { recursive: true, withFileTypes: true })
 test("all public build entries have matching runtime and declaration output", () => {
   for (const entry of ["index", "client/index", "compat/index"]) {
     for (const extension of [".js", ".cjs", ".d.ts", ".d.cts"]) {
-      assert.equal(files.includes(`${entry}${extension}`), true, `${entry}${extension}`);
+      assert.equal(
+        files.includes(`${entry}${extension}`),
+        true,
+        `${entry}${extension}`,
+      );
     }
   }
 
@@ -43,10 +49,18 @@ test("the package export map only targets files in the build", () => {
 });
 
 test("published output has no source or declaration maps", () => {
-  assert.deepEqual(files.filter((file) => extname(file) === ".map"), []);
+  assert.deepEqual(
+    files.filter((file) => extname(file) === ".map"),
+    [],
+  );
 
-  for (const file of files.filter((candidate) => /\.(?:js|cjs)$/.test(candidate))) {
-    assert.doesNotMatch(readFileSync(join(dist, file), "utf8"), /sourceMappingURL/);
+  for (const file of files.filter((candidate) =>
+    /\.(?:js|cjs)$/.test(candidate),
+  )) {
+    assert.doesNotMatch(
+      readFileSync(join(dist, file), "utf8"),
+      /sourceMappingURL/,
+    );
   }
 });
 

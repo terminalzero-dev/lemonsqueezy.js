@@ -12,7 +12,10 @@ const files = (await readdir(dist, { recursive: true }))
 
 for (const entry of ["index", "client/index", "compat/index"]) {
   for (const extension of [".js", ".cjs", ".d.ts", ".d.cts"]) {
-    assert(files.includes(`${entry}${extension}`), `${entry}${extension} is missing`);
+    assert(
+      files.includes(`${entry}${extension}`),
+      `${entry}${extension} is missing`,
+    );
   }
 }
 
@@ -21,7 +24,10 @@ for (const typeEntry of ["types/index.d.ts", "types/index.d.cts"]) {
 }
 assert(!files.includes("types/index.js"), "types/index.js must be removed");
 assert(!files.includes("types/index.cjs"), "types/index.cjs must be removed");
-assert.deepEqual(files.filter((file) => extname(file) === ".map"), []);
+assert.deepEqual(
+  files.filter((file) => extname(file) === ".map"),
+  [],
+);
 
 for (const conditions of Object.values(packageJson.exports)) {
   for (const moduleKind of Object.values(conditions)) {

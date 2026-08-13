@@ -67,14 +67,18 @@ export async function prepareConsumer(name) {
     )}\n`,
   );
 
-  run("corepack", ["pnpm", "install", "--ignore-workspace", "--lockfile-only"], {
-    cwd: consumerDirectory,
-  });
+  run(
+    "corepack",
+    ["pnpm", "install", "--ignore-workspace", "--lockfile-only"],
+    {
+      cwd: consumerDirectory,
+    },
+  );
   run(
     "corepack",
     ["pnpm", "install", "--ignore-workspace", "--frozen-lockfile"],
     {
-    cwd: consumerDirectory,
+      cwd: consumerDirectory,
     },
   );
 

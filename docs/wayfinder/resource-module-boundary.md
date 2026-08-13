@@ -306,7 +306,7 @@ interface ResourceRuntime {
   invoke<Args extends readonly unknown[], Result>(
     operation: OperationContract<Args, Result>,
     args: Args,
-    options?: RequestOptions
+    options?: RequestOptions,
   ): Promise<CoreSuccess<Result>>;
 }
 

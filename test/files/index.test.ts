@@ -83,7 +83,7 @@ describe("List all files", () => {
     expect(links.last).toBeDefined();
     expect(
       data.filter((item) => item.attributes.variant_id === Number(variantId))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -131,7 +131,7 @@ describe("Retrieve a file", () => {
       await getFile("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

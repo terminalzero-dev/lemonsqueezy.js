@@ -25,7 +25,7 @@ describe("Create a webhook", () => {
       await createWebhook("", {} as any);
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -94,7 +94,7 @@ describe("Update a checkout", () => {
       await updateWebhook("", {});
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -169,7 +169,7 @@ describe("Retrieve a checkout", () => {
       await getWebhook("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -339,7 +339,8 @@ describe("List all webhooks", () => {
     const { meta, data, links } = _data!;
     expect(meta.page).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -386,7 +387,7 @@ describe("Delete a checkout", () => {
       await deleteWebhook("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

@@ -21,7 +21,7 @@ import type {
  */
 export function getLicenseKeyInstance(
   licenseKeyInstanceId: number | string,
-  params: GetLicenseKeyInstanceParams = {}
+  params: GetLicenseKeyInstanceParams = {},
 ) {
   requiredCheck({ licenseKeyInstanceId });
   return $fetch<LicenseKeyInstance>({
@@ -42,7 +42,7 @@ export function getLicenseKeyInstance(
  * @returns A paginated list of license key instance objects ordered by `id`.
  */
 export function listLicenseKeyInstances(
-  params: ListLicenseKeyInstancesParams = {}
+  params: ListLicenseKeyInstancesParams = {},
 ) {
   return $fetch<ListLicenseKeyInstances>({
     path: `/v1/license-key-instances${convertListParamsToQueryString(params)}`,

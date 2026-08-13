@@ -104,7 +104,7 @@ describe("Failed to activate a license key", () => {
       await activateLicense("", "");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -347,7 +347,7 @@ describe("Failed to validate a license key", async () => {
       await validateLicense("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -450,7 +450,7 @@ describe("Failed to deactivate a license key", async () => {
       await deactivateLicense("", "");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

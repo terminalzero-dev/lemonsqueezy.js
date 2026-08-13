@@ -57,7 +57,7 @@ describe("List all products", () => {
     expect(links).toBeDefined();
     expect(
       data.filter((item) => item.attributes.store_id === Number(STORE_ID))
-        .length
+        .length,
     ).toEqual(data.length);
 
     const { first, last } = links;
@@ -125,7 +125,7 @@ describe("Retrieve a product", () => {
       await getProduct("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

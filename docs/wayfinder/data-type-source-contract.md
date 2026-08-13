@@ -173,9 +173,7 @@ Canonical resource、response、input、relationship、enum 和 JSON:API primiti
 type JSONPrimitive = string | number | boolean | null;
 
 type JSONValue =
-  | JSONPrimitive
-  | readonly JSONValue[]
-  | { readonly [key: string]: JSONValue };
+  JSONPrimitive | readonly JSONValue[] | { readonly [key: string]: JSONValue };
 
 interface JSONAPIResourceIdentifier<Type extends string = string> {
   readonly type: Type;

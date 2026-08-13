@@ -101,7 +101,8 @@ describe("List all license keys", () => {
     const { meta, data, links } = _data!;
     expect(meta.page).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -127,7 +128,8 @@ describe("List all license keys", () => {
     const { meta, data, links } = _data!;
     expect(meta.page).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.order_id === Number(orderId)).length
+      data.filter((item) => item.attributes.order_id === Number(orderId))
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -154,8 +156,8 @@ describe("List all license keys", () => {
     expect(meta.page).toBeDefined();
     expect(
       data.filter(
-        (item) => item.attributes.order_item_id === Number(orderItemId)
-      ).length
+        (item) => item.attributes.order_item_id === Number(orderItemId),
+      ).length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -182,7 +184,7 @@ describe("List all license keys", () => {
     expect(meta.page).toBeDefined();
     expect(
       data.filter((item) => item.attributes.product_id === Number(productId))
-        .length
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -206,7 +208,7 @@ describe("List all license keys", () => {
     const { meta, data, links } = _data!;
     expect(meta.page).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.status === licenseKeyStatus).length
+      data.filter((item) => item.attributes.status === licenseKeyStatus).length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -253,7 +255,7 @@ describe("Retrieve a license key", () => {
       await getLicenseKey("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -441,7 +443,7 @@ describe("Update a license key", () => {
       await updateLicenseKey("", {});
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

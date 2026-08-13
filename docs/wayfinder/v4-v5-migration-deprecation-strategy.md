@@ -43,7 +43,10 @@ Compatibility facade 从 `5.0.0-beta.1` 起冻结并受整个 v5 semver 保护�
 这条路径只跨越 Package migration boundary，并隔离所有可选 API modernization。典型调用：
 
 ```ts
-import { getAuthenticatedUser, lemonSqueezySetup } from "@terminalzero/lemonsqueezy";
+import {
+  getAuthenticatedUser,
+  lemonSqueezySetup,
+} from "@terminalzero/lemonsqueezy";
 
 lemonSqueezySetup({ apiKey });
 
@@ -92,7 +95,10 @@ const { data, error, statusCode } = await getAuthenticatedUser();
 项目在验证 Compatibility-first migration 后，可以把有明确价值的调用移到 Explicit Client：
 
 ```ts
-import { createClient, isLemonSqueezyError } from "@terminalzero/lemonsqueezy/client";
+import {
+  createClient,
+  isLemonSqueezyError,
+} from "@terminalzero/lemonsqueezy/client";
 
 const client = createClient({ apiKey });
 

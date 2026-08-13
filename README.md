@@ -86,7 +86,7 @@ For more functions usage, see [Wiki](https://github.com/lmsqueezy/lemonsqueezy.j
 
 <details>
   <summary>Click to view</summary>
-  
+
 | Export                          | min+brotli |
 | ------------------------------- | ---------- |
 | createDiscount                  | 1.01 kB    |

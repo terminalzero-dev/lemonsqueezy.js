@@ -8,7 +8,10 @@ const packageJson = JSON.parse(
 
 test("the repository uses the approved package manager and build host", () => {
   assert.equal(packageJson.packageManager, "pnpm@11.21.0");
-  assert.equal(readFileSync(new URL("../../.nvmrc", import.meta.url), "utf8"), "24\n");
+  assert.equal(
+    readFileSync(new URL("../../.nvmrc", import.meta.url), "utf8"),
+    "24\n",
+  );
   assert.deepEqual(packageJson.engines, {
     node: "^22.0.0 || ^24.0.0",
     bun: ">=1.3.14 <2",
@@ -16,7 +19,10 @@ test("the repository uses the approved package manager and build host", () => {
 });
 
 test("pnpm has the repository's only committed dependency lockfile", () => {
-  assert.equal(existsSync(new URL("../../pnpm-lock.yaml", import.meta.url)), true);
+  assert.equal(
+    existsSync(new URL("../../pnpm-lock.yaml", import.meta.url)),
+    true,
+  );
 
   for (const lockfile of [
     "bun.lock",
@@ -73,6 +79,10 @@ test("legacy toolchain dependencies and lifecycle hooks are absent", () => {
 
 test("repository scripts do not invoke an unapproved package manager or runner", () => {
   for (const [name, command] of Object.entries(packageJson.scripts)) {
-    assert.doesNotMatch(command, /(?:^|[\s;&|])(bunx?|npm|npx|yarn)(?:[\s;&|]|$)/, name);
+    assert.doesNotMatch(
+      command,
+      /(?:^|[\s;&|])(bunx?|npm|npx|yarn)(?:[\s;&|]|$)/,
+      name,
+    );
   }
 });

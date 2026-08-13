@@ -11,7 +11,10 @@ const binaries = [
 console.log(`Node ${process.version}`);
 run("corepack", ["pnpm", "--version"]);
 console.log("TypeScript");
-run(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--version"]);
+run(process.execPath, [
+  join(root, "node_modules/typescript/bin/tsc"),
+  "--version",
+]);
 
 for (const [label, binary] of binaries) {
   console.log(label);

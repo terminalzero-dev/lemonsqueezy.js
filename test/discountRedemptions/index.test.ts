@@ -80,7 +80,7 @@ describe("List all discount redemptions", () => {
     const { meta, links, data } = _data!;
     expect(
       data.filter((item) => item.attributes.discount_id === Number(discountId))
-        .length
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -105,7 +105,8 @@ describe("List all discount redemptions", () => {
 
     const { meta, links, data } = _data!;
     expect(
-      data.filter((item) => item.attributes.order_id === Number(orderId)).length
+      data.filter((item) => item.attributes.order_id === Number(orderId))
+        .length,
     ).toEqual(data.length);
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
@@ -152,7 +153,7 @@ describe("Retrieve a discount redemption", () => {
       await getDiscountRedemption("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });

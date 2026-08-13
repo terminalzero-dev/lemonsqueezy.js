@@ -24,7 +24,7 @@ import type {
  */
 export function getSubscriptionInvoice(
   subscriptionInvoiceId: number | string,
-  params: GetSubscriptionInvoiceParams = {}
+  params: GetSubscriptionInvoiceParams = {},
 ) {
   requiredCheck({ subscriptionInvoiceId });
   return $fetch<SubscriptionInvoice>({
@@ -48,7 +48,7 @@ export function getSubscriptionInvoice(
  * @returns A paginated list of subscription invoice objects ordered by `created_at` (descending).
  */
 export function listSubscriptionInvoices(
-  params: ListSubscriptionInvoicesParams = {}
+  params: ListSubscriptionInvoicesParams = {},
 ) {
   return $fetch<ListSubscriptionInvoices>({
     path: `/v1/subscription-invoices${convertListParamsToQueryString(params)}`,
@@ -72,12 +72,12 @@ export function listSubscriptionInvoices(
  */
 export function generateSubscriptionInvoice(
   subscriptionInvoiceId: number | string,
-  params: GenerateSubscriptionInvoiceParams
+  params: GenerateSubscriptionInvoiceParams,
 ) {
   requiredCheck({ subscriptionInvoiceId });
   const searchParams = convertKeys(params);
   const queryString = new URLSearchParams(
-    searchParams as Record<string, any>
+    searchParams as Record<string, any>,
   ).toString();
   const query = queryString ? `?${queryString}` : "";
 
@@ -95,7 +95,7 @@ export function generateSubscriptionInvoice(
  */
 export function issueSubscriptionInvoiceRefund(
   subscriptionInvoiceId: number | string,
-  amount: number
+  amount: number,
 ) {
   requiredCheck({ subscriptionInvoiceId, amount });
 

@@ -131,7 +131,8 @@ describe("List all orders", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.store_id === Number(storeId)).length
+      data.filter((item) => item.attributes.store_id === Number(storeId))
+        .length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -174,7 +175,7 @@ describe("List all orders", () => {
     expect(links.first).toBeDefined();
     expect(links.last).toBeDefined();
     expect(
-      data.filter((item) => item.attributes.user_email === userEmail).length
+      data.filter((item) => item.attributes.user_email === userEmail).length,
     ).toEqual(data.length);
 
     const { currentPage, from, lastPage, perPage, to, total } = meta.page;
@@ -238,7 +239,7 @@ describe("Retrieve an order", () => {
       await getOrder("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -379,7 +380,7 @@ describe("Retrieve an order", () => {
       testMode,
     ];
     expect(Object.keys(first_order_item).length).toEqual(
-      firstOrderItems.length
+      firstOrderItems.length,
     );
     for (const item of firstOrderItems) {
       expect(item).toBeDefined();
@@ -548,7 +549,7 @@ describe("Retrieve an order", () => {
       testMode,
     ];
     expect(Object.keys(first_order_item).length).toEqual(
-      firstOrderItems.length
+      firstOrderItems.length,
     );
     for (const item of firstOrderItems) {
       expect(item).toBeDefined();
@@ -585,7 +586,7 @@ describe("Generate order invoice", () => {
       await generateOrderInvoice("");
     } catch (error) {
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter:"
+        "Please provide the required parameter:",
       );
     }
   });
@@ -605,7 +606,7 @@ describe("Generate order invoice", () => {
     expect(meta).toBeDefined();
     expect(meta.urls).toBeDefined();
     expect(meta.urls.download_invoice).toStartWith(
-      "https://app.lemonsqueezy.com/my-orders/"
+      "https://app.lemonsqueezy.com/my-orders/",
     );
   });
 
@@ -653,7 +654,7 @@ describe("Issue order refund", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter: orderId."
+        "Please provide the required parameter: orderId.",
       );
     }
   });
@@ -664,7 +665,7 @@ describe("Issue order refund", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toMatch(
-        "Please provide the required parameter: amount."
+        "Please provide the required parameter: amount.",
       );
     }
   });
@@ -674,11 +675,11 @@ describe("Issue order refund", () => {
     async () => {
       const { statusCode, error, data } = await issueOrderRefund(
         refundableOrderId,
-        1
+        1,
       );
       expect(statusCode).toEqual(200);
       expect(error).toBeNull();
       expect(data).toBeDefined();
-    }
+    },
   );
 });
