@@ -1,27 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { isLemonSqueezyError } from "../../src/client";
 import { createClientWithAdapter } from "../../src/internal/testing";
-
-const userResponse = {
-  meta: { test_mode: true },
-  jsonapi: { version: "1.0" },
-  links: { self: "https://api.lemonsqueezy.com/v1/users/1" },
-  data: {
-    type: "users",
-    id: "1",
-    attributes: {
-      name: "Ada Lovelace",
-      email: "ada@example.com",
-      color: "#898FA9",
-      avatar_url: "https://example.com/avatar.png",
-      has_custom_avatar: true,
-      created_at: "2024-05-24T14:08:31.000000Z",
-      updated_at: "2024-08-26T13:24:54.000000Z",
-      future_field: "preserved",
-    },
-    links: { self: "https://api.lemonsqueezy.com/v1/users/1" },
-  },
-} as const;
+import { userResponse } from "./fixtures";
 
 describe("users.getAuthenticated", () => {
   it("retrieves the authenticated user through an immutable explicit client", async () => {
@@ -277,6 +257,56 @@ describe("users.getAuthenticated", () => {
       expect(aborted).toBe(false);
       await vi.advanceTimersByTimeAsync(1);
       expect(aborted).toBe(true);
+      await rejection;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps caller cancellation active while reading the response body", async () => {
+    const caller = new AbortController();
+    const reason = new Error("stop reading");
+    const client = createClientWithAdapter(
+      { apiKey: "explicit-key" },
+      async () =>
+        new Response(
+          new ReadableStream({
+            start() {
+              // Keep the body pending until request cancellation wins the race.
+            },
+          }),
+        ),
+    );
+
+    const result = client.users.getAuthenticated({ signal: caller.signal });
+    caller.abort(reason);
+
+    await expect(result).rejects.toMatchObject({
+      code: "aborted",
+      cause: reason,
+    });
+  });
+
+  it("keeps the SDK timeout active while reading the response body", async () => {
+    vi.useFakeTimers();
+    const client = createClientWithAdapter(
+      { apiKey: "explicit-key" },
+      async () =>
+        new Response(
+          new ReadableStream({
+            start() {
+              // Keep the body pending until the SDK timeout wins the race.
+            },
+          }),
+        ),
+    );
+
+    try {
+      const result = client.users.getAuthenticated({ timeoutMs: 10 });
+      const rejection = expect(result).rejects.toMatchObject({
+        code: "timeout",
+      });
+      await vi.advanceTimersByTimeAsync(10);
       await rejection;
     } finally {
       vi.useRealTimers();

@@ -39,8 +39,11 @@ export interface UnknownJSONAPIResource extends JSONAPIResource<
   Readonly<Record<string, unknown>>
 > {}
 
-export type KnownLemonSqueezyResource = never;
-export type LemonSqueezyResource = UnknownJSONAPIResource;
+export type KnownLemonSqueezyResource =
+  import("../namespaces/users/types").UserResource;
+export type LemonSqueezyResource =
+  | KnownLemonSqueezyResource
+  | UnknownJSONAPIResource;
 
 export interface JSONAPISingleResponse<Resource> {
   readonly jsonapi: { readonly version: string };

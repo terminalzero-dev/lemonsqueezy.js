@@ -25,12 +25,12 @@ type Attributes = {
    * An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) formatted date-time string indicating when the object was created.
    * e.g. "2021-05-24T14:08:31.000000Z"
    */
-  createdAt: string;
+  created_at: string;
   /**
    * An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) formatted date-time string indicating when the object was last updated.
    * e.g. "2021-08-26T13:24:54.000000Z"
    */
-  updatedAt: string;
+  updated_at: string;
 };
 
 export type User = LemonSqueezyResponse<

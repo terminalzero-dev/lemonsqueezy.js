@@ -2,6 +2,7 @@ import {
   createClient,
   getAuthenticatedUser,
   isLemonSqueezyError,
+  type LemonSqueezyError,
   type User,
 } from "@terminalzero/lemonsqueezy";
 import type {
@@ -9,7 +10,19 @@ import type {
   UserResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
-const userPromise: Promise<unknown> = getAuthenticatedUser();
+type UserEnvelope =
+  | {
+      readonly statusCode: number;
+      readonly data: User | null;
+      readonly error: null;
+    }
+  | {
+      readonly statusCode: number | null;
+      readonly data: null;
+      readonly error: LemonSqueezyError;
+    };
+
+const userPromise: Promise<UserEnvelope> = getAuthenticatedUser();
 const client = createClient({ apiKey: "type-contract", timeoutMs: 1_000 });
 const directUser: Promise<UserResponse> = client.users.getAuthenticated();
 const _user: User | undefined = undefined;
@@ -24,3 +37,6 @@ void isLemonSqueezyError;
 client.users.getAuthenticated("1");
 // @ts-expect-error Client namespaces are readonly
 client.users = client.users;
+// @ts-expect-error Compatibility facade returns an envelope, not a direct body
+const directFacadeBody: Promise<UserResponse> = getAuthenticatedUser();
+void directFacadeBody;
