@@ -16,11 +16,18 @@ Release Candidate run.
   offline recovery materials, and public scoped-package permission.
 - No package registry version named `@terminalzero/lemonsqueezy@5.0.0-beta.1`
   exists.
-- The repository-only `v5-release-workflow` deploy key has write access, its
-  private key exists only as `RELEASE_TAG_DEPLOY_KEY` in the protected
-  `npm-release` environment, and the tag creation ruleset grants deploy keys
-  the workflow-only bypass. Governance pins its public SHA-256 fingerprint and
-  rejects any additional writable deploy key.
+- The organization-owned `lemonsqueezy-v5-release` GitHub App is installed only
+  on this repository with Contents write, Metadata read, and no event
+  subscriptions. Its private key exists only as
+  `RELEASE_GITHUB_APP_PRIVATE_KEY` in the protected `npm-release` environment,
+  and the tag creation ruleset grants only its pinned Integration ID the
+  workflow bypass. The protected job reads the live installation and fails
+  before tag mutation unless it is unsuspended, selected-repository mode, and
+  limited to this exact repository and permission set. It performs that audit
+  with an App JWT for installation metadata and an owner-scoped metadata-only
+  installation token for the complete repository list, revokes the token at
+  job close, then separately mints the repository-scoped write token used for
+  the tag.
 
 ## Interactive publication
 
@@ -42,10 +49,11 @@ public --tag beta`. Do not check out source, build, pack, patch, or compress.
 7. Dispatch `registry-release.yml` against the same Candidate. Its read-only
    `verify` job must pass registry metadata, integrity, exact tarball, and
    ESM/CJS installation checks before the protected `tag` job can use the
-   repository-only deploy key to create `v5.0.0-beta.1` at the exact Candidate
-   commit. The separate `finalize` job reads the protected tag back and creates
+   repository-only GitHub App installation token to create `v5.0.0-beta.1` at
+   the exact Candidate commit. The action revokes the short-lived token when the
+   job ends. The separate `finalize` job reads the protected tag back and creates
    an immutable prerelease with the tarball and evidence as assets without
-   receiving the deploy key.
+   receiving the App private key or installation token.
 
 ## Closeout recovery
 
@@ -69,8 +77,8 @@ Publication success followed by verification failure is not retried with the
 same version. Preserve evidence, normalize affected dist-tags, and publish a new
 fix version through the approved recovery path.
 
-Rotate the release identity only outside a release run: generate the replacement,
-merge its public fingerprint through the normal PR gate, replace the repository
-deploy key and `npm-release` environment secret, revoke the old key, then rerun
-governance verification. If the private key may be exposed, remove the deploy key
-immediately and pause releases until the full rotation is verified.
+Rotate the release identity only outside a release run: generate a replacement
+App private key, replace the `npm-release` environment secret, revoke the old
+private key in GitHub App settings, then rerun governance verification. If a key
+may be exposed, revoke it immediately and pause releases until the replacement
+workflow identity is verified.

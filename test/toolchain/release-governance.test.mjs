@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync, verify } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -10,9 +10,10 @@ import { once } from "node:events";
 import { promisify } from "node:util";
 import { test } from "node:test";
 import {
-  assertReleaseDeployKeySecret,
+  assertReleaseIdentitySecret,
+  assertReleaseInstallation,
   resolveRulesetBypassActors,
-  selectReleaseDeployKey,
+  selectReleaseActionsIntegration,
 } from "../../scripts/lib/github-governance.mjs";
 
 const execute = promisify(execFile);
@@ -502,9 +503,22 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   assert.match(workflow, /gh release create/);
   assert.match(workflow, /Create or verify the protected release tag/);
   assert.match(workflow, /git push origin/);
-  assert.match(workflow, /RELEASE_TAG_DEPLOY_KEY/);
+  assert.match(workflow, /actions\/create-github-app-token@[0-9a-f]{40}/);
+  assert.match(workflow, /RELEASE_GITHUB_APP_PRIVATE_KEY/);
+  assert.match(workflow, /RELEASE_GITHUB_APP_CLIENT_ID/);
+  assert.match(workflow, /permission-contents: write/);
+  assert.match(workflow, /permission-metadata: read/);
+  assert.match(workflow, /owner: \$\{\{ github\.repository_owner \}\}/);
+  assert.match(workflow, /steps\.audit-token\.outputs\.token/);
+  assert.match(workflow, /steps\.audit-token\.outputs\.installation-id/);
+  assert.match(workflow, /steps\.audit-token\.outputs\.app-slug/);
+  assert.match(workflow, /verify-release-installation\.mjs/);
   assert.match(workflow, /persist-credentials: true/);
-  assert.equal(workflow.match(/RELEASE_TAG_DEPLOY_KEY/g)?.length, 1);
+  assert.equal(workflow.match(/RELEASE_GITHUB_APP_PRIVATE_KEY/g)?.length, 4);
+  assert.equal(
+    workflow.match(/actions\/create-github-app-token@[0-9a-f]{40}/g)?.length,
+    2,
+  );
   assert.match(
     workflow,
     /tag:[\s\S]*persist-credentials: true[\s\S]*finalize:[\s\S]*persist-credentials: false/,
@@ -587,17 +601,23 @@ void test("repository governance protects release refs without a review quorum",
   assert.deepEqual(tagCreation.rules, [{ type: "creation" }]);
   assert.deepEqual(tagCreation.bypass_actors, [
     {
-      actor_id: "$releaseDeployKey",
-      actor_type: "DeployKey",
+      actor_id: "$releaseActionsIntegration",
+      actor_type: "Integration",
       bypass_mode: "always",
     },
   ]);
   assert.deepEqual(governance.releaseIdentity, {
-    deployKey: {
-      title: "v5-release-workflow",
+    actionsIntegration: {
+      id: 4593139,
+      slug: "lemonsqueezy-v5-release",
+      clientId: "Iv23liKrkrIVKfLtmUk6",
+      installationId: 153681769,
       environment: "npm-release",
-      privateKeySecret: "RELEASE_TAG_DEPLOY_KEY",
-      fingerprint: "SHA256:canblEOxFyTUEyOxhVk2M0sp1+5vAm4ha8RyYBx3ibc",
+      privateKeySecret: "RELEASE_GITHUB_APP_PRIVATE_KEY",
+      permissions: { contents: "write", metadata: "read" },
+      events: [],
+      repositorySelection: "selected",
+      repositories: ["terminalzero-dev/lemonsqueezy.js"],
     },
     team: {
       name: "v5-release-managers",
@@ -627,6 +647,10 @@ void test("repository governance protects release refs without a review quorum",
     "read",
   );
   assert.equal(governance.variables.RELEASE_MAINTAINER, "keyding");
+  assert.equal(
+    governance.variables.RELEASE_GITHUB_APP_CLIENT_ID,
+    "Iv23liKrkrIVKfLtmUk6",
+  );
   assert.equal(governance.immutableReleases, true);
   assert.match(
     readRootText("scripts/apply-github-governance.mjs"),
@@ -634,53 +658,251 @@ void test("repository governance protects release refs without a review quorum",
   );
 });
 
-void test("release governance pins and resolves its deploy-key identity", () => {
+void test("release governance pins and resolves its GitHub App identity", () => {
   const desired = {
-    title: "v5-release-workflow",
+    id: 4593139,
+    slug: "lemonsqueezy-v5-release",
+    clientId: "Iv23liKrkrIVKfLtmUk6",
+    installationId: 153681769,
     environment: "npm-release",
-    privateKeySecret: "RELEASE_TAG_DEPLOY_KEY",
-    fingerprint: "SHA256:canblEOxFyTUEyOxhVk2M0sp1+5vAm4ha8RyYBx3ibc",
+    privateKeySecret: "RELEASE_GITHUB_APP_PRIVATE_KEY",
+    permissions: { contents: "write", metadata: "read" },
+    events: [],
+    repositorySelection: "selected",
+    repositories: ["terminalzero-dev/lemonsqueezy.js"],
   };
-  const key = {
-    id: 42,
-    title: desired.title,
-    read_only: false,
-    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP6IZ9Ak2ilRk61WDzH/1nfF6SWh1FIwd2lg7jtvabb6 v5-release-workflow",
+  const integration = {
+    id: desired.id,
+    slug: desired.slug,
+    client_id: desired.clientId,
+    owner: { login: "terminalzero-dev" },
+    permissions: desired.permissions,
+    events: desired.events,
   };
 
-  assert.equal(selectReleaseDeployKey([key], desired), key);
-  assert.throws(
-    () => selectReleaseDeployKey([key, { ...key, id: 43 }], desired),
-    /deploy key count/,
+  assert.equal(
+    selectReleaseActionsIntegration(integration, desired, "terminalzero-dev"),
+    integration,
   );
   assert.throws(
     () =>
-      selectReleaseDeployKey(
-        [{ ...key, key: key.key.replace("abb6", "abb7") }],
+      selectReleaseActionsIntegration(
+        { ...integration, client_id: "wrong" },
         desired,
+        "terminalzero-dev",
       ),
-    /public key fingerprint/,
+    /client id/,
+  );
+  assert.throws(
+    () =>
+      selectReleaseActionsIntegration(
+        { ...integration, owner: { login: "another-owner" } },
+        desired,
+        "terminalzero-dev",
+      ),
+    /owner/,
+  );
+  assert.throws(
+    () =>
+      selectReleaseActionsIntegration(
+        { ...integration, permissions: { contents: "write" } },
+        desired,
+        "terminalzero-dev",
+      ),
+    /permissions/,
   );
   assert.deepEqual(
     resolveRulesetBypassActors(
       [
         {
-          actor_id: "$releaseDeployKey",
-          actor_type: "DeployKey",
+          actor_id: "$releaseActionsIntegration",
+          actor_type: "Integration",
           bypass_mode: "always",
         },
       ],
-      { releaseIdentityTeamId: 7 },
+      { releaseIdentityTeamId: 7, releaseActionsIntegrationId: desired.id },
     ),
-    [{ actor_id: null, actor_type: "DeployKey", bypass_mode: "always" }],
+    [
+      {
+        actor_id: desired.id,
+        actor_type: "Integration",
+        bypass_mode: "always",
+      },
+    ],
   );
   assert.doesNotThrow(() =>
-    assertReleaseDeployKeySecret([{ name: "RELEASE_TAG_DEPLOY_KEY" }], desired),
+    assertReleaseIdentitySecret(
+      [{ name: "RELEASE_GITHUB_APP_PRIVATE_KEY" }],
+      desired,
+    ),
   );
   assert.throws(
-    () => assertReleaseDeployKeySecret([], desired),
+    () => assertReleaseIdentitySecret([], desired),
     /environment secret/,
   );
+
+  const identity = {
+    installationId: desired.installationId,
+    appSlug: desired.slug,
+  };
+  const installation = {
+    id: desired.installationId,
+    app_id: desired.id,
+    app_slug: desired.slug,
+    account: { login: "terminalzero-dev" },
+    suspended_at: null,
+    repository_selection: desired.repositorySelection,
+    permissions: desired.permissions,
+    events: desired.events,
+  };
+  const repositories = {
+    total_count: 1,
+    repositories: [{ full_name: "terminalzero-dev/lemonsqueezy.js" }],
+  };
+  assert.doesNotThrow(() =>
+    assertReleaseInstallation(
+      installation,
+      identity,
+      repositories,
+      desired,
+      "terminalzero-dev",
+    ),
+  );
+  assert.throws(
+    () =>
+      assertReleaseInstallation(
+        installation,
+        identity,
+        {
+          total_count: 2,
+          repositories: [
+            ...repositories.repositories,
+            { full_name: "terminalzero-dev/another-repository" },
+          ],
+        },
+        desired,
+        "terminalzero-dev",
+      ),
+    /2 !== 1/,
+  );
+  assert.throws(
+    () =>
+      assertReleaseInstallation(
+        installation,
+        { ...identity, appSlug: "wrong-app" },
+        repositories,
+        desired,
+        "terminalzero-dev",
+      ),
+    /installation app slug/,
+  );
+  assert.throws(
+    () =>
+      assertReleaseInstallation(
+        { ...installation, repository_selection: "all" },
+        identity,
+        repositories,
+        desired,
+        "terminalzero-dev",
+      ),
+    /installation repository selection/,
+  );
+});
+
+void test("release installation verifier audits the owner-wide token scope", async () => {
+  const requests = [];
+  const server = createServer((request, response) => {
+    requests.push({
+      url: request.url,
+      authorization: request.headers.authorization,
+    });
+    response.setHeader("content-type", "application/json");
+    const body = request.url?.startsWith("/app/installations/")
+      ? {
+          id: 153681769,
+          app_id: 4593139,
+          app_slug: "lemonsqueezy-v5-release",
+          account: { login: "terminalzero-dev" },
+          suspended_at: null,
+          repository_selection: "selected",
+          permissions: { contents: "write", metadata: "read" },
+          events: [],
+        }
+      : {
+          total_count: 1,
+          repositories: [{ full_name: "terminalzero-dev/lemonsqueezy.js" }],
+        };
+    response.end(JSON.stringify(body));
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const { privateKey, publicKey } = generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+  });
+
+  try {
+    const { stdout } = await execute(
+      process.execPath,
+      [
+        new URL(
+          "../../scripts/verify-release-installation.mjs",
+          import.meta.url,
+        ).pathname,
+        "--repository",
+        "terminalzero-dev/lemonsqueezy.js",
+        "--installation-id",
+        "153681769",
+        "--app-slug",
+        "lemonsqueezy-v5-release",
+        "--github-api",
+        `http://127.0.0.1:${server.address().port}`,
+      ],
+      {
+        env: {
+          ...process.env,
+          GITHUB_TOKEN: "test-token",
+          RELEASE_GITHUB_APP_PRIVATE_KEY: privateKey.export({
+            format: "pem",
+            type: "pkcs8",
+          }),
+        },
+      },
+    );
+    assert.match(stdout, /Verified release App installation 153681769/);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].url, "/app/installations/153681769");
+  assert.match(requests[0].authorization, /^Bearer eyJ/);
+  const jwt = requests[0].authorization.slice("Bearer ".length);
+  const [encodedHeader, encodedPayload, encodedSignature] = jwt.split(".");
+  assert.deepEqual(JSON.parse(Buffer.from(encodedHeader, "base64url")), {
+    alg: "RS256",
+    typ: "JWT",
+  });
+  const payload = JSON.parse(Buffer.from(encodedPayload, "base64url"));
+  const now = Math.floor(Date.now() / 1000);
+  assert.equal(payload.iss, "Iv23liKrkrIVKfLtmUk6");
+  assert.ok(payload.iat <= now);
+  assert.ok(payload.iat >= now - 120);
+  assert.equal(payload.exp - payload.iat, 600);
+  assert.ok(payload.exp <= now + 600);
+  assert.equal(
+    verify(
+      "RSA-SHA256",
+      Buffer.from(`${encodedHeader}.${encodedPayload}`),
+      publicKey,
+      Buffer.from(encodedSignature, "base64url"),
+    ),
+    true,
+  );
+  assert.deepEqual(requests[1], {
+    url: "/installation/repositories?per_page=100",
+    authorization: "Bearer test-token",
+  });
 });
 
 void test("repository governance has an auditable dry-run before mutation", async () => {

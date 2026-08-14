@@ -1,10 +1,16 @@
 {
   "releaseIdentity": {
-    "deployKey": {
-      "title": "v5-release-workflow",
+    "actionsIntegration": {
+      "id": 4593139,
+      "slug": "lemonsqueezy-v5-release",
+      "clientId": "Iv23liKrkrIVKfLtmUk6",
+      "installationId": 153681769,
       "environment": "npm-release",
-      "privateKeySecret": "RELEASE_TAG_DEPLOY_KEY",
-      "fingerprint": "SHA256:canblEOxFyTUEyOxhVk2M0sp1+5vAm4ha8RyYBx3ibc"
+      "privateKeySecret": "RELEASE_GITHUB_APP_PRIVATE_KEY",
+      "permissions": { "contents": "write", "metadata": "read" },
+      "events": [],
+      "repositorySelection": "selected",
+      "repositories": ["terminalzero-dev/lemonsqueezy.js"]
     },
     "team": {
       "name": "v5-release-managers",
@@ -61,8 +67,8 @@
       "enforcement": "active",
       "bypass_actors": [
         {
-          "actor_id": "$releaseDeployKey",
-          "actor_type": "DeployKey",
+          "actor_id": "$releaseActionsIntegration",
+          "actor_type": "Integration",
           "bypass_mode": "always"
         }
       ],
@@ -123,6 +129,7 @@
   },
   "immutableReleases": true,
   "variables": {
-    "RELEASE_MAINTAINER": "keyding"
+    "RELEASE_MAINTAINER": "keyding",
+    "RELEASE_GITHUB_APP_CLIENT_ID": "Iv23liKrkrIVKfLtmUk6"
   }
 }
