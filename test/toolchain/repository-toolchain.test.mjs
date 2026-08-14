@@ -6,7 +6,7 @@ const readRootText = (path) =>
   readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
 const packageJson = JSON.parse(readRootText("package.json"));
 
-test("the repository uses the approved package manager and build host", () => {
+void test("the repository uses the approved package manager and build host", () => {
   assert.equal(packageJson.packageManager, "pnpm@11.21.0");
   assert.equal(
     readFileSync(new URL("../../.nvmrc", import.meta.url), "utf8"),
@@ -18,7 +18,7 @@ test("the repository uses the approved package manager and build host", () => {
   });
 });
 
-test("pnpm has the repository's only committed dependency lockfile", () => {
+void test("pnpm has the repository's only committed dependency lockfile", () => {
   assert.equal(
     existsSync(new URL("../../pnpm-lock.yaml", import.meta.url)),
     true,
@@ -39,14 +39,14 @@ test("pnpm has the repository's only committed dependency lockfile", () => {
   }
 });
 
-test("pnpm enforces the repository dependency policies", () => {
+void test("pnpm enforces the repository dependency policies", () => {
   assert.equal(
     readFileSync(new URL("../../pnpm-workspace.yaml", import.meta.url), "utf8"),
     "allowBuilds:\n  esbuild: true\nminimumReleaseAge: 1440\n",
   );
 });
 
-test("legacy toolchain dependencies and lifecycle hooks are absent", () => {
+void test("legacy toolchain dependencies and lifecycle hooks are absent", () => {
   const allDependencies = {
     ...packageJson.dependencies,
     ...packageJson.devDependencies,
@@ -77,7 +77,7 @@ test("legacy toolchain dependencies and lifecycle hooks are absent", () => {
   }
 });
 
-test("repository scripts do not invoke an unapproved package manager or runner", () => {
+void test("repository scripts do not invoke an unapproved package manager or runner", () => {
   for (const [name, command] of Object.entries(packageJson.scripts)) {
     assert.doesNotMatch(
       command,
@@ -87,7 +87,7 @@ test("repository scripts do not invoke an unapproved package manager or runner",
   }
 });
 
-test("package positioning does not claim to be the official SDK", () => {
+void test("package positioning does not claim to be the official SDK", () => {
   const readme = readRootText("README.md");
   const prose = readme.replace(/\n>\s*/g, " ");
 
@@ -96,7 +96,7 @@ test("package positioning does not claim to be the official SDK", () => {
   assert.doesNotMatch(readme, /official (?:Lemon Squeezy )?JavaScript SDK/i);
 });
 
-test("migration documentation and release feedback assets are publish-ready", () => {
+void test("migration documentation and release feedback assets are publish-ready", () => {
   const readme = readRootText("README.md");
   const migration = readRootText("MIGRATION.md");
   const changelog = readRootText("CHANGELOG.md");
@@ -138,7 +138,7 @@ test("migration documentation and release feedback assets are publish-ready", ()
   );
 });
 
-test("CI installs and records the minimum supported Bun runtime", () => {
+void test("CI installs and records the minimum supported Bun runtime", () => {
   const workflow = readFileSync(
     new URL("../../.github/workflows/check.yml", import.meta.url),
     "utf8",
@@ -153,22 +153,57 @@ test("CI installs and records the minimum supported Bun runtime", () => {
   assert.match(toolVersions, /run\("bun", \["--version"\]\)/);
 });
 
-test("Test Mode integration stays fail-closed until its protected canary exists", () => {
+void test("Test Mode integration is an exact-tarball, fail-closed protected canary", () => {
   assert.equal(
     packageJson.scripts["test:integration"],
     "node scripts/test-integration.mjs",
   );
   assert.equal(
     existsSync(new URL("../../vitest.integration.config.ts", import.meta.url)),
-    false,
+    true,
   );
   assert.equal(
-    existsSync(new URL("../integration-setup.ts", import.meta.url)),
-    false,
+    existsSync(new URL("../integration/canary.test.mjs", import.meta.url)),
+    true,
   );
+
+  const integrationScript = readFileSync(
+    new URL("../../scripts/test-integration.mjs", import.meta.url),
+    "utf8",
+  );
+  for (const name of [
+    "LEMON_SQUEEZY_API_KEY",
+    "LEMON_SQUEEZY_TEST_STORE_ID",
+    "LEMON_SQUEEZY_TEST_PRODUCT_ID",
+    "LEMON_SQUEEZY_TEST_LICENSE_KEY",
+    "LEMON_SQUEEZY_TEST_RUN_ID",
+  ]) {
+    assert.match(integrationScript, new RegExp(name));
+  }
+  assert.match(integrationScript, /prepareConsumer\("test-mode-integration"\)/);
+  assert.doesNotMatch(integrationScript, /Issue #32 adds/);
+  const integrationConfig = readRootText("vitest.integration.config.ts");
+  const canary = readRootText("test/integration/canary.test.mjs");
+  assert.match(integrationConfig, /testTimeout: 10 \* 60_000/);
+  assert.match(
+    canary,
+    /assert\.equal\(license\.license_key\.test_mode, true\)/,
+  );
+  assert.equal(
+    packageJson.scripts["test:integration:reap"],
+    "node scripts/reap-integration-fixtures.mjs",
+  );
+  const reaper = readFileSync(
+    new URL("../integration/reaper.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(reaper, /24 \* 60 \* 60 \* 1_000/);
+  assert.match(reaper, /sdk-ci-/);
+  assert.match(reaper, /MAX_PAGES = 10/);
+  assert.doesNotMatch(reaper, /customers|orders|subscriptions|license-keys/);
 });
 
-test("exact-tarball type fixtures stay outside source-workspace analysis", () => {
+void test("exact-tarball type fixtures stay outside source-workspace analysis", () => {
   const oxlint = JSON.parse(
     readFileSync(new URL("../../.oxlintrc.json", import.meta.url), "utf8"),
   );
@@ -178,4 +213,64 @@ test("exact-tarball type fixtures stay outside source-workspace analysis", () =>
 
   assert.ok(oxlint.ignorePatterns.includes("test/package/types/**"));
   assert.ok(tsconfig.exclude.includes("test/package/types"));
+});
+
+void test("the credential-free gate exercises exact-tarball bundler graphs", () => {
+  assert.equal(
+    packageJson.scripts["test:bundlers"],
+    "node scripts/test-bundlers.mjs",
+  );
+  assert.match(
+    packageJson.scripts.check,
+    /pack:artifact.*test:artifact.*test:types.*test:package.*test:bundlers/,
+  );
+  assert.equal(
+    existsSync(new URL("../../scripts/test-bundlers.mjs", import.meta.url)),
+    true,
+  );
+  assert.equal(
+    existsSync(new URL("../package/bundlers/client.mjs", import.meta.url)),
+    true,
+  );
+});
+
+void test("package installation is independent from the consumer runtime", () => {
+  const packageSmoke = readRootText("scripts/test-package.mjs");
+  assert.match(packageSmoke, /PACKAGE_SMOKE_NODE_BINARY/);
+  assert.match(packageSmoke, /PACKAGE_SMOKE_BUN_BINARY/);
+  assert.match(packageSmoke, /prepareConsumer\("package-smoke"\)/);
+});
+
+void test("credentialed v4 tests have exactly one migrated destination", () => {
+  for (const path of [
+    "test/checkouts/index.test.ts",
+    "test/customers/index.test.ts",
+    "test/discountRedemptions/index.test.ts",
+    "test/discounts/index.test.ts",
+    "test/files/index.test.ts",
+    "test/internal/fetch.test.ts",
+    "test/license/index.test.ts",
+    "test/licenseKeyInstances/index.test.ts",
+    "test/licenseKeys/index.test.ts",
+    "test/orderItems/index.test.ts",
+    "test/orders/index.test.ts",
+    "test/prices/index.test.ts",
+    "test/products/index.test.ts",
+    "test/stores/index.test.ts",
+    "test/subscriptionInvoices/index.test.ts",
+    "test/subscriptionItems/index.test.ts",
+    "test/subscriptions/index.test.ts",
+    "test/usageRecords/index.test.ts",
+    "test/users/index.test.ts",
+    "test/variants/index.test.ts",
+    "test/webhooks/index.test.ts",
+  ]) {
+    assert.equal(
+      existsSync(new URL(`../../${path}`, import.meta.url)),
+      false,
+      path,
+    );
+  }
+  const vitestConfig = readRootText("vitest.config.ts");
+  assert.doesNotMatch(vitestConfig, /\.skip|skipIf|LEMON_SQUEEZY_/);
 });

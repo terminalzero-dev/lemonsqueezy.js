@@ -11,13 +11,13 @@ const artifactDirectory = fileURLToPath(
 const files = readdirSync(artifactDirectory).sort();
 const packageFiles = readdirSync(join(artifactDirectory, "packages")).sort();
 
-test("pack produces one canonical tarball and one publish plan", () => {
+void test("pack produces one canonical tarball and one publish plan", () => {
   assert.equal(packageFiles.filter((file) => file.endsWith(".tgz")).length, 1);
   assert.equal(files.includes("publish-plan.json"), true);
   assert.equal(files.includes("artifact.json"), true);
 });
 
-test("the recorded canonical artifact digest matches the exact tarball", () => {
+void test("the recorded canonical artifact digest matches the exact tarball", () => {
   const identity = JSON.parse(
     readFileSync(join(artifactDirectory, "artifact.json"), "utf8"),
   );

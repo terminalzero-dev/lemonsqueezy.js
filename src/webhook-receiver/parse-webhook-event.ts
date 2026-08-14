@@ -8,7 +8,7 @@ import type {
   WebhookRawBody,
 } from "./types";
 
-const resourceTypeByEvent = {
+export const knownWebhookEventCatalog = {
   order_created: "orders",
   order_refunded: "orders",
   customer_updated: "customers",
@@ -114,8 +114,8 @@ function decodeEvent(payload: unknown): InboundWebhookEvent {
 }
 
 function knownResourceType(eventName: string): string | undefined {
-  if (Object.hasOwn(resourceTypeByEvent, eventName)) {
-    return resourceTypeByEvent[eventName as KnownWebhookEventName];
+  if (Object.hasOwn(knownWebhookEventCatalog, eventName)) {
+    return knownWebhookEventCatalog[eventName as KnownWebhookEventName];
   }
 
   return undefined;
