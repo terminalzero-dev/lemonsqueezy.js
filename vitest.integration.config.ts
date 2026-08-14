@@ -8,5 +8,6 @@ export default defineConfig({
     include: ["integration/**/*.test.mjs"],
     maxWorkers: 1,
     sequence: { concurrent: false },
+    testTimeout: 10 * 60_000,
   },
 });

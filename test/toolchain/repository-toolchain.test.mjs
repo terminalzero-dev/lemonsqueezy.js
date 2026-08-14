@@ -182,6 +182,13 @@ void test("Test Mode integration is an exact-tarball, fail-closed protected cana
   }
   assert.match(integrationScript, /prepareConsumer\("test-mode-integration"\)/);
   assert.doesNotMatch(integrationScript, /Issue #32 adds/);
+  const integrationConfig = readRootText("vitest.integration.config.ts");
+  const canary = readRootText("test/integration/canary.test.mjs");
+  assert.match(integrationConfig, /testTimeout: 10 \* 60_000/);
+  assert.match(
+    canary,
+    /assert\.equal\(license\.license_key\.test_mode, true\)/,
+  );
   assert.equal(
     packageJson.scripts["test:integration:reap"],
     "node scripts/reap-integration-fixtures.mjs",

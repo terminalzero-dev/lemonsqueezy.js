@@ -93,7 +93,7 @@
     "test:integration": "node scripts/test-integration.mjs",
     "test:integration:reap": "node scripts/reap-integration-fixtures.mjs",
     "test:package": "node scripts/test-package.mjs",
-    "test:repository": "node --test test/toolchain/repository-toolchain.test.mjs test/toolchain/contract-drift.test.mjs",
+    "test:repository": "node --test test/toolchain/repository-toolchain.test.mjs test/toolchain/contract-drift.test.mjs test/toolchain/integration-safety.test.mjs",
     "test:types": "node scripts/test-types.mjs",
     "tool:versions": "node scripts/tool-versions.mjs",
     "typecheck": "node node_modules/typescript/bin/tsc --noEmit",

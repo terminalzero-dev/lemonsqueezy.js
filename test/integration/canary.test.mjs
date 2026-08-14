@@ -9,6 +9,10 @@ import {
 } from "@terminalzero/lemonsqueezy";
 import { createClient } from "@terminalzero/lemonsqueezy/client";
 import { describe, it } from "vitest";
+import {
+  cleanupRegisteredFixtures,
+  registerFixture,
+} from "./fixture-safety.mjs";
 
 const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
 const storeId = process.env.LEMON_SQUEEZY_TEST_STORE_ID;
@@ -50,7 +54,13 @@ describe("protected Test Mode release canary", () => {
         amountType: "percent",
         testMode: true,
       });
-      await registerFixture("discount", discount.data);
+      await registerFixture({
+        journal,
+        type: "discount",
+        resource: discount.data,
+        storeId,
+        persist: persistJournal,
+      });
       assertResource(discount.data, "discounts", journal.fixtures.at(-1).id);
       assert.equal(discount.data.attributes.store_id, Number(storeId));
       assert.equal(discount.data.attributes.test_mode, true);
@@ -66,7 +76,13 @@ describe("protected Test Mode release canary", () => {
         secret: randomBytes(32).toString("hex"),
         testMode: true,
       });
-      await registerFixture("webhook", webhook.data);
+      await registerFixture({
+        journal,
+        type: "webhook",
+        resource: webhook.data,
+        storeId,
+        persist: persistJournal,
+      });
       assertResource(webhook.data, "webhooks", journal.fixtures.at(-1).id);
       assert.equal(webhook.data.attributes.store_id, Number(storeId));
       assert.equal(webhook.data.attributes.test_mode, true);
@@ -82,15 +98,13 @@ describe("protected Test Mode release canary", () => {
     } catch (error) {
       primaryError = error;
     } finally {
-      for (const fixture of [...journal.fixtures].reverse()) {
-        try {
-          await cleanupFixture(fixture);
-        } catch (error) {
-          fixture.cleanupStatus = "failed";
-          await persistJournal();
-          cleanupErrors.push(error);
-        }
-      }
+      cleanupErrors.push(
+        ...(await cleanupRegisteredFixtures({
+          fixtures: journal.fixtures,
+          cleanup: cleanupFixture,
+          persist: persistJournal,
+        })),
+      );
     }
 
     if (primaryError || cleanupErrors.length > 0) {
@@ -132,27 +146,13 @@ async function preflight() {
   const license = await client.license.validate({ licenseKey });
   assert.equal(typeof license.valid, "boolean");
   assert.equal(license.meta.store_id, Number(storeId));
-  assert.notEqual(license.license_key.test_mode, false);
+  assert.equal(license.license_key.test_mode, true);
 }
 
 function assertResource(resource, type, id) {
   assert.equal(resource.type, type);
   assert.equal(typeof resource.id, "string");
   if (id !== undefined) assert.equal(resource.id, String(id));
-}
-
-async function registerFixture(type, resource) {
-  assert.equal(typeof resource.attributes.created_at, "string");
-  const fixture = {
-    type,
-    id: resource.id,
-    storeId,
-    createdAt: resource.attributes.created_at,
-    cleanupAction: "delete",
-    cleanupStatus: "pending",
-  };
-  journal.fixtures.push(fixture);
-  await persistJournal();
 }
 
 async function cleanupFixture(fixture) {
@@ -163,14 +163,10 @@ async function cleanupFixture(fixture) {
       const result = await remove(fixture.id);
       if (result.error === null) {
         assert.equal(result.statusCode, 204, "Hard delete must return 204");
-        fixture.cleanupStatus = "cleaned";
-        await persistJournal();
-        return;
+        return "cleaned";
       }
       if (result.statusCode === 404) {
-        fixture.cleanupStatus = "already-cleaned";
-        await persistJournal();
-        return;
+        return "already-cleaned";
       }
       if (!isTransient(result.error) || attempt === 3) throw result.error;
     } catch (error) {
