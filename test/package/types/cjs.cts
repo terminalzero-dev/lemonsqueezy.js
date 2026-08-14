@@ -25,6 +25,9 @@ import type {
   DeactivateLicenseResponse,
   ValidateLicenseResponse,
   WebhookResponse,
+  InboundWebhookEvent,
+  OrderResource,
+  ParseWebhookEventInput,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -40,6 +43,24 @@ type UserEnvelope =
     };
 
 const userPromise: Promise<UserEnvelope> = sdk.getAuthenticatedUser();
+const webhookInput: ParseWebhookEventInput = {
+  secret: "signing-secret",
+  rawBody: new Uint8Array([123, 125]),
+  signature: "0".repeat(64),
+};
+const inboundWebhook: InboundWebhookEvent = sdk.parseWebhookEvent(webhookInput);
+function narrowInboundWebhook(event: InboundWebhookEvent) {
+  if (!event.known) return event.data;
+
+  switch (event.eventName) {
+    case "order_created": {
+      const resource: OrderResource = event.data;
+      return resource;
+    }
+    default:
+      return event.data;
+  }
+}
 const client = clientEntry.createClient({ apiKey: "type-contract" });
 const directUser: Promise<UserResponse> = client.users.getAuthenticated();
 const affiliate: Promise<AffiliateResponse> = client.affiliates.get(1);
@@ -119,6 +140,8 @@ const fullSubscriptionInvoiceRefundEnvelope =
   sdk.issueSubscriptionInvoiceRefund(1);
 
 void userPromise;
+void inboundWebhook;
+void narrowInboundWebhook;
 void directUser;
 void affiliate;
 void customer;

@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const { createHmac } = require("node:crypto");
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const client = require("@terminalzero/lemonsqueezy/client");
@@ -13,16 +14,42 @@ const expectedClient = [
   "createClient",
   "isLemonSqueezyError",
 ];
+const expectedWebhookReceiver = [
+  "WebhookError",
+  "isWebhookError",
+  "parseWebhookEvent",
+];
 const compareNames = (left, right) => left.localeCompare(right);
 
 assert.deepEqual(
   Object.keys(root).sort(compareNames),
-  [...expected, ...expectedClient].sort(compareNames),
+  [...expected, ...expectedClient, ...expectedWebhookReceiver].sort(
+    compareNames,
+  ),
 );
 assert.deepEqual(Object.keys(compat).sort(), expected);
 assert.deepEqual(
   Object.keys(client).sort(compareNames),
   [...expectedClient].sort(compareNames),
+);
+const webhookBody = JSON.stringify({
+  meta: { event_name: "order_created" },
+  data: { type: "orders", id: "installed-package" },
+});
+assert.deepEqual(
+  root.parseWebhookEvent({
+    secret: "package-smoke-secret",
+    rawBody: webhookBody,
+    signature: createHmac("sha256", "package-smoke-secret")
+      .update(webhookBody)
+      .digest("hex"),
+  }),
+  {
+    known: true,
+    eventName: "order_created",
+    meta: { event_name: "order_created" },
+    data: { type: "orders", id: "installed-package" },
+  },
 );
 assert.equal(
   root.lemonSqueezySetup({ apiKey: "package-smoke" }).apiKey,

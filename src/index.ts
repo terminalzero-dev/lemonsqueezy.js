@@ -1,4 +1,10 @@
 export { createClient, isLemonSqueezyError, LemonSqueezyError } from "./client";
+export {
+  isWebhookError,
+  parseWebhookEvent,
+  WebhookError,
+} from "./webhook-receiver";
+export type * from "./webhook-receiver/types";
 export type {
   AbortSignal,
   ClientOptions,

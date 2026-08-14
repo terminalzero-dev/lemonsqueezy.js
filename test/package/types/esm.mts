@@ -8,6 +8,8 @@ import {
   getAuthenticatedUser,
   issueSubscriptionInvoiceRefund,
   isLemonSqueezyError,
+  isWebhookError,
+  parseWebhookEvent,
   validateLicense,
   updateSubscriptionItem,
   type LemonSqueezyError,
@@ -16,6 +18,7 @@ import {
   type User,
   type AffiliateResponse,
   type LicenseKeyResponse,
+  type WebhookError,
 } from "@terminalzero/lemonsqueezy";
 import type {
   AffiliateStatus,
@@ -76,6 +79,21 @@ import type {
   WebhookListResponse,
   WebhookResponse,
   WebhookSubscriptionEventName,
+  InboundWebhookEvent,
+  KnownInboundWebhookEvent,
+  KnownWebhookEventName,
+  ParseWebhookEventInput,
+  UnknownInboundWebhookEvent,
+  WebhookErrorCode,
+  WebhookEventMeta,
+  WebhookEventResourceMap,
+  WebhookRawBody,
+  AffiliateResource,
+  CustomerResource,
+  LicenseKeyResource,
+  OrderResource,
+  SubscriptionInvoiceResource,
+  SubscriptionResource,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -91,6 +109,60 @@ type UserEnvelope =
     };
 
 const userPromise: Promise<UserEnvelope> = getAuthenticatedUser();
+const webhookRawBody: WebhookRawBody = "{}";
+const parseWebhookInput: ParseWebhookEventInput = {
+  secret: "signing-secret",
+  rawBody: webhookRawBody,
+  signature: "0".repeat(64),
+};
+const inboundWebhookEvent: InboundWebhookEvent =
+  parseWebhookEvent(parseWebhookInput);
+declare const webhookError: WebhookError;
+const webhookErrorCode: WebhookErrorCode = webhookError.code;
+const guardedWebhookError: boolean = isWebhookError(webhookError);
+// @ts-expect-error Webhook error causes are readonly
+webhookError.cause = new Error("replacement");
+type KnownEvent = KnownWebhookEventName;
+type EventMap = WebhookEventResourceMap;
+type EventMeta = WebhookEventMeta<KnownEvent>;
+type KnownEventEnvelope = KnownInboundWebhookEvent;
+type UnknownEventEnvelope = UnknownInboundWebhookEvent;
+
+function narrowKnownWebhookEvent(event: InboundWebhookEvent) {
+  if (!event.known) return event.data;
+
+  const knownEvent: KnownInboundWebhookEvent = event;
+  void knownEvent;
+
+  switch (event.eventName) {
+    case "order_created": {
+      const resource: OrderResource = event.data;
+      return resource;
+    }
+    case "customer_updated": {
+      const resource: CustomerResource = event.data;
+      return resource;
+    }
+    case "subscription_created": {
+      const resource: SubscriptionResource = event.data;
+      return resource;
+    }
+    case "subscription_payment_success": {
+      const resource: SubscriptionInvoiceResource = event.data;
+      return resource;
+    }
+    case "license_key_created": {
+      const resource: LicenseKeyResource = event.data;
+      return resource;
+    }
+    case "affiliate_activated": {
+      const resource: AffiliateResource = event.data;
+      return resource;
+    }
+    default:
+      return event.data;
+  }
+}
 const client = createClient({ apiKey: "type-contract", timeoutMs: 1_000 });
 const directUser: Promise<UserResponse> = client.users.getAuthenticated();
 const store: Promise<StoreResponse> = client.stores.get(1);
@@ -292,6 +364,14 @@ const deactivatedLicenseEnvelope = deactivateLicense(
   "instance-42",
 );
 const futureLicenseKeyStatus: LicenseKeyStatus = "future_status";
+void inboundWebhookEvent;
+void webhookErrorCode;
+void guardedWebhookError;
+void narrowKnownWebhookEvent;
+void (undefined as unknown as EventMap);
+void (undefined as unknown as EventMeta);
+void (undefined as unknown as KnownEventEnvelope);
+void (undefined as unknown as UnknownEventEnvelope);
 declare const canonicalDiscountResponse: DiscountResponse;
 declare const compatibilityDiscount: Discount;
 declare const canonicalDiscountRedemptionResponse: DiscountRedemptionResponse;
@@ -574,6 +654,15 @@ void validatedLicenseEnvelope;
 void deactivatedLicenseEnvelope;
 // @ts-expect-error Internal contracts are not public package entries
 import("@terminalzero/lemonsqueezy/namespaces/affiliates/contract");
+// @ts-expect-error Inbound Webhook receiver has no runtime subpath
+import("@terminalzero/lemonsqueezy/webhook-receiver");
+parseWebhookEvent({
+  secret: "signing-secret",
+  rawBody: "{}",
+  signature: "0".repeat(64),
+  // @ts-expect-error Event identity comes only from signed meta.event_name
+  eventName: "order_created",
+});
 // @ts-expect-error Compatibility facade returns an envelope, not a direct body
 const directFacadeBody: Promise<UserResponse> = getAuthenticatedUser();
 void directFacadeBody;

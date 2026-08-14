@@ -2,6 +2,7 @@ export type * from "./response";
 export type * from "./common";
 export type * from "./iso";
 export type * from "./jsonapi";
+export type * from "../webhook-receiver/types";
 export type * from "../namespaces/users/types";
 export type {
   StoreAttributes,
