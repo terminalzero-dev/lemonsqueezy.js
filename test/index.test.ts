@@ -26,15 +26,22 @@ describe("v5 package entries", () => {
     "createClient",
     "isLemonSqueezyError",
   ];
+  const expectedWebhookReceiverRuntimeExports = [
+    "WebhookError",
+    "isWebhookError",
+    "parseWebhookEvent",
+  ];
 
   it("keeps Client runtime exports out of the Compatibility entry", () => {
     expect(Object.keys(clientExports).sort(compareNames)).toEqual(
       [...expectedClientRuntimeExports].sort(compareNames),
     );
     expect(Object.keys(rootExports).sort(compareNames)).toEqual(
-      [...expectedCompatRuntimeExports, ...expectedClientRuntimeExports].sort(
-        compareNames,
-      ),
+      [
+        ...expectedCompatRuntimeExports,
+        ...expectedClientRuntimeExports,
+        ...expectedWebhookReceiverRuntimeExports,
+      ].sort(compareNames),
     );
   });
 });

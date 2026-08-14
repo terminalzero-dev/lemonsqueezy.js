@@ -2,6 +2,7 @@ import {
   activateLicense,
   lemonSqueezySetup,
 } from "@terminalzero/lemonsqueezy/compat";
+import { parseWebhookEvent } from "@terminalzero/lemonsqueezy";
 import { createClient } from "@terminalzero/lemonsqueezy/client";
 import type {
   AffiliateListResponse,
@@ -21,9 +22,17 @@ import type {
   Flatten,
   UserResponse,
   WebhookListResponse,
+  InboundWebhookEvent,
+  ParseWebhookEventInput,
 } from "@terminalzero/lemonsqueezy/types";
 
 const config = lemonSqueezySetup({ apiKey: "type-contract" });
+const webhookInput: ParseWebhookEventInput = {
+  secret: "signing-secret",
+  rawBody: new Uint8Array([123, 125]),
+  signature: "0".repeat(64),
+};
+const inboundWebhook: InboundWebhookEvent = parseWebhookEvent(webhookInput);
 const value: Flatten<{ value: string }> = { value: config.apiKey ?? "" };
 const response: Promise<UserResponse> = createClient({
   apiKey: "type-contract",
@@ -90,6 +99,7 @@ const activatedLicenseEnvelope = activateLicense(
 );
 
 void value;
+void inboundWebhook;
 void response;
 void affiliates;
 void customer;
