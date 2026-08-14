@@ -1,6 +1,66 @@
 # @terminalzero/lemonsqueezy
 
-## 5.0.0-beta.1 (unreleased)
+## 5.0.0-beta.1
+
+### Minor Changes
+
+- [#42](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/42) [`f36f743`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/f36f74356c7eae5d78f156d55b45b252e79574bf) Thanks [@keyding](https://github.com/keyding)! - Add read-only Explicit Client namespaces for stores, products, variants,
+  prices, files, and affiliates with shared Compatibility projections for the
+  five v4 catalog resources.
+
+- [#47](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/47) [`4e4b94a`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/4e4b94afad02a3538cccd8e6e4477c5368037784) Thanks [@keyding](https://github.com/keyding)! - Add Subscription Item and Usage Record client namespaces with metering,
+  current usage, strict updates, and shared Compatibility projections.
+
+- [#45](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/45) [`a2e172f`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/a2e172f97d88ae32323877deb349ca18e101e850) Thanks [@keyding](https://github.com/keyding)! - Add the Subscription Resource namespace with retrieval, listing, updates,
+  cancellation, reviewed filters, and Operation Contracts shared with the
+  Compatibility facade.
+
+- [#41](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/41) [`8d110b1`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/8d110b14056ab5ffe5fb5cf546fab6b68deed3fe) Thanks [@keyding](https://github.com/keyding)! - Add the first v5 Explicit Client tracer bullet with `users.getAuthenticated`,
+  shared Compatibility execution, classified errors, request cancellation and
+  timeouts, and public Canonical JSON:API types.
+
+- [#51](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/51) [`2f15b24`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/2f15b24ea9abd8f72f42990f8a8271f0aead10e7) Thanks [@keyding](https://github.com/keyding)! - Add the credential-free License API namespace with activation, validation, and
+  deactivation operations backed by the same contracts as the positional
+  Compatibility facade.
+
+- [#54](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/54) [`4b60638`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/4b60638a6d3410ddd0ad299f6102f9ed1d3795e5) Thanks [@keyding](https://github.com/keyding)! - Complete the v4 Compatibility facade and migration experience with an exact
+  surface fixture, a packaged canonical migration guide, executable installed
+  package examples, release impact and rollback metadata, and migration feedback
+  intake.
+
+  Migration impact: Behavior correction
+
+  Exact rollback: `@lemonsqueezy/lemonsqueezy.js@4.0.0` with the recorded
+  pre-migration manifest and lockfile.
+
+- [#46](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/46) [`f7f5fda`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/f7f5fda06c5064a46ee0d19a1c724120894d549e) Thanks [@keyding](https://github.com/keyding)! - Add the Subscription Invoice namespace with retrieval, listing, invoice
+  generation, full and partial refunds, and shared Compatibility projections.
+
+- [#44](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/44) [`cfc925c`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/cfc925c68558bc86f9ba118fe8ff30e666b06146) Thanks [@keyding](https://github.com/keyding)! - Add Order and Order Item Resource namespaces with invoice generation, full and
+  partial refunds, reviewed filters, and Operation Contracts shared with the
+  Compatibility facade.
+
+- [#43](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/43) [`d01afd5`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/d01afd5013ba1dc64a48f30799074f098ff0cef2) Thanks [@keyding](https://github.com/keyding)! - Add complete Customer and Checkout Explicit Client namespaces with shared
+  Compatibility execution, strict write inputs, and opaque checkout custom data.
+
+- [#48](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/48) [`b95a7e3`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/b95a7e3dc46a2114ee0859c33cb3da30b1b6167d) Thanks [@keyding](https://github.com/keyding)! - Add the Discount and Discount Redemption namespaces with create, retrieve,
+  list, hard-delete, and shared Compatibility projections.
+
+- [#53](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/53) [`0cf4a5b`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/0cf4a5b368c3a53c961df7cd48d1dbe82868350b) Thanks [@keyding](https://github.com/keyding)! - Add synchronous Inbound Webhook signature verification, known-event narrowing,
+  authenticated unknown-event preservation, and cross-package Webhook errors.
+
+- [#49](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/49) [`f2ad6d9`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/f2ad6d9374af43b340bbdb4a0dbc906469226846) Thanks [@keyding](https://github.com/keyding)! - Add authenticated License Key and License Key Instance namespaces with five
+  reviewed operations and shared Compatibility projections that preserve only
+  explicit License Key update fields.
+
+- [#52](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/52) [`c0c9e12`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/c0c9e12a73373d239461c8d34c9011ef036cb5eb) Thanks [@keyding](https://github.com/keyding)! - Add the Webhook Management namespace with create, retrieve, update, delete,
+  list, closed subscription-event inputs, and shared Compatibility projections.
+
+### Patch Changes
+
+- [#40](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/40) [`e1a7fe1`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/e1a7fe15b7fa7080dd7b22b3ff18a6e6ddc61234) Thanks [@keyding](https://github.com/keyding)! - Establish the Terminal Zero package identity, pnpm and Node 24 toolchain, dual-format ES2022 output, and exact-tarball validation baseline.
+
+### Release notes
 
 Migration impact: Behavior correction
 
