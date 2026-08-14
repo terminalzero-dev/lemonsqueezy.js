@@ -1,9 +1,16 @@
 import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
 
 export function createFixtureDiscountCode(fixtureTag) {
   const code = fixtureTag.replaceAll("-", "").toUpperCase();
   assert.match(code, /^[A-Z0-9]{3,256}$/);
   return code;
+}
+
+export function createFixtureWebhookSecret() {
+  const secret = randomBytes(20).toString("hex");
+  assert.equal(secret.length, 40);
+  return secret;
 }
 
 export async function registerFixture({

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   cleanupRegisteredFixtures,
   createFixtureDiscountCode,
+  createFixtureWebhookSecret,
   registerFixture,
 } from "../integration/fixture-safety.mjs";
 
@@ -11,6 +12,13 @@ void test("fixture discount codes satisfy the public contract", () => {
 
   assert.equal(code, "SDKCI317851792931");
   assert.match(code, /^[A-Z0-9]{3,256}$/);
+});
+
+void test("fixture webhook secrets stay within the API limit", () => {
+  const secret = createFixtureWebhookSecret();
+
+  assert.equal(secret.length, 40);
+  assert.match(secret, /^[a-f0-9]{40}$/);
 });
 
 void test("a created fixture remains cleanup-visible when journaling fails", async () => {
