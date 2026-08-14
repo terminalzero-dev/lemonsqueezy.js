@@ -10,7 +10,7 @@ import type {
   TransportAdapter,
 } from "./types";
 
-export async function sendJsonApiRequest(
+export async function sendRequest(
   request: CoreRequest,
   config: RuntimeConfig,
   transport: TransportAdapter,
@@ -18,7 +18,9 @@ export async function sendJsonApiRequest(
   sanitizeErrorDetail?: (value: unknown) => unknown,
 ): Promise<CoreSuccess<unknown>> {
   try {
-    return await sendJsonApiRequestOnce(request, config, transport, options);
+    return request.protocol === "license"
+      ? await sendLicenseRequestOnce(request, config, transport, options)
+      : await sendJsonApiRequestOnce(request, config, transport, options);
   } catch (error) {
     if (!sanitizeErrorDetail || !isLemonSqueezyError(error)) throw error;
 
@@ -37,8 +39,58 @@ export async function sendJsonApiRequest(
   }
 }
 
+async function sendLicenseRequestOnce(
+  request: Extract<CoreRequest, { readonly protocol: "license" }>,
+  config: RuntimeConfig,
+  transport: TransportAdapter,
+  options?: RequestOptions,
+): Promise<CoreSuccess<unknown>> {
+  const timeoutMs = validateRequestOptions(config, options);
+  const headers = new Headers({
+    Accept: "application/json",
+    "Content-Type": "application/x-www-form-urlencoded",
+  });
+  const received = await receiveOnce(
+    transport,
+    new URL(`${API_BASE_URL}${request.path}`).href,
+    {
+      method: request.method,
+      headers,
+      body: createFormBody(request.form),
+    },
+    timeoutMs,
+    options?.signal,
+  );
+  const parsed = parseResponseBody(received.text);
+
+  if (!received.response.ok) {
+    throw new LemonSqueezyError(
+      `Lemon Squeezy License API request failed with status ${received.response.status}.`,
+      "http",
+      {
+        statusCode: received.response.status,
+        responseBody: parsed.body,
+      },
+    );
+  }
+
+  if (!parsed.isJson) {
+    throw new LemonSqueezyError(
+      "Lemon Squeezy License API returned an invalid response.",
+      "invalid_response",
+      {
+        statusCode: received.response.status,
+        responseBody: parsed.body,
+        cause: parsed.cause,
+      },
+    );
+  }
+
+  return { statusCode: received.response.status, body: parsed.body };
+}
+
 async function sendJsonApiRequestOnce(
-  request: CoreRequest,
+  request: Extract<CoreRequest, { readonly protocol: "jsonapi" }>,
   config: RuntimeConfig,
   transport: TransportAdapter,
   options?: RequestOptions,
@@ -50,19 +102,7 @@ async function sendJsonApiRequestOnce(
     );
   }
 
-  const timeoutMs = options?.timeoutMs ?? config.timeoutMs;
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
-    throw new LemonSqueezyError(
-      "timeoutMs must be a positive finite number.",
-      "validation",
-    );
-  }
-
-  if (options?.signal?.aborted) {
-    throw new LemonSqueezyError("The request was aborted.", "aborted", {
-      cause: options.signal.reason,
-    });
-  }
+  const timeoutMs = validateRequestOptions(config, options);
 
   const headers = new Headers({
     Accept: "application/vnd.api+json",
@@ -114,6 +154,35 @@ async function sendJsonApiRequestOnce(
   }
 
   return { statusCode: received.response.status, body: parsed.body };
+}
+
+function createFormBody(
+  fields: readonly (readonly [string, string])[],
+): string {
+  const form = new URLSearchParams();
+  fields.forEach(([name, value]) => form.append(name, value));
+  return form.toString();
+}
+
+function validateRequestOptions(
+  config: RuntimeConfig,
+  options?: RequestOptions,
+): number {
+  const timeoutMs = options?.timeoutMs ?? config.timeoutMs;
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new LemonSqueezyError(
+      "timeoutMs must be a positive finite number.",
+      "validation",
+    );
+  }
+
+  if (options?.signal?.aborted) {
+    throw new LemonSqueezyError("The request was aborted.", "aborted", {
+      cause: options.signal.reason,
+    });
+  }
+
+  return timeoutMs;
 }
 
 interface ReceivedResponse {

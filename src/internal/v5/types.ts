@@ -28,13 +28,22 @@ export interface RuntimeConfig {
 
 export type TransportAdapter = (request: Request) => Promise<Response>;
 
-export interface CoreRequest {
+export interface JsonApiCoreRequest {
   readonly protocol: "jsonapi";
   readonly method: "GET" | "POST" | "PATCH" | "DELETE";
   readonly path: `/v1/${string}`;
   readonly query?: URLSearchParams;
   readonly body?: unknown;
 }
+
+export interface LicenseCoreRequest {
+  readonly protocol: "license";
+  readonly method: "POST";
+  readonly path: `/v1/licenses/${"activate" | "validate" | "deactivate"}`;
+  readonly form: readonly (readonly [string, string])[];
+}
+
+export type CoreRequest = JsonApiCoreRequest | LicenseCoreRequest;
 
 export type SuccessContract =
   | {
@@ -43,7 +52,11 @@ export type SuccessContract =
     }
   | { readonly kind: "meta-only" }
   | { readonly kind: "invoice" }
-  | { readonly kind: "empty" };
+  | { readonly kind: "empty" }
+  | {
+      readonly kind: "license-json";
+      readonly discriminator: "activated" | "valid" | "deactivated";
+    };
 
 declare const operationResult: unique symbol;
 
@@ -52,7 +65,7 @@ export interface OperationContract<Args extends readonly unknown[], Result> {
   readonly compile: (args: Args) => CoreRequest;
   readonly success: SuccessContract;
   readonly evidence: readonly string[];
-  readonly sanitizeErrorDetail?: (value: unknown) => unknown;
+  readonly sanitizeErrorDetail?: (value: unknown, args: Args) => unknown;
   readonly [operationResult]?: Result;
 }
 

@@ -1,4 +1,17 @@
-import { $fetch, convertKeys, requiredCheck } from "../internal";
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
+import {
+  activateLicenseOperation,
+  deactivateLicenseOperation,
+  validateLicenseOperation,
+} from "../namespaces/license/contract";
+import type {
+  ActivateLicenseInput,
+  ActivateLicenseResponse,
+  DeactivateLicenseInput,
+  DeactivateLicenseResponse,
+  ValidateLicenseInput,
+  ValidateLicenseResponse,
+} from "../namespaces/license/types";
 import type {
   ActivateLicense,
   DeactivateLicense,
@@ -16,15 +29,11 @@ export async function activateLicense(
   licenseKey: string,
   instanceName: string,
 ) {
-  requiredCheck({ licenseKey, instanceName });
-  return $fetch<ActivateLicense>(
-    {
-      path: "/v1/licenses/activate",
-      method: "POST",
-      body: convertKeys({ licenseKey, instanceName }),
-    },
-    false,
-  );
+  return invokeDefaultCompatibility<
+    readonly [ActivateLicenseInput],
+    ActivateLicenseResponse,
+    ActivateLicense
+  >(activateLicenseOperation, [{ licenseKey, instanceName }]);
 }
 
 /**
@@ -35,18 +44,11 @@ export async function activateLicense(
  * @returns A response object containing `valid`, `error`, `license_key`, `instance`, `meta`.
  */
 export async function validateLicense(licenseKey: string, instanceId?: string) {
-  requiredCheck({ licenseKey });
-  return $fetch<ValidateLicense>(
-    {
-      path: "/v1/licenses/validate",
-      method: "POST",
-      body: convertKeys({
-        licenseKey,
-        instanceId,
-      }),
-    },
-    false,
-  );
+  return invokeDefaultCompatibility<
+    readonly [ValidateLicenseInput],
+    ValidateLicenseResponse,
+    ValidateLicense
+  >(validateLicenseOperation, [{ licenseKey, instanceId }]);
 }
 
 /**
@@ -60,16 +62,9 @@ export async function deactivateLicense(
   licenseKey: string,
   instanceId: string,
 ) {
-  requiredCheck({ licenseKey, instanceId });
-  return $fetch<DeactivateLicense>(
-    {
-      path: "/v1/licenses/deactivate",
-      method: "POST",
-      body: convertKeys({
-        licenseKey,
-        instanceId,
-      }),
-    },
-    false,
-  );
+  return invokeDefaultCompatibility<
+    readonly [DeactivateLicenseInput],
+    DeactivateLicenseResponse,
+    DeactivateLicense
+  >(deactivateLicenseOperation, [{ licenseKey, instanceId }]);
 }

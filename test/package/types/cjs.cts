@@ -21,6 +21,9 @@ import type {
   DiscountRedemptionResponse,
   LicenseKeyResponse,
   LicenseKeyInstanceResponse,
+  ActivateLicenseResponse,
+  DeactivateLicenseResponse,
+  ValidateLicenseResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -80,6 +83,27 @@ const licenseKey: Promise<LicenseKeyResponse> = client.licenseKeys.update(1, {
 });
 const licenseKeyInstance: Promise<LicenseKeyInstanceResponse> =
   client.licenseKeyInstances.get(1);
+const activatedLicense: Promise<ActivateLicenseResponse> =
+  client.license.activate(
+    { licenseKey: "business-license-key", instanceName: "Work laptop" },
+    { timeoutMs: 1_000 },
+  );
+const validatedLicense: Promise<ValidateLicenseResponse> =
+  client.license.validate({ licenseKey: "business-license-key" });
+const deactivatedLicense: Promise<DeactivateLicenseResponse> =
+  client.license.deactivate({
+    licenseKey: "business-license-key",
+    instanceId: "instance-42",
+  });
+const activatedLicenseEnvelope = sdk.activateLicense(
+  "business-license-key",
+  "Work laptop",
+);
+const validatedLicenseEnvelope = sdk.validateLicense("business-license-key");
+const deactivatedLicenseEnvelope = sdk.deactivateLicense(
+  "business-license-key",
+  "instance-42",
+);
 const deletedDiscountEnvelope = sdk.deleteDiscount(1);
 const numericSubscriptionItemEnvelope = sdk.updateSubscriptionItem(1, 3);
 const subscriptionInvoiceEnvelope = sdk.generateSubscriptionInvoice(1);
@@ -106,6 +130,12 @@ void deletedDiscount;
 void discountRedemption;
 void licenseKey;
 void licenseKeyInstance;
+void activatedLicense;
+void validatedLicense;
+void deactivatedLicense;
+void activatedLicenseEnvelope;
+void validatedLicenseEnvelope;
+void deactivatedLicenseEnvelope;
 void deletedDiscountEnvelope;
 void numericSubscriptionItemEnvelope;
 void subscriptionInvoiceEnvelope;
