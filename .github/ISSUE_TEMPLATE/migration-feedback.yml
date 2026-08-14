@@ -1,0 +1,81 @@
+name: Migration feedback
+description: Share evidence or a blocker from adopting an exact Terminal Zero release.
+title: "[Migration]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing the community-maintained SDK. Remove confidential values and account, store, and customer identifiers before submitting. Community feedback does not create a response-time or resolution commitment.
+  - type: input
+    id: versions
+    attributes:
+      label: Exact package versions
+      description: Provide the exact upstream starting version and exact Terminal Zero target version.
+      placeholder: "4.0.0 to 5.0.0-beta.N"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Consumer environment
+      description: Include runtime and version, ESM or CJS, TypeScript version and resolution mode, and package manager version.
+    validations:
+      required: true
+  - type: dropdown
+    id: path
+    attributes:
+      label: Migration path
+      options:
+        - Compatibility-first
+        - Progressive Client
+        - Greenfield Explicit Client
+    validations:
+      required: true
+  - type: textarea
+    id: surfaces
+    attributes:
+      label: SDK surfaces exercised
+      description: List facade functions, Client namespaces, or the Inbound Webhook receiver used.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction and evidence
+      description: Describe the smallest sanitized reproduction, expected result, actual result, and verification already performed.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Describe any application-side workaround, or write None.
+    validations:
+      required: true
+  - type: dropdown
+    id: blocker
+    attributes:
+      label: Does this block migration?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+  - type: dropdown
+    id: stable
+    attributes:
+      label: Stable adoption on the current contract
+      description: Would this project adopt Stable if the reported blockers are resolved?
+      options:
+        - "Yes"
+        - "No"
+        - Undecided
+    validations:
+      required: true
+  - type: checkboxes
+    id: sanitized
+    attributes:
+      label: Sanitization confirmation
+      options:
+        - label: I removed confidential values, raw request bodies, and account or customer identifiers.
+          required: true

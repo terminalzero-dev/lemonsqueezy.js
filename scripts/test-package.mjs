@@ -16,6 +16,7 @@ const topLevelFiles = (await readdir(installedPackage)).sort();
 
 assert.deepEqual(topLevelFiles, [
   "LICENSE",
+  "MIGRATION.md",
   "README.md",
   "dist",
   "package.json",

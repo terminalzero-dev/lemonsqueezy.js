@@ -1,4 +1,31 @@
-# @lemonsqueezy/lemonsqueezy.js
+# @terminalzero/lemonsqueezy
+
+## 5.0.0-beta.1 (unreleased)
+
+Migration impact: Behavior correction
+
+Exact rollback: restore the recorded pre-migration commit and lockfile with
+`@lemonsqueezy/lemonsqueezy.js@4.0.0`. After this beta has been validated,
+record its exact package version separately as the Terminal Zero Last Known
+Good rollback target.
+
+Migration guide:
+[`MIGRATION.md` at the `v5.0.0-beta.1` tag](https://github.com/terminalzero-dev/lemonsqueezy.js/blob/v5.0.0-beta.1/MIGRATION.md).
+
+- Add the complete Explicit Client operation set, Compatibility facade, and
+  Inbound Webhook receiver.
+- Correct the documented v4 behavior classes for empty responses, error
+  status and data, list serialization, explicit update fields, invoice and
+  Subscription Item declarations, falsy validation, Promise rejection, and
+  `onError` isolation. Review every applicable row in the tagged Migration
+  Behavior Audit before rollout.
+- Ship exact-tarball ESM/CJS, TypeScript, runtime, and migration-example
+  verification.
+
+## Upstream history
+
+The entries below record releases made before the Terminal Zero package
+boundary.
 
 ## 4.0.0
 
