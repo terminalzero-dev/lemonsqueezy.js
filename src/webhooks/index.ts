@@ -1,10 +1,20 @@
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertKeys,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  createWebhookOperation,
+  deleteWebhookOperation,
+  getWebhookOperation,
+  listWebhooksOperation,
+  updateWebhookOperation,
+} from "../namespaces/webhooks/contract";
+import type {
+  CreateWebhookInput,
+  GetWebhookParams as CanonicalGetWebhookParams,
+  ListWebhooksParams as CanonicalListWebhooksParams,
+  UpdateWebhookInput,
+  WebhookListResponse,
+  WebhookResponse,
+} from "../namespaces/webhooks/types";
+import type { FetchResponse } from "../internal/fetch/types";
 import type {
   GetWebhookParams,
   ListWebhooks,
@@ -22,33 +32,12 @@ import type {
  * @returns A webhook object.
  */
 export function createWebhook(storeId: number | string, webhook: NewWebhook) {
-  requiredCheck({ storeId });
-
-  const { url, events, secret, testMode } = webhook;
-
-  return $fetch<Webhook>({
-    path: "/v1/webhooks",
-    method: "POST",
-    body: {
-      data: {
-        type: "webhooks",
-        attributes: convertKeys({
-          url,
-          events,
-          secret,
-          testMode,
-        }),
-        relationships: {
-          store: {
-            data: {
-              type: "stores",
-              id: storeId.toString(),
-            },
-          },
-        },
-      },
-    },
-  });
+  const input: CreateWebhookInput = { storeId, ...webhook };
+  return invokeDefaultCompatibility<
+    readonly [CreateWebhookInput],
+    WebhookResponse,
+    Webhook
+  >(createWebhookOperation, [input]) as Promise<FetchResponse<Webhook>>;
 }
 
 /**
@@ -63,10 +52,13 @@ export function getWebhook(
   webhookId: number | string,
   params: GetWebhookParams = {},
 ) {
-  requiredCheck({ webhookId });
-  return $fetch<Webhook>({
-    path: `/v1/webhooks/${webhookId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetWebhookParams],
+    WebhookResponse,
+    Webhook
+  >(getWebhookOperation, [webhookId, params]) as Promise<
+    FetchResponse<Webhook>
+  >;
 }
 
 /**
@@ -80,25 +72,14 @@ export function updateWebhook(
   webhookId: number | string,
   webhook: UpdateWebhook,
 ) {
-  requiredCheck({ webhookId });
-
-  const { url, events, secret } = webhook;
-
-  return $fetch<Webhook>({
-    path: `/v1/webhooks/${webhookId}`,
-    method: "PATCH",
-    body: {
-      data: {
-        id: webhookId.toString(),
-        type: "webhooks",
-        attributes: convertKeys({
-          url,
-          events,
-          secret,
-        }),
-      },
-    },
-  });
+  const input: UpdateWebhookInput = webhook;
+  return invokeDefaultCompatibility<
+    readonly [number | string, UpdateWebhookInput],
+    WebhookResponse,
+    Webhook
+  >(updateWebhookOperation, [webhookId, input]) as Promise<
+    FetchResponse<Webhook>
+  >;
 }
 
 /**
@@ -108,11 +89,10 @@ export function updateWebhook(
  * @returns A `204` status code and `No Content` response on success.
  */
 export function deleteWebhook(webhookId: number | string) {
-  requiredCheck({ webhookId });
-  return $fetch<null>({
-    path: `/v1/webhooks/${webhookId}`,
-    method: "DELETE",
-  });
+  return invokeDefaultCompatibility<readonly [number | string], void, null>(
+    deleteWebhookOperation,
+    [webhookId],
+  ) as Promise<FetchResponse<null>>;
 }
 
 /**
@@ -128,7 +108,9 @@ export function deleteWebhook(webhookId: number | string) {
  * @returns A paginated list of webhook objects ordered by `created_at`.
  */
 export function listWebhooks(params: ListWebhooksParams = {}) {
-  return $fetch<ListWebhooks>({
-    path: `/v1/webhooks${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListWebhooksParams],
+    WebhookListResponse,
+    ListWebhooks
+  >(listWebhooksOperation, [params]) as Promise<FetchResponse<ListWebhooks>>;
 }

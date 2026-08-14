@@ -20,6 +20,7 @@ import type { DiscountRedemptionsNamespace } from "../namespaces/discount-redemp
 import type { LicenseKeysNamespace } from "../namespaces/license-keys/namespace";
 import type { LicenseKeyInstancesNamespace } from "../namespaces/license-key-instances/namespace";
 import type { LicenseNamespace } from "../namespaces/license/namespace";
+import type { WebhooksNamespace } from "../namespaces/webhooks/namespace";
 
 export {
   isLemonSqueezyError,
@@ -70,6 +71,8 @@ export type { LicenseKeyInstancesNamespace } from "../namespaces/license-key-ins
 export type * from "../namespaces/license-key-instances/types";
 export type { LicenseNamespace } from "../namespaces/license/namespace";
 export type * from "../namespaces/license/types";
+export type { WebhooksNamespace } from "../namespaces/webhooks/namespace";
+export type * from "../namespaces/webhooks/types";
 export type {
   GetStoreParams,
   ListStoresParams,
@@ -106,6 +109,7 @@ export interface LemonSqueezyClient {
   readonly licenseKeys: LicenseKeysNamespace;
   readonly licenseKeyInstances: LicenseKeyInstancesNamespace;
   readonly license: LicenseNamespace;
+  readonly webhooks: WebhooksNamespace;
 }
 
 export function createClient(options: ClientOptions = {}): LemonSqueezyClient {

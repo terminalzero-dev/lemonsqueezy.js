@@ -20,6 +20,7 @@ import type {
   ActivateLicenseResponse,
   Flatten,
   UserResponse,
+  WebhookListResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
 const config = lemonSqueezySetup({ apiKey: "type-contract" });
@@ -74,6 +75,9 @@ const licenseKeyInstances: Promise<LicenseKeyInstanceListResponse> =
   createClient({ apiKey: "type-contract" }).licenseKeyInstances.list({
     filter: { licenseKeyId: 1 },
   });
+const webhooks: Promise<WebhookListResponse> = createClient({
+  apiKey: "type-contract",
+}).webhooks.list({ filter: { storeId: 1 } });
 const activatedLicense: Promise<ActivateLicenseResponse> = createClient(
   {},
 ).license.activate(
@@ -100,5 +104,6 @@ void discounts;
 void discountRedemptions;
 void licenseKeys;
 void licenseKeyInstances;
+void webhooks;
 void activatedLicense;
 void activatedLicenseEnvelope;

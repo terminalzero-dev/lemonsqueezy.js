@@ -51,6 +51,7 @@ for (const namespace of [
   "licenseKeys",
   "licenseKeyInstances",
   "license",
+  "webhooks",
 ]) {
   assert.equal(Object.isFrozen(explicit[namespace]), true);
 }
@@ -107,6 +108,13 @@ assert.deepEqual(Object.keys(explicit.license).sort(), [
   "activate",
   "deactivate",
   "validate",
+]);
+assert.deepEqual(Object.keys(explicit.webhooks).sort(), [
+  "create",
+  "delete",
+  "get",
+  "list",
+  "update",
 ]);
 assert.deepEqual(Object.keys(explicit.customers).sort(), [
   "archive",

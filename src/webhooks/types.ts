@@ -6,23 +6,10 @@ import type {
   Params,
   Relationships,
 } from "../types";
-
-type Events =
-  | "order_created"
-  | "order_refunded"
-  | "subscription_created"
-  | "subscription_updated"
-  | "subscription_cancelled"
-  | "subscription_resumed"
-  | "subscription_expired"
-  | "subscription_paused"
-  | "subscription_unpaused"
-  | "subscription_payment_success"
-  | "subscription_payment_failed"
-  | "subscription_payment_recovered"
-  | "subscription_payment_refunded"
-  | "license_key_created"
-  | "license_key_updated";
+import type {
+  WebhookEventName,
+  WebhookSubscriptionEventName,
+} from "../namespaces/webhooks/types";
 
 type Attributes = {
   /**
@@ -36,7 +23,7 @@ type Attributes = {
   /**
    * An array of events that will be sent.
    */
-  events: Events[];
+  events: readonly WebhookEventName[];
   /**
    * An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) formatted date-time string indicating when the last webhook event was sent. Will be `null` if no events have been sent yet.
    */
@@ -81,7 +68,7 @@ export type NewWebhook = {
   /**
    * (Required) An array of webhook event types that should be sent to the webhook endpoint. [See the list of available event types](https://docs.lemonsqueezy.com/help/webhooks#event-types).
    */
-  events: Events[];
+  events: readonly WebhookSubscriptionEventName[];
   /**
    * (Required) A string used by Lemon Squeezy to sign requests for increased security. (Learn about receiving signed requests)[https://docs.lemonsqueezy.com/help/webhooks#signing-requests].
    *
@@ -95,6 +82,6 @@ export type NewWebhook = {
 };
 export type UpdateWebhook = {
   url?: string;
-  events?: Events[];
+  events?: readonly WebhookSubscriptionEventName[];
   secret?: string;
 };

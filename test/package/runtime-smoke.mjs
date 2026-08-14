@@ -54,6 +54,7 @@ for (const namespace of [
   "licenseKeys",
   "licenseKeyInstances",
   "license",
+  "webhooks",
 ]) {
   assert.equal(Object.isFrozen(explicit[namespace]), true);
 }
@@ -110,6 +111,13 @@ assert.deepEqual(Object.keys(explicit.license).sort(), [
   "activate",
   "deactivate",
   "validate",
+]);
+assert.deepEqual(Object.keys(explicit.webhooks).sort(), [
+  "create",
+  "delete",
+  "get",
+  "list",
+  "update",
 ]);
 assert.deepEqual(Object.keys(explicit.customers).sort(), [
   "archive",
@@ -185,7 +193,8 @@ globalThis.fetch = async (request) => {
   const url = new URL(request.url);
   if (
     request.method === "DELETE" &&
-    url.pathname.startsWith("/v1/discounts/")
+    (url.pathname.startsWith("/v1/discounts/") ||
+      url.pathname.startsWith("/v1/webhooks/"))
   ) {
     return new Response(null, { status: 204 });
   }
@@ -198,19 +207,21 @@ globalThis.fetch = async (request) => {
 
   const type = url.pathname.includes("/discount-redemptions")
     ? "discount-redemptions"
-    : url.pathname.includes("/discounts")
-      ? "discounts"
-      : url.pathname.includes("/subscription-invoices")
-        ? "subscription-invoices"
-        : url.pathname.includes("/subscription-items")
-          ? "subscription-items"
-          : url.pathname.includes("/usage-records")
-            ? "usage-records"
-            : url.pathname.includes("/order-items")
-              ? "order-items"
-              : url.pathname.includes("/subscriptions")
-                ? "subscriptions"
-                : "orders";
+    : url.pathname.includes("/webhooks")
+      ? "webhooks"
+      : url.pathname.includes("/discounts")
+        ? "discounts"
+        : url.pathname.includes("/subscription-invoices")
+          ? "subscription-invoices"
+          : url.pathname.includes("/subscription-items")
+            ? "subscription-items"
+            : url.pathname.includes("/usage-records")
+              ? "usage-records"
+              : url.pathname.includes("/order-items")
+                ? "order-items"
+                : url.pathname.includes("/subscriptions")
+                  ? "subscriptions"
+                  : "orders";
   return Response.json(
     request.method === "GET" && url.pathname === `/v1/${type}`
       ? listResponse(type)
@@ -278,6 +289,17 @@ await explicit.discountRedemptions.get(1, { include: ["order"] });
 await explicit.discountRedemptions.list({
   filter: { discountId: 1, orderId: 2 },
 });
+await explicit.webhooks.create({
+  storeId: 1,
+  url: "https://example.com/webhooks",
+  events: ["order_created", "affiliate_activated"],
+  secret: "signing-secret",
+  testMode: true,
+});
+await explicit.webhooks.get(1, { include: ["store"] });
+await explicit.webhooks.update(1, { events: ["customer_updated"] });
+await explicit.webhooks.list({ filter: { storeId: 1 } });
+assert.equal(await explicit.webhooks.delete(1), undefined);
 await assert.rejects(explicit.orders.refund(1, { amount: 0 }), {
   code: "validation",
 });
@@ -340,6 +362,15 @@ const compatibilityResults = await Promise.all([
   root.listDiscountRedemptions({
     filter: { discountId: 1, orderId: 2 },
   }),
+  root.createWebhook(1, {
+    url: "https://example.com/webhooks",
+    events: ["order_created", "affiliate_activated"],
+    secret: "signing-secret",
+    testMode: true,
+  }),
+  root.getWebhook(1, { include: ["store"] }),
+  root.updateWebhook(1, { events: ["customer_updated"] }),
+  root.listWebhooks({ filter: { storeId: 1 } }),
 ]);
 for (const result of compatibilityResults) {
   assert.equal(result.statusCode, 200);
@@ -347,6 +378,11 @@ for (const result of compatibilityResults) {
   assert.equal(result.error, null);
 }
 assert.deepEqual(await root.deleteDiscount(1), {
+  statusCode: 204,
+  data: null,
+  error: null,
+});
+assert.deepEqual(await root.deleteWebhook(1), {
   statusCode: 204,
   data: null,
   error: null,

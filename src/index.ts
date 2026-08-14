@@ -169,6 +169,18 @@ export type {
   LicenseApiMeta,
   ValidateLicenseInput,
   ValidateLicenseResponse,
+  WebhooksNamespace,
+  CreateWebhookInput,
+  GetWebhookParams as CanonicalGetWebhookParams,
+  ListWebhooksParams as CanonicalListWebhooksParams,
+  UpdateWebhookInput,
+  WebhookAttributes,
+  WebhookEventName,
+  WebhookListResponse,
+  WebhookRelationships,
+  WebhookResource,
+  WebhookResponse,
+  WebhookSubscriptionEventName,
 } from "./client";
 
 // Setup

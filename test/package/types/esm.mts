@@ -3,6 +3,7 @@ import {
   activateLicense,
   deactivateLicense,
   deleteDiscount,
+  deleteWebhook,
   generateSubscriptionInvoice,
   getAuthenticatedUser,
   issueSubscriptionInvoiceRefund,
@@ -25,6 +26,7 @@ import type {
   CustomerResponse,
   CustomerRelationships,
   CreateDiscountInput,
+  CreateWebhookInput,
   DiscountListResponse,
   DiscountRedemptionListResponse,
   DiscountRedemptionResponse,
@@ -70,6 +72,10 @@ import type {
   ValidateLicenseResponse,
   VariantListResponse,
   VariantResponse,
+  WebhookEventName,
+  WebhookListResponse,
+  WebhookResponse,
+  WebhookSubscriptionEventName,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -214,6 +220,26 @@ const discountRedemptions: Promise<DiscountRedemptionListResponse> =
     filter: { discountId: 1, orderId: 2 },
   });
 const deletedDiscountEnvelope = deleteDiscount(1);
+const webhookEvent: WebhookSubscriptionEventName = "affiliate_activated";
+const futureWebhookEvent: WebhookEventName = "future_event";
+const createWebhookInput: CreateWebhookInput = {
+  storeId: 1,
+  url: "https://example.com/webhooks",
+  events: [webhookEvent],
+  secret: "signing-secret",
+  testMode: true,
+};
+const webhook: Promise<WebhookResponse> =
+  client.webhooks.create(createWebhookInput);
+const updatedWebhook: Promise<WebhookResponse> = client.webhooks.update(1, {
+  events: ["customer_updated"],
+});
+const webhooks: Promise<WebhookListResponse> = client.webhooks.list({
+  filter: { storeId: 1 },
+  include: ["store"],
+});
+const deletedWebhook: Promise<void> = client.webhooks.delete(1);
+const deletedWebhookEnvelope = deleteWebhook(1);
 const licenseKey: Promise<LicenseKeyResponse> = client.licenseKeys.get(1, {
   include: ["store", "license-key-instances"],
 });
@@ -369,6 +395,13 @@ void deletedDiscount;
 void discountRedemption;
 void discountRedemptions;
 void deletedDiscountEnvelope;
+void webhookEvent;
+void futureWebhookEvent;
+void webhook;
+void updatedWebhook;
+void webhooks;
+void deletedWebhook;
+void deletedWebhookEnvelope;
 void licenseKey;
 void licenseKeys;
 void updatedLicenseKey;
@@ -478,6 +511,18 @@ client.discounts.create({
 client.discounts.get(1, { include: ["orders"] });
 // @ts-expect-error Discount Redemptions expose only get and list
 client.discountRedemptions.create({});
+client.webhooks.create({
+  storeId: 1,
+  url: "https://example.com/webhooks",
+  // @ts-expect-error Webhook subscription input uses the closed reviewed event union
+  events: ["future_event"],
+  secret: "signing-secret",
+});
+// @ts-expect-error Webhook Management exposes no inbound verification behavior
+client.webhooks.verify("payload", "signature");
+declare const webhookResponse: WebhookResponse;
+// @ts-expect-error Webhook responses never expose the signing secret
+webhookResponse.data.attributes.secret;
 // @ts-expect-error License Key request status is a closed documented enum
 client.licenseKeys.list({ filter: { status: "future_status" } });
 // @ts-expect-error License Key updates accept only reviewed attributes
