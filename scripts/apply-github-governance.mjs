@@ -184,10 +184,14 @@ function ensureReleaseIdentityTeam() {
     `orgs/${owner}/teams/${desired.slug}/repos/${owner}/${repository}`,
     { permission: desired.repository_permission },
   );
-  const teamRepository = request(
+  const teamRepositories = request(
     "GET",
-    `orgs/${owner}/teams/${desired.slug}/repos/${owner}/${repository}`,
+    `orgs/${owner}/teams/${desired.slug}/repos?per_page=100`,
   );
+  const teamRepository = teamRepositories.find(
+    ({ full_name: fullName }) => fullName === values.repository,
+  );
+  assert.ok(teamRepository, "release identity repository access");
   assert.equal(
     teamRepository.permissions[desired.repository_permission],
     true,
