@@ -157,6 +157,18 @@ export type {
   LicenseKeyInstanceResource,
   LicenseKeyInstanceResponse,
   ListLicenseKeyInstancesParams as CanonicalListLicenseKeyInstancesParams,
+  LicenseNamespace,
+  ActivateLicenseInput,
+  ActivateLicenseResponse,
+  DeactivateLicenseInput,
+  DeactivateLicenseResponse,
+  KnownLicenseApiKeyStatus,
+  LicenseApiInstance,
+  LicenseApiKey,
+  LicenseApiKeyStatus,
+  LicenseApiMeta,
+  ValidateLicenseInput,
+  ValidateLicenseResponse,
 } from "./client";
 
 // Setup

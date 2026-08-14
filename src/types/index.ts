@@ -189,6 +189,7 @@ export type {
   LicenseKeyInstanceResponse,
   ListLicenseKeyInstancesParams as CanonicalListLicenseKeyInstancesParams,
 } from "../namespaces/license-key-instances/types";
+export type * from "../namespaces/license/types";
 export type * from "../checkouts/types";
 export type * from "../customers/types";
 export type * from "../discountRedemptions/types";

@@ -1,5 +1,5 @@
 import { LemonSqueezyError } from "../../client/error";
-import { sendJsonApiRequest } from "./http";
+import { sendRequest } from "./http";
 import type {
   OperationContract,
   RequestOptions,
@@ -20,12 +20,14 @@ export function createResourceRuntime(
       options?: RequestOptions,
     ) {
       const compiled = operation.compile(args);
-      const result = await sendJsonApiRequest(
+      const result = await sendRequest(
         compiled,
         config,
         transport,
         options,
-        operation.sanitizeErrorDetail,
+        operation.sanitizeErrorDetail === undefined
+          ? undefined
+          : (value) => operation.sanitizeErrorDetail!(value, args),
       );
 
       if (!isValidResponse(result.body, operation.success)) {
@@ -35,7 +37,7 @@ export function createResourceRuntime(
           {
             statusCode: result.statusCode,
             responseBody: operation.sanitizeErrorDetail
-              ? operation.sanitizeErrorDetail(result.body)
+              ? operation.sanitizeErrorDetail(result.body, args)
               : result.body,
           },
         );
@@ -50,6 +52,9 @@ function isValidResponse(body: unknown, success: SuccessContract): boolean {
   if (success.kind === "empty") return body === undefined;
   if (success.kind === "invoice") return isValidInvoiceResponse(body);
   if (success.kind === "meta-only") return isValidMetaOnlyResponse(body);
+  if (success.kind === "license-json") {
+    return isRecord(body) && typeof body[success.discriminator] === "boolean";
+  }
   if (!isRecord(body)) return false;
   const resources = success.kind === "jsonapi-list" ? body.data : [body.data];
   if (!Array.isArray(resources)) return false;

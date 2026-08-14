@@ -1,10 +1,13 @@
 import {
   createClient,
+  activateLicense,
+  deactivateLicense,
   deleteDiscount,
   generateSubscriptionInvoice,
   getAuthenticatedUser,
   issueSubscriptionInvoiceRefund,
   isLemonSqueezyError,
+  validateLicense,
   updateSubscriptionItem,
   type LemonSqueezyError,
   type Discount,
@@ -15,6 +18,7 @@ import {
 } from "@terminalzero/lemonsqueezy";
 import type {
   AffiliateStatus,
+  ActivateLicenseResponse,
   CheckoutResponse,
   CreateCheckoutInput,
   CreateCustomerInput,
@@ -25,6 +29,7 @@ import type {
   DiscountRedemptionListResponse,
   DiscountRedemptionResponse,
   DiscountResponse,
+  DeactivateLicenseResponse,
   GenerateOrderInvoiceResponse,
   OrderItemListResponse,
   OrderItemResponse,
@@ -62,6 +67,7 @@ import type {
   StoreResponse,
   UserResponse,
   UpdateLicenseKeyInput,
+  ValidateLicenseResponse,
   VariantListResponse,
   VariantResponse,
 } from "@terminalzero/lemonsqueezy/types";
@@ -235,6 +241,30 @@ const licenseKeyInstances: Promise<LicenseKeyInstanceListResponse> =
     filter: { licenseKeyId: 1 },
     page: { number: 1, size: 10 },
   });
+const activatedLicense: Promise<ActivateLicenseResponse> =
+  client.license.activate(
+    { licenseKey: "business-license-key", instanceName: "Work laptop" },
+    { timeoutMs: 1_000 },
+  );
+const validatedLicense: Promise<ValidateLicenseResponse> =
+  client.license.validate({ licenseKey: "business-license-key" });
+const deactivatedLicense: Promise<DeactivateLicenseResponse> =
+  client.license.deactivate(
+    { licenseKey: "business-license-key", instanceId: "instance-42" },
+    { timeoutMs: 1_000 },
+  );
+const activatedLicenseEnvelope = activateLicense(
+  "business-license-key",
+  "Work laptop",
+);
+const validatedLicenseEnvelope = validateLicense(
+  "business-license-key",
+  "instance-42",
+);
+const deactivatedLicenseEnvelope = deactivateLicense(
+  "business-license-key",
+  "instance-42",
+);
 const futureLicenseKeyStatus: LicenseKeyStatus = "future_status";
 declare const canonicalDiscountResponse: DiscountResponse;
 declare const compatibilityDiscount: Discount;
@@ -465,6 +495,17 @@ const clientDeleteAsEnvelope: typeof deletedDiscountEnvelope =
   client.discounts.delete(1);
 void facadeDeleteAsVoid;
 void clientDeleteAsEnvelope;
+// @ts-expect-error Canonical License activation accepts an object input
+client.license.activate("business-license-key");
+// @ts-expect-error License deactivation requires an instance ID
+client.license.deactivate({ licenseKey: "business-license-key" });
+client.license.validate({
+  licenseKey: "business-license-key",
+  // @ts-expect-error License inputs accept only operation-defined fields
+  arbitrary: true,
+});
+// @ts-expect-error RequestOptions remain in the final position
+client.license.validate({ timeoutMs: 1_000 });
 client.usageRecords.create({
   subscriptionItemId: 1,
   quantity: 5,
@@ -480,6 +521,12 @@ const functionProducts: AffiliateProducts = () => undefined;
 const undefinedProducts: AffiliateProducts = undefined;
 void functionProducts;
 void undefinedProducts;
+void activatedLicense;
+void validatedLicense;
+void deactivatedLicense;
+void activatedLicenseEnvelope;
+void validatedLicenseEnvelope;
+void deactivatedLicenseEnvelope;
 // @ts-expect-error Internal contracts are not public package entries
 import("@terminalzero/lemonsqueezy/namespaces/affiliates/contract");
 // @ts-expect-error Compatibility facade returns an envelope, not a direct body

@@ -1,4 +1,7 @@
-import { lemonSqueezySetup } from "@terminalzero/lemonsqueezy/compat";
+import {
+  activateLicense,
+  lemonSqueezySetup,
+} from "@terminalzero/lemonsqueezy/compat";
 import { createClient } from "@terminalzero/lemonsqueezy/client";
 import type {
   AffiliateListResponse,
@@ -14,6 +17,7 @@ import type {
   DiscountRedemptionListResponse,
   LicenseKeyListResponse,
   LicenseKeyInstanceListResponse,
+  ActivateLicenseResponse,
   Flatten,
   UserResponse,
 } from "@terminalzero/lemonsqueezy/types";
@@ -70,6 +74,16 @@ const licenseKeyInstances: Promise<LicenseKeyInstanceListResponse> =
   createClient({ apiKey: "type-contract" }).licenseKeyInstances.list({
     filter: { licenseKeyId: 1 },
   });
+const activatedLicense: Promise<ActivateLicenseResponse> = createClient(
+  {},
+).license.activate(
+  { licenseKey: "business-license-key", instanceName: "Work laptop" },
+  { timeoutMs: 1_000 },
+);
+const activatedLicenseEnvelope = activateLicense(
+  "business-license-key",
+  "Work laptop",
+);
 
 void value;
 void response;
@@ -86,3 +100,5 @@ void discounts;
 void discountRedemptions;
 void licenseKeys;
 void licenseKeyInstances;
+void activatedLicense;
+void activatedLicenseEnvelope;
