@@ -1,13 +1,16 @@
 const assert = require("node:assert/strict");
-const { createHmac } = require("node:crypto");
-const { readFileSync } = require("node:fs");
-const { join } = require("node:path");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
 const client = require("@terminalzero/lemonsqueezy/client");
 const compat = require("@terminalzero/lemonsqueezy/compat");
 const root = require("@terminalzero/lemonsqueezy");
 
 const expected = JSON.parse(
-  readFileSync(join(__dirname, "expected-runtime-exports.json"), "utf8"),
+  fs.readFileSync(
+    path.join(__dirname, "expected-runtime-exports.json"),
+    "utf8",
+  ),
 );
 const expectedClient = [
   "LemonSqueezyError",
@@ -28,6 +31,8 @@ assert.deepEqual(
   ),
 );
 assert.deepEqual(Object.keys(compat).sort(), expected);
+assert.equal(root.lemonSqueezySetup, compat.lemonSqueezySetup);
+assert.equal(root.getAuthenticatedUser, compat.getAuthenticatedUser);
 assert.deepEqual(
   Object.keys(client).sort(compareNames),
   [...expectedClient].sort(compareNames),
@@ -40,7 +45,8 @@ assert.deepEqual(
   root.parseWebhookEvent({
     secret: "package-smoke-secret",
     rawBody: webhookBody,
-    signature: createHmac("sha256", "package-smoke-secret")
+    signature: crypto
+      .createHmac("sha256", "package-smoke-secret")
       .update(webhookBody)
       .digest("hex"),
   }),

@@ -31,6 +31,8 @@ assert.deepEqual(
   ),
 );
 assert.deepEqual(Object.keys(compat).sort(), expected);
+assert.equal(root.lemonSqueezySetup, compat.lemonSqueezySetup);
+assert.equal(root.getAuthenticatedUser, compat.getAuthenticatedUser);
 assert.deepEqual(
   Object.keys(client).sort(compareNames),
   [...expectedClient].sort(compareNames),

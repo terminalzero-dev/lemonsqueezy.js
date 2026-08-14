@@ -15,7 +15,7 @@ const files = readdirSync(dist, { recursive: true, withFileTypes: true })
   .map((entry) => relative(dist, join(entry.parentPath, entry.name)))
   .sort();
 
-test("all public build entries have matching runtime and declaration output", () => {
+void test("all public build entries have matching runtime and declaration output", () => {
   for (const entry of ["index", "client/index", "compat/index"]) {
     for (const extension of [".js", ".cjs", ".d.ts", ".d.cts"]) {
       assert.equal(
@@ -32,7 +32,7 @@ test("all public build entries have matching runtime and declaration output", ()
   assert.equal(files.includes("types/index.cjs"), false);
 });
 
-test("the package export map only targets files in the build", () => {
+void test("the package export map only targets files in the build", () => {
   const targets = [];
 
   for (const conditions of Object.values(packageJson.exports)) {
@@ -48,7 +48,7 @@ test("the package export map only targets files in the build", () => {
   }
 });
 
-test("published output has no source or declaration maps", () => {
+void test("published output has no source or declaration maps", () => {
   assert.deepEqual(
     files.filter((file) => extname(file) === ".map"),
     [],
@@ -64,7 +64,7 @@ test("published output has no source or declaration maps", () => {
   }
 });
 
-test("the type-only entry cannot be executed", async () => {
+void test("the type-only entry cannot be executed", async () => {
   assert.equal(existsSync(join(dist, "types/index.js")), false);
   assert.equal(existsSync(join(dist, "types/index.cjs")), false);
 });

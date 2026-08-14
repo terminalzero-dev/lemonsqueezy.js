@@ -32,11 +32,32 @@ pnpm check
 `pnpm check` builds twice to verify reproducibility, packs one Canonical Package
 Artifact, and runs Type Contract and Installed-package Smoke tests against that
 exact tarball. It does not require Lemon Squeezy credentials or network access
-to the Lemon Squeezy API.
+to the Lemon Squeezy API. Package Smoke includes the Node/Bun runtime entries,
+TypeScript 5.4/current declarations, closed exports, module identity, and
+esbuild, Vite/Rollup, webpack, and Bun bundler graphs.
 
-`pnpm test:integration` is reserved for the protected Test Mode canary. It fails
-closed until the dedicated-store preflight and exact-tarball canary land in
-Issue #32; the legacy source-level API tests must not be used as that gate.
+`pnpm test:integration` is reserved for a protected Test Mode environment. It
+requires `LEMON_SQUEEZY_API_KEY`, `LEMON_SQUEEZY_TEST_STORE_ID`,
+`LEMON_SQUEEZY_TEST_PRODUCT_ID`, `LEMON_SQUEEZY_TEST_LICENSE_KEY`, and a safe
+`LEMON_SQUEEZY_TEST_RUN_ID`. The canary installs the Canonical Package Artifact,
+proves Test Mode and the one allowed store before writing, then serially tests
+read-only seeds and hard-delete Discount/Webhook fixtures. It immediately
+records created fixture IDs in a secret-free journal and always cleans them in
+reverse order.
+
+`pnpm test:integration:reap` is the bounded recovery path for test fixtures
+older than 24 hours. It re-runs the Test Mode/store preflight and only deletes
+exactly identifiable `sdk-ci-*` Discount or Webhook records; it never sweeps
+other resource types. Use the journal-based cleanup path first.
+
+To inspect a sanitized API observation without changing public contracts, run:
+
+```sh
+pnpm report:contract-drift sanitized-observation.json
+```
+
+The command prints a candidate-only report for human review. It cannot edit the
+Contract Catalog, public types, or serializers and omits opaque data values.
 
 ## Changes and releases
 

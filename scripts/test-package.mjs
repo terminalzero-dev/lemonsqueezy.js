@@ -46,9 +46,16 @@ for (const conditions of Object.values(packageJson.exports)) {
   }
 }
 
-for (const runtime of ["node", "bun"]) {
-  run(runtime, ["runtime-smoke.mjs"], { cwd: consumerDirectory });
-  run(runtime, ["runtime-smoke.cjs"], { cwd: consumerDirectory });
+const runtimes = [
+  ["Node", process.env.PACKAGE_SMOKE_NODE_BINARY ?? "node"],
+  ["Bun", process.env.PACKAGE_SMOKE_BUN_BINARY ?? "bun"],
+];
+for (const [label, binary] of runtimes) {
+  assert.ok(binary, `${label} runtime binary must not be empty`);
+  console.log(label);
+  run(binary, ["--version"], { cwd: consumerDirectory });
+  run(binary, ["runtime-smoke.mjs"], { cwd: consumerDirectory });
+  run(binary, ["runtime-smoke.cjs"], { cwd: consumerDirectory });
 }
 
 await readCanonicalArtifact();
