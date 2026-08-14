@@ -358,11 +358,20 @@ void test("repository governance protects release refs without a review quorum",
   assert.deepEqual(tagCreation.rules, [{ type: "creation" }]);
   assert.deepEqual(tagCreation.bypass_actors, [
     {
-      actor_id: 15368,
-      actor_type: "Integration",
+      actor_id: "$releaseIdentityTeam",
+      actor_type: "Team",
       bypass_mode: "always",
     },
   ]);
+  assert.deepEqual(governance.releaseIdentity, {
+    team: {
+      name: "v5-release-managers",
+      slug: "v5-release-managers",
+      privacy: "closed",
+      repository_permission: "push",
+      members: [{ username: "keyding", role: "maintainer" }],
+    },
+  });
   const tagImmutability = byName.get("Immutable v5 tags");
   assert.deepEqual(tagImmutability.bypass_actors, []);
   assert.deepEqual(
