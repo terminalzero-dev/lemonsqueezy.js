@@ -148,7 +148,10 @@ void test("CI installs and records the minimum supported Bun runtime", () => {
     "utf8",
   );
 
-  assert.match(workflow, /uses: oven-sh\/setup-bun@v2/);
+  assert.match(
+    workflow,
+    /uses: oven-sh\/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2\.2\.0/,
+  );
   assert.match(workflow, /bun-version: "1\.3\.14"/);
   assert.match(toolVersions, /run\("bun", \["--version"\]\)/);
 });

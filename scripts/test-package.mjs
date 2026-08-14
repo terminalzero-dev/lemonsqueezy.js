@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   prepareConsumer,
   readCanonicalArtifact,
+  root,
   run,
 } from "./lib/canonical-artifact.mjs";
 
@@ -11,6 +12,9 @@ const { consumerDirectory, installedPackage } =
   await prepareConsumer("package-smoke");
 const packageJson = JSON.parse(
   await readFile(join(installedPackage, "package.json"), "utf8"),
+);
+const sourcePackageJson = JSON.parse(
+  await readFile(join(root, "package.json"), "utf8"),
 );
 const topLevelFiles = (await readdir(installedPackage)).sort();
 
@@ -22,7 +26,7 @@ assert.deepEqual(topLevelFiles, [
   "package.json",
 ]);
 assert.equal(packageJson.name, "@terminalzero/lemonsqueezy");
-assert.equal(packageJson.version, "5.0.0-beta.0");
+assert.equal(packageJson.version, sourcePackageJson.version);
 
 const distFiles = await readdir(join(installedPackage, "dist"), {
   recursive: true,
@@ -46,10 +50,15 @@ for (const conditions of Object.values(packageJson.exports)) {
   }
 }
 
-const runtimes = [
-  ["Node", process.env.PACKAGE_SMOKE_NODE_BINARY ?? "node"],
-  ["Bun", process.env.PACKAGE_SMOKE_BUN_BINARY ?? "bun"],
-];
+const requestedRuntime = process.env.PACKAGE_SMOKE_RUNTIME ?? "all";
+assert.match(requestedRuntime, /^(?:all|node|bun)$/);
+const runtimes = [];
+if (requestedRuntime === "all" || requestedRuntime === "node") {
+  runtimes.push(["Node", process.env.PACKAGE_SMOKE_NODE_BINARY ?? "node"]);
+}
+if (requestedRuntime === "all" || requestedRuntime === "bun") {
+  runtimes.push(["Bun", process.env.PACKAGE_SMOKE_BUN_BINARY ?? "bun"]);
+}
 for (const [label, binary] of runtimes) {
   assert.ok(binary, `${label} runtime binary must not be empty`);
   console.log(label);
