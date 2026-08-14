@@ -1,9 +1,15 @@
+import type { FetchResponse } from "../internal/fetch/types";
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  getLicenseKeyInstanceOperation,
+  listLicenseKeyInstancesOperation,
+} from "../namespaces/license-key-instances/contract";
+import type {
+  GetLicenseKeyInstanceParams as CanonicalGetLicenseKeyInstanceParams,
+  LicenseKeyInstanceListResponse,
+  LicenseKeyInstanceResponse,
+  ListLicenseKeyInstancesParams as CanonicalListLicenseKeyInstancesParams,
+} from "../namespaces/license-key-instances/types";
 import type {
   GetLicenseKeyInstanceParams,
   LicenseKeyInstance,
@@ -23,10 +29,13 @@ export function getLicenseKeyInstance(
   licenseKeyInstanceId: number | string,
   params: GetLicenseKeyInstanceParams = {},
 ) {
-  requiredCheck({ licenseKeyInstanceId });
-  return $fetch<LicenseKeyInstance>({
-    path: `/v1/license-key-instances/${licenseKeyInstanceId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetLicenseKeyInstanceParams],
+    LicenseKeyInstanceResponse,
+    LicenseKeyInstance
+  >(getLicenseKeyInstanceOperation, [licenseKeyInstanceId, params]) as Promise<
+    FetchResponse<LicenseKeyInstance>
+  >;
 }
 
 /**
@@ -44,7 +53,11 @@ export function getLicenseKeyInstance(
 export function listLicenseKeyInstances(
   params: ListLicenseKeyInstancesParams = {},
 ) {
-  return $fetch<ListLicenseKeyInstances>({
-    path: `/v1/license-key-instances${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListLicenseKeyInstancesParams],
+    LicenseKeyInstanceListResponse,
+    ListLicenseKeyInstances
+  >(listLicenseKeyInstancesOperation, [params]) as Promise<
+    FetchResponse<ListLicenseKeyInstances>
+  >;
 }

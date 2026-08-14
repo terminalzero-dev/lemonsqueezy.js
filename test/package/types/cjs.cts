@@ -19,6 +19,8 @@ import type {
   CreateDiscountInput,
   DiscountResponse,
   DiscountRedemptionResponse,
+  LicenseKeyResponse,
+  LicenseKeyInstanceResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -73,6 +75,11 @@ const discount: Promise<DiscountResponse> =
 const deletedDiscount: Promise<void> = client.discounts.delete(1);
 const discountRedemption: Promise<DiscountRedemptionResponse> =
   client.discountRedemptions.get(1);
+const licenseKey: Promise<LicenseKeyResponse> = client.licenseKeys.update(1, {
+  disabled: false,
+});
+const licenseKeyInstance: Promise<LicenseKeyInstanceResponse> =
+  client.licenseKeyInstances.get(1);
 const deletedDiscountEnvelope = sdk.deleteDiscount(1);
 const numericSubscriptionItemEnvelope = sdk.updateSubscriptionItem(1, 3);
 const subscriptionInvoiceEnvelope = sdk.generateSubscriptionInvoice(1);
@@ -97,6 +104,8 @@ void usageRecord;
 void discount;
 void deletedDiscount;
 void discountRedemption;
+void licenseKey;
+void licenseKeyInstance;
 void deletedDiscountEnvelope;
 void numericSubscriptionItemEnvelope;
 void subscriptionInvoiceEnvelope;

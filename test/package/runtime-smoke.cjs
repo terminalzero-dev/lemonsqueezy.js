@@ -48,6 +48,8 @@ for (const namespace of [
   "usageRecords",
   "discounts",
   "discountRedemptions",
+  "licenseKeys",
+  "licenseKeyInstances",
 ]) {
   assert.equal(Object.isFrozen(explicit[namespace]), true);
 }
@@ -88,6 +90,15 @@ assert.deepEqual(Object.keys(explicit.discounts).sort(), [
   "list",
 ]);
 assert.deepEqual(Object.keys(explicit.discountRedemptions).sort(), [
+  "get",
+  "list",
+]);
+assert.deepEqual(Object.keys(explicit.licenseKeys).sort(), [
+  "get",
+  "list",
+  "update",
+]);
+assert.deepEqual(Object.keys(explicit.licenseKeyInstances).sort(), [
   "get",
   "list",
 ]);

@@ -1,10 +1,17 @@
+import type { FetchResponse } from "../internal/fetch/types";
+import { invokeDefaultCompatibility } from "../internal/v5/default-client";
 import {
-  $fetch,
-  convertIncludeToQueryString,
-  convertKeys,
-  convertListParamsToQueryString,
-  requiredCheck,
-} from "../internal";
+  getLicenseKeyOperation,
+  listLicenseKeysOperation,
+  updateLicenseKeyOperation,
+} from "../namespaces/license-keys/contract";
+import type {
+  GetLicenseKeyParams as CanonicalGetLicenseKeyParams,
+  LicenseKeyListResponse,
+  LicenseKeyResponse,
+  ListLicenseKeysParams as CanonicalListLicenseKeysParams,
+  UpdateLicenseKeyInput,
+} from "../namespaces/license-keys/types";
 import type {
   GetLicenseKeyParams,
   LicenseKey,
@@ -25,10 +32,13 @@ export function getLicenseKey(
   licenseKeyId: number | string,
   params: GetLicenseKeyParams = {},
 ) {
-  requiredCheck({ licenseKeyId });
-  return $fetch<LicenseKey>({
-    path: `/v1/license-keys/${licenseKeyId}${convertIncludeToQueryString(params.include)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [number | string, CanonicalGetLicenseKeyParams],
+    LicenseKeyResponse,
+    LicenseKey
+  >(getLicenseKeyOperation, [licenseKeyId, params]) as Promise<
+    FetchResponse<LicenseKey>
+  >;
 }
 
 /**
@@ -47,9 +57,13 @@ export function getLicenseKey(
  * @returns A paginated list of license key objects ordered by `id`.
  */
 export function listLicenseKeys(params: ListLicenseKeysParams = {}) {
-  return $fetch<ListLicenseKeys>({
-    path: `/v1/license-keys${convertListParamsToQueryString(params)}`,
-  });
+  return invokeDefaultCompatibility<
+    readonly [CanonicalListLicenseKeysParams],
+    LicenseKeyListResponse,
+    ListLicenseKeys
+  >(listLicenseKeysOperation, [params]) as Promise<
+    FetchResponse<ListLicenseKeys>
+  >;
 }
 
 /**
@@ -66,20 +80,12 @@ export function updateLicenseKey(
   licenseKeyId: string | number,
   licenseKey: UpdateLicenseKey,
 ) {
-  requiredCheck({ licenseKeyId });
-
-  const { activationLimit, disabled = false, expiresAt } = licenseKey;
-  const attributes = convertKeys({ activationLimit, disabled, expiresAt });
-
-  return $fetch<LicenseKey>({
-    path: `/v1/license-keys/${licenseKeyId}`,
-    method: "PATCH",
-    body: {
-      data: {
-        type: "license-keys",
-        id: licenseKeyId.toString(),
-        attributes,
-      },
-    },
-  });
+  const input: UpdateLicenseKeyInput = licenseKey;
+  return invokeDefaultCompatibility<
+    readonly [number | string, UpdateLicenseKeyInput],
+    LicenseKeyResponse,
+    LicenseKey
+  >(updateLicenseKeyOperation, [licenseKeyId, input]) as Promise<
+    FetchResponse<LicenseKey>
+  >;
 }

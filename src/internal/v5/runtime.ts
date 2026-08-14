@@ -25,6 +25,7 @@ export function createResourceRuntime(
         config,
         transport,
         options,
+        operation.sanitizeErrorDetail,
       );
 
       if (!isValidResponse(result.body, operation.success)) {
@@ -33,7 +34,9 @@ export function createResourceRuntime(
           "invalid_response",
           {
             statusCode: result.statusCode,
-            responseBody: result.body,
+            responseBody: operation.sanitizeErrorDetail
+              ? operation.sanitizeErrorDetail(result.body)
+              : result.body,
           },
         );
       }
