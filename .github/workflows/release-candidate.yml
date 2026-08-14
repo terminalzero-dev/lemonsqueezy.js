@@ -90,10 +90,13 @@ jobs:
         with:
           ref: ${{ inputs.expected_commit }}
 
-      - name: Use the matrix Node.js runtime
+      - name: Use Node.js 24 as the install host
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "24"
+
+      - name: Record the install host
+        run: echo "PACKAGE_SMOKE_INSTALL_NODE=$(command -v node)" >> "$GITHUB_ENV"
 
       - name: Enable the repository package manager
         run: corepack enable
@@ -107,8 +110,18 @@ jobs:
           name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
           path: .artifacts/package
 
+      - name: Use the matrix Node.js runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+
       - name: Exercise ESM and CJS through Node
-        run: pnpm test:package
+        run: |
+          runtime_node=$(command -v node)
+          install_node_directory=$(dirname "$PACKAGE_SMOKE_INSTALL_NODE")
+          PATH="$install_node_directory:$PATH" \
+            PACKAGE_SMOKE_NODE_BINARY="$runtime_node" \
+            "$PACKAGE_SMOKE_INSTALL_NODE" scripts/test-package.mjs
         env:
           PACKAGE_SMOKE_RUNTIME: node
 

@@ -284,6 +284,9 @@ void test("manual Release Candidates reuse one artifact without registry mutatio
   );
   assert.match(workflow, /bun-version: \["1\.3\.14", "1\.x"\]/);
   assert.match(workflow, /PACKAGE_SMOKE_RUNTIME: node/);
+  assert.match(workflow, /Use Node\.js 24 as the install host/);
+  assert.match(workflow, /PACKAGE_SMOKE_INSTALL_NODE/);
+  assert.match(workflow, /PACKAGE_SMOKE_NODE_BINARY="\$runtime_node"/);
   assert.match(workflow, /PACKAGE_SMOKE_RUNTIME: bun/);
   assert.match(workflow, /create-release-candidate\.mjs/);
   assert.match(workflow, /verify-release-candidate\.mjs/);
