@@ -64,7 +64,8 @@ export type KnownLemonSqueezyResource =
   | import("../namespaces/discounts/types").DiscountResource
   | import("../namespaces/discount-redemptions/types").DiscountRedemptionResource
   | import("../namespaces/license-keys/types").LicenseKeyResource
-  | import("../namespaces/license-key-instances/types").LicenseKeyInstanceResource;
+  | import("../namespaces/license-key-instances/types").LicenseKeyInstanceResource
+  | import("../namespaces/webhooks/types").WebhookResource;
 export type LemonSqueezyResource =
   | KnownLemonSqueezyResource
   | UnknownJSONAPIResource;

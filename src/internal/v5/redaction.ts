@@ -18,14 +18,31 @@ export function sanitizeLicenseApiErrorDetail(
   return sanitizeValue(
     value,
     {
-      sanitizeString: (string) =>
-        secrets.reduce(
-          (sanitized, secret) => sanitized.replaceAll(secret, redacted),
-          string,
-        ),
+      sanitizeString: (string) => replaceSecrets(string, secrets),
       isSensitiveProperty: isLicenseApiSensitiveProperty,
     },
     new WeakMap(),
+  );
+}
+
+export function sanitizeWebhookManagementErrorDetail(
+  value: unknown,
+  secrets: readonly string[],
+): unknown {
+  return sanitizeValue(
+    value,
+    {
+      sanitizeString: (string) => replaceSecrets(string, secrets),
+      isSensitiveProperty: (property) => property === "secret",
+    },
+    new WeakMap(),
+  );
+}
+
+function replaceSecrets(value: string, secrets: readonly string[]): string {
+  return secrets.reduce(
+    (sanitized, secret) => sanitized.replaceAll(secret, redacted),
+    value,
   );
 }
 

@@ -24,6 +24,7 @@ import type {
   ActivateLicenseResponse,
   DeactivateLicenseResponse,
   ValidateLicenseResponse,
+  WebhookResponse,
 } from "@terminalzero/lemonsqueezy/types";
 
 type UserEnvelope =
@@ -78,6 +79,13 @@ const discount: Promise<DiscountResponse> =
 const deletedDiscount: Promise<void> = client.discounts.delete(1);
 const discountRedemption: Promise<DiscountRedemptionResponse> =
   client.discountRedemptions.get(1);
+const webhook: Promise<WebhookResponse> = client.webhooks.create({
+  storeId: 1,
+  url: "https://example.com/webhooks",
+  events: ["order_created"],
+  secret: "signing-secret",
+});
+const deletedWebhook: Promise<void> = client.webhooks.delete(1);
 const licenseKey: Promise<LicenseKeyResponse> = client.licenseKeys.update(1, {
   disabled: false,
 });
@@ -128,6 +136,8 @@ void usageRecord;
 void discount;
 void deletedDiscount;
 void discountRedemption;
+void webhook;
+void deletedWebhook;
 void licenseKey;
 void licenseKeyInstance;
 void activatedLicense;
