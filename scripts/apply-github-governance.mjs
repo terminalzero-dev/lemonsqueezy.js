@@ -27,17 +27,27 @@ if (values["dry-run"]) {
 }
 
 const repositoryPath = `repos/${values.repository}`;
+const [owner, repository] = values.repository.split("/");
+const releaseIdentityTeam = ensureReleaseIdentityTeam();
 const existingRulesets = request("GET", `${repositoryPath}/rulesets`);
+const appliedRulesetSpecifications = [];
 for (const desired of governance.rulesets) {
+  const specification = structuredClone(desired);
+  for (const actor of specification.bypass_actors) {
+    if (actor.actor_id === "$releaseIdentityTeam") {
+      actor.actor_id = releaseIdentityTeam.id;
+    }
+  }
   const existing = existingRulesets.find(({ name }) => name === desired.name);
   const endpoint = existing
     ? `${repositoryPath}/rulesets/${existing.id}`
     : `${repositoryPath}/rulesets`;
-  request(existing ? "PUT" : "POST", endpoint, desired);
+  request(existing ? "PUT" : "POST", endpoint, specification);
+  appliedRulesetSpecifications.push(specification);
 }
 
 for (const desired of governance.environments) {
-  const { branches, ...environment } = desired;
+  const { name: _name, branches, ...environment } = desired;
   const environmentPath = `${repositoryPath}/environments/${encodeURIComponent(desired.name)}`;
   request("PUT", environmentPath, environment);
   const policies = request(
@@ -85,7 +95,7 @@ for (const [name, value] of Object.entries(governance.variables)) {
 }
 
 const appliedRulesets = request("GET", `${repositoryPath}/rulesets`);
-for (const desired of governance.rulesets) {
+for (const desired of appliedRulesetSpecifications) {
   const summary = appliedRulesets.find(({ name }) => name === desired.name);
   assert.ok(summary, `${desired.name} was not applied`);
   const applied = request("GET", `${repositoryPath}/rulesets/${summary.id}`);
@@ -97,7 +107,7 @@ for (const desired of governance.rulesets) {
     "conditions",
     "rules",
   ]) {
-    assert.deepEqual(
+    assertMatchesDesired(
       applied[field],
       desired[field],
       `${desired.name} ${field}`,
@@ -141,6 +151,73 @@ for (const [name, value] of Object.entries(governance.variables)) {
   assert.equal(variable.value, value, `${name} repository variable`);
 }
 console.log(`Applied and verified GitHub governance for ${values.repository}.`);
+
+function assertMatchesDesired(actual, desired, label) {
+  if (Array.isArray(desired)) {
+    assert.ok(Array.isArray(actual), `${label} must be an array`);
+    assert.equal(actual.length, desired.length, `${label} length`);
+    for (const [index, value] of desired.entries()) {
+      assertMatchesDesired(actual[index], value, `${label}[${index}]`);
+    }
+    return;
+  }
+  if (desired !== null && typeof desired === "object") {
+    assert.ok(actual !== null && typeof actual === "object", `${label} object`);
+    for (const [key, value] of Object.entries(desired)) {
+      assertMatchesDesired(actual[key], value, `${label}.${key}`);
+    }
+    return;
+  }
+  assert.deepEqual(actual, desired, label);
+}
+
+function ensureReleaseIdentityTeam() {
+  const desired = governance.releaseIdentity.team;
+  const teams = request("GET", `orgs/${owner}/teams?per_page=100`);
+  let team = teams.find(({ slug }) => slug === desired.slug);
+  if (!team) {
+    team = request("POST", `orgs/${owner}/teams`, {
+      name: desired.name,
+      privacy: desired.privacy,
+    });
+  }
+  assert.equal(team.name, desired.name, "release identity team name");
+  assert.equal(team.privacy, desired.privacy, "release identity team privacy");
+
+  for (const member of desired.members) {
+    request(
+      "PUT",
+      `orgs/${owner}/teams/${desired.slug}/memberships/${member.username}`,
+      { role: member.role },
+    );
+    const membership = request(
+      "GET",
+      `orgs/${owner}/teams/${desired.slug}/memberships/${member.username}`,
+    );
+    assert.equal(membership.state, "active", `${member.username} team state`);
+    assert.equal(membership.role, member.role, `${member.username} team role`);
+  }
+
+  request(
+    "PUT",
+    `orgs/${owner}/teams/${desired.slug}/repos/${owner}/${repository}`,
+    { permission: desired.repository_permission },
+  );
+  const teamRepositories = request(
+    "GET",
+    `orgs/${owner}/teams/${desired.slug}/repos?per_page=100`,
+  );
+  const teamRepository = teamRepositories.find(
+    ({ full_name: fullName }) => fullName === values.repository,
+  );
+  assert.ok(teamRepository, "release identity repository access");
+  assert.equal(
+    teamRepository.permissions[desired.repository_permission],
+    true,
+    "release identity repository permission",
+  );
+  return team;
+}
 
 function request(method, endpoint, body) {
   const arguments_ = [

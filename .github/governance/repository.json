@@ -1,4 +1,13 @@
 {
+  "releaseIdentity": {
+    "team": {
+      "name": "v5-release-managers",
+      "slug": "v5-release-managers",
+      "privacy": "closed",
+      "repository_permission": "push",
+      "members": [{ "username": "keyding", "role": "maintainer" }]
+    }
+  },
   "rulesets": [
     {
       "name": "Protect v5 branches",
@@ -46,8 +55,8 @@
       "enforcement": "active",
       "bypass_actors": [
         {
-          "actor_id": 15368,
-          "actor_type": "Integration",
+          "actor_id": "$releaseIdentityTeam",
+          "actor_type": "Team",
           "bypass_mode": "always"
         }
       ],
