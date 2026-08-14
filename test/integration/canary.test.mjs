@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import {
   deleteDiscount,
@@ -12,6 +11,7 @@ import { describe, it } from "vitest";
 import {
   cleanupRegisteredFixtures,
   createFixtureDiscountCode,
+  createFixtureWebhookSecret,
   registerFixture,
 } from "./fixture-safety.mjs";
 
@@ -74,7 +74,7 @@ describe("protected Test Mode release canary", () => {
         storeId,
         url: `https://example.com/sdk-ci/${fixtureTag}`,
         events: ["order_created"],
-        secret: randomBytes(32).toString("hex"),
+        secret: createFixtureWebhookSecret(),
         testMode: true,
       });
       await registerFixture({
