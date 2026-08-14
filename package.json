@@ -1,7 +1,7 @@
 {
   "name": "@terminalzero/lemonsqueezy",
   "description": "Experimental community-maintained Lemon Squeezy SDK for JavaScript and TypeScript, maintained by Terminal Zero. Not affiliated with or endorsed by Lemon Squeezy.",
-  "version": "5.0.0-beta.0",
+  "version": "5.0.0-beta.1",
   "author": {
     "name": "Terminal Zero",
     "url": "https://github.com/terminalzero-dev"
