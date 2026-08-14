@@ -11,6 +11,7 @@ import { createClient } from "@terminalzero/lemonsqueezy/client";
 import { describe, it } from "vitest";
 import {
   cleanupRegisteredFixtures,
+  createFixtureDiscountCode,
   registerFixture,
 } from "./fixture-safety.mjs";
 
@@ -49,7 +50,7 @@ describe("protected Test Mode release canary", () => {
       const discount = await client.discounts.create({
         storeId,
         name: fixtureTag,
-        code: fixtureTag.toUpperCase(),
+        code: createFixtureDiscountCode(fixtureTag),
         amount: 10,
         amountType: "percent",
         testMode: true,

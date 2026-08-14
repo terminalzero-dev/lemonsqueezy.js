@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
 
+export function createFixtureDiscountCode(fixtureTag) {
+  const code = fixtureTag.replaceAll("-", "").toUpperCase();
+  assert.match(code, /^[A-Z0-9]{3,256}$/);
+  return code;
+}
+
 export async function registerFixture({
   journal,
   type,
