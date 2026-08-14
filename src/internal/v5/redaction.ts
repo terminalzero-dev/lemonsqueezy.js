@@ -1,63 +1,37 @@
 const redacted = "[REDACTED]";
 
 export function sanitizeLicenseManagementErrorDetail(value: unknown): unknown {
-  return sanitizeValue(value, new WeakMap());
+  return sanitizeValue(
+    value,
+    {
+      sanitizeString: () => redacted,
+      isSensitiveProperty: () => false,
+    },
+    new WeakMap(),
+  );
 }
 
 export function sanitizeLicenseApiErrorDetail(
   value: unknown,
   secrets: readonly string[],
 ): unknown {
-  return sanitizeLicenseApiValue(value, secrets, new WeakMap());
+  return sanitizeValue(
+    value,
+    {
+      sanitizeString: (string) =>
+        secrets.reduce(
+          (sanitized, secret) => sanitized.replaceAll(secret, redacted),
+          string,
+        ),
+      isSensitiveProperty: isLicenseApiSensitiveProperty,
+    },
+    new WeakMap(),
+  );
 }
 
-function sanitizeLicenseApiValue(
-  value: unknown,
-  secrets: readonly string[],
-  seen: WeakMap<object, unknown>,
-): unknown {
-  if (typeof value === "string") {
-    return secrets.reduce(
-      (sanitized, secret) => sanitized.replaceAll(secret, redacted),
-      value,
-    );
-  }
-  if (typeof value !== "object" || value === null) return value;
-
-  const existing = seen.get(value);
-  if (existing !== undefined) return existing;
-
-  if (value instanceof Error) {
-    const sanitized = new Error(
-      sanitizeLicenseApiValue(value.message, secrets, seen) as string,
-    );
-    seen.set(value, sanitized);
-    if (value.cause !== undefined) {
-      Object.defineProperty(sanitized, "cause", {
-        configurable: true,
-        value: sanitizeLicenseApiValue(value.cause, secrets, seen),
-      });
-    }
-    return sanitized;
-  }
-
-  if (Array.isArray(value)) {
-    const sanitized: unknown[] = [];
-    seen.set(value, sanitized);
-    value.forEach((item) =>
-      sanitized.push(sanitizeLicenseApiValue(item, secrets, seen)),
-    );
-    return sanitized;
-  }
-
-  const sanitized: Record<string, unknown> = {};
-  seen.set(value, sanitized);
-  for (const [property, child] of Object.entries(value)) {
-    sanitized[property] = isLicenseApiSensitiveProperty(property)
-      ? redacted
-      : sanitizeLicenseApiValue(child, secrets, seen);
-  }
-  return sanitized;
+interface SanitizationPolicy {
+  readonly sanitizeString: (value: string) => string;
+  readonly isSensitiveProperty: (property: string) => boolean;
 }
 
 function isLicenseApiSensitiveProperty(property: string): boolean {
@@ -71,21 +45,22 @@ function isLicenseApiSensitiveProperty(property: string): boolean {
 
 function sanitizeValue(
   value: unknown,
+  policy: SanitizationPolicy,
   seen: WeakMap<object, unknown>,
 ): unknown {
-  if (typeof value === "string") return redacted;
+  if (typeof value === "string") return policy.sanitizeString(value);
   if (typeof value !== "object" || value === null) return value;
 
   const existing = seen.get(value);
   if (existing !== undefined) return existing;
 
   if (value instanceof Error) {
-    const sanitized = new Error(redacted);
+    const sanitized = new Error(policy.sanitizeString(value.message));
     seen.set(value, sanitized);
     if (value.cause !== undefined) {
       Object.defineProperty(sanitized, "cause", {
         configurable: true,
-        value: sanitizeValue(value.cause, seen),
+        value: sanitizeValue(value.cause, policy, seen),
       });
     }
     return sanitized;
@@ -94,14 +69,16 @@ function sanitizeValue(
   if (Array.isArray(value)) {
     const sanitized: unknown[] = [];
     seen.set(value, sanitized);
-    value.forEach((item) => sanitized.push(sanitizeValue(item, seen)));
+    value.forEach((item) => sanitized.push(sanitizeValue(item, policy, seen)));
     return sanitized;
   }
 
   const sanitized: Record<string, unknown> = {};
   seen.set(value, sanitized);
   for (const [property, child] of Object.entries(value)) {
-    sanitized[property] = sanitizeValue(child, seen);
+    sanitized[property] = policy.isSensitiveProperty(property)
+      ? redacted
+      : sanitizeValue(child, policy, seen);
   }
   return sanitized;
 }
