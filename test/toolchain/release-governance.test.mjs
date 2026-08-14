@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -11,6 +12,29 @@ const execute = promisify(execFile);
 const readRootText = (path) =>
   readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
 const packageJson = JSON.parse(readRootText("package.json"));
+const createPublishPlan = () =>
+  `${JSON.stringify(
+    {
+      version: 1,
+      plan: [
+        [
+          {
+            kind: "publish",
+            name: "@terminalzero/lemonsqueezy",
+            version: packageJson.version,
+            access: "public",
+            tag: "beta",
+            tarball: {
+              path: "packages/candidate.tgz",
+              integrity: "sha256-av2FFFr1XY1gzZ5pinYruVvD039vq2xgoTLhL8o//TQ=",
+            },
+          },
+        ],
+      ],
+    },
+    null,
+    2,
+  )}\n`;
 
 void test("release governance is part of the default credential-free gate", () => {
   assert.match(
@@ -104,32 +128,8 @@ void test("a release candidate binds the exact artifact to source and gate evide
       2,
     )}\n`,
   );
-  await writeFile(
-    join(artifactDirectory, "publish-plan.json"),
-    `${JSON.stringify(
-      {
-        version: 1,
-        plan: [
-          [
-            {
-              kind: "publish",
-              name: "@terminalzero/lemonsqueezy",
-              version: "5.0.0-beta.0",
-              access: "public",
-              tag: "beta",
-              tarball: {
-                path: "packages/candidate.tgz",
-                integrity:
-                  "sha256-av2FFFr1XY1gzZ5pinYruVvD039vq2xgoTLhL8o//TQ=",
-              },
-            },
-          ],
-        ],
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  const publishPlan = createPublishPlan();
+  await writeFile(join(artifactDirectory, "publish-plan.json"), publishPlan);
 
   await execute(process.execPath, [
     new URL("../../scripts/create-release-candidate.mjs", import.meta.url)
@@ -137,7 +137,7 @@ void test("a release candidate binds the exact artifact to source and gate evide
     "--artifact-directory",
     artifactDirectory,
     "--expected-version",
-    "5.0.0-beta.0",
+    packageJson.version,
     "--expected-commit",
     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "--repository",
@@ -155,7 +155,7 @@ void test("a release candidate binds the exact artifact to source and gate evide
     {
       schemaVersion: 1,
       package: "@terminalzero/lemonsqueezy",
-      version: "5.0.0-beta.0",
+      version: packageJson.version,
       sourceCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       artifact: {
         file: "packages/candidate.tgz",
@@ -168,8 +168,7 @@ void test("a release candidate binds the exact artifact to source and gate evide
       },
       publishPlan: {
         file: "publish-plan.json",
-        sha256:
-          "6dd6a8d35f4710b851824f7d7e3dba1d23d99e89d1696517df03fcd9962f7fd1",
+        sha256: createHash("sha256").update(publishPlan).digest("hex"),
       },
       gates: {
         credentialFree: "passed",
@@ -208,39 +207,15 @@ void test("pre-publish verification rejects changed candidate bytes", async () =
       2,
     )}\n`,
   );
-  await writeFile(
-    join(artifactDirectory, "publish-plan.json"),
-    `${JSON.stringify(
-      {
-        version: 1,
-        plan: [
-          [
-            {
-              kind: "publish",
-              name: "@terminalzero/lemonsqueezy",
-              version: "5.0.0-beta.0",
-              access: "public",
-              tag: "beta",
-              tarball: {
-                path: "packages/candidate.tgz",
-                integrity:
-                  "sha256-av2FFFr1XY1gzZ5pinYruVvD039vq2xgoTLhL8o//TQ=",
-              },
-            },
-          ],
-        ],
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  const publishPlan = createPublishPlan();
+  await writeFile(join(artifactDirectory, "publish-plan.json"), publishPlan);
   await writeFile(
     join(artifactDirectory, "candidate.json"),
     `${JSON.stringify(
       {
         schemaVersion: 1,
         package: "@terminalzero/lemonsqueezy",
-        version: "5.0.0-beta.0",
+        version: packageJson.version,
         sourceCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         artifact: {
           file: "packages/candidate.tgz",
@@ -253,8 +228,7 @@ void test("pre-publish verification rejects changed candidate bytes", async () =
         },
         publishPlan: {
           file: "publish-plan.json",
-          sha256:
-            "6dd6a8d35f4710b851824f7d7e3dba1d23d99e89d1696517df03fcd9962f7fd1",
+          sha256: createHash("sha256").update(publishPlan).digest("hex"),
         },
         gates: {
           credentialFree: "passed",
@@ -281,7 +255,7 @@ void test("pre-publish verification rejects changed candidate bytes", async () =
       "--artifact-directory",
       artifactDirectory,
       "--expected-version",
-      "5.0.0-beta.0",
+      packageJson.version,
       "--expected-commit",
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "--skip-registry-check",
