@@ -16,6 +16,8 @@ const packageJson = JSON.parse(
 const sourcePackageJson = JSON.parse(
   await readFile(join(root, "package.json"), "utf8"),
 );
+const expectedVersion =
+  process.env.PACKAGE_SMOKE_EXPECTED_VERSION ?? sourcePackageJson.version;
 const topLevelFiles = (await readdir(installedPackage)).sort();
 
 assert.deepEqual(topLevelFiles, [
@@ -26,7 +28,7 @@ assert.deepEqual(topLevelFiles, [
   "package.json",
 ]);
 assert.equal(packageJson.name, "@terminalzero/lemonsqueezy");
-assert.equal(packageJson.version, sourcePackageJson.version);
+assert.equal(packageJson.version, expectedVersion);
 
 const distFiles = await readdir(join(installedPackage, "dist"), {
   recursive: true,
