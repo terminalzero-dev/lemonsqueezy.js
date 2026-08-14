@@ -3,6 +3,11 @@ import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
+import {
+  assertReleaseDeployKeySecret,
+  resolveRulesetBypassActors,
+  selectReleaseDeployKey,
+} from "./lib/github-governance.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const { values } = parseArgs({
@@ -29,19 +34,15 @@ if (values["dry-run"]) {
 const repositoryPath = `repos/${values.repository}`;
 const [owner, repository] = values.repository.split("/");
 const releaseIdentityTeam = ensureReleaseIdentityTeam();
-const releaseActionsIntegration = ensureReleaseActionsIntegration();
+ensureReleaseDeployKey();
 const existingRulesets = request("GET", `${repositoryPath}/rulesets`);
 const appliedRulesetSpecifications = [];
 for (const desired of governance.rulesets) {
   const specification = structuredClone(desired);
-  for (const actor of specification.bypass_actors) {
-    if (actor.actor_id === "$releaseIdentityTeam") {
-      actor.actor_id = releaseIdentityTeam.id;
-    }
-    if (actor.actor_id === "$releaseActionsIntegration") {
-      actor.actor_id = releaseActionsIntegration.id;
-    }
-  }
+  specification.bypass_actors = resolveRulesetBypassActors(
+    specification.bypass_actors,
+    { releaseIdentityTeamId: releaseIdentityTeam.id },
+  );
   const existing = existingRulesets.find(({ name }) => name === desired.name);
   const endpoint = existing
     ? `${repositoryPath}/rulesets/${existing.id}`
@@ -74,6 +75,7 @@ for (const desired of governance.environments) {
     }
   }
 }
+ensureReleaseDeployKeySecret();
 
 request("PUT", `${repositoryPath}/actions/permissions`, governance.actions);
 request(
@@ -231,16 +233,19 @@ function ensureReleaseIdentityTeam() {
   return team;
 }
 
-function ensureReleaseActionsIntegration() {
-  const desired = governance.releaseIdentity.actionsIntegration;
-  const integration = request("GET", `apps/${desired.slug}`);
-  assert.equal(integration.id, desired.id, "release Actions integration id");
-  assert.equal(
-    integration.slug,
-    desired.slug,
-    "release Actions integration slug",
+function ensureReleaseDeployKey() {
+  const desired = governance.releaseIdentity.deployKey;
+  const keys = request("GET", `${repositoryPath}/keys?per_page=100`);
+  selectReleaseDeployKey(keys, desired);
+}
+
+function ensureReleaseDeployKeySecret() {
+  const desired = governance.releaseIdentity.deployKey;
+  const secrets = request(
+    "GET",
+    `${repositoryPath}/environments/${encodeURIComponent(desired.environment)}/secrets?per_page=100`,
   );
-  return integration;
+  assertReleaseDeployKeySecret(secrets.secrets, desired);
 }
 
 function request(method, endpoint, body) {

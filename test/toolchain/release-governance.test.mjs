@@ -9,6 +9,11 @@ import { join } from "node:path";
 import { once } from "node:events";
 import { promisify } from "node:util";
 import { test } from "node:test";
+import {
+  assertReleaseDeployKeySecret,
+  resolveRulesetBypassActors,
+  selectReleaseDeployKey,
+} from "../../scripts/lib/github-governance.mjs";
 
 const execute = promisify(execFile);
 const readRootText = (path) =>
@@ -481,7 +486,11 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   );
   assert.match(
     workflow,
-    /finalize:[\s\S]*needs: verify[\s\S]*permissions:\n\s+actions: read\n\s+contents: write/,
+    /tag:[\s\S]*needs: verify[\s\S]*permissions:\n\s+contents: read/,
+  );
+  assert.match(
+    workflow,
+    /finalize:[\s\S]*needs: tag[\s\S]*permissions:\n\s+actions: read\n\s+contents: write/,
   );
   assert.match(workflow, /contents: write/);
   assert.match(workflow, /run-id: \$\{\{ inputs\.candidate_run_id \}\}/);
@@ -491,6 +500,16 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   assert.match(workflow, /PACKAGE_SMOKE_EXPECTED_VERSION/);
   assert.match(workflow, /run: pnpm test:package/);
   assert.match(workflow, /gh release create/);
+  assert.match(workflow, /Create or verify the protected release tag/);
+  assert.match(workflow, /git push origin/);
+  assert.match(workflow, /RELEASE_TAG_DEPLOY_KEY/);
+  assert.match(workflow, /persist-credentials: true/);
+  assert.equal(workflow.match(/RELEASE_TAG_DEPLOY_KEY/g)?.length, 1);
+  assert.match(
+    workflow,
+    /tag:[\s\S]*persist-credentials: true[\s\S]*finalize:[\s\S]*persist-credentials: false/,
+  );
+  assert.match(workflow, /--verify-tag/);
   assert.match(workflow, /--target "\$EXPECTED_COMMIT"/);
   assert.match(workflow, /--draft/);
   assert.match(workflow, /--prerelease/);
@@ -568,20 +587,17 @@ void test("repository governance protects release refs without a review quorum",
   assert.deepEqual(tagCreation.rules, [{ type: "creation" }]);
   assert.deepEqual(tagCreation.bypass_actors, [
     {
-      actor_id: "$releaseIdentityTeam",
-      actor_type: "Team",
-      bypass_mode: "always",
-    },
-    {
-      actor_id: "$releaseActionsIntegration",
-      actor_type: "Integration",
+      actor_id: "$releaseDeployKey",
+      actor_type: "DeployKey",
       bypass_mode: "always",
     },
   ]);
   assert.deepEqual(governance.releaseIdentity, {
-    actionsIntegration: {
-      id: 15368,
-      slug: "github-actions",
+    deployKey: {
+      title: "v5-release-workflow",
+      environment: "npm-release",
+      privateKeySecret: "RELEASE_TAG_DEPLOY_KEY",
+      fingerprint: "SHA256:canblEOxFyTUEyOxhVk2M0sp1+5vAm4ha8RyYBx3ibc",
     },
     team: {
       name: "v5-release-managers",
@@ -615,6 +631,55 @@ void test("repository governance protects release refs without a review quorum",
   assert.match(
     readRootText("scripts/apply-github-governance.mjs"),
     /immutable-releases/,
+  );
+});
+
+void test("release governance pins and resolves its deploy-key identity", () => {
+  const desired = {
+    title: "v5-release-workflow",
+    environment: "npm-release",
+    privateKeySecret: "RELEASE_TAG_DEPLOY_KEY",
+    fingerprint: "SHA256:canblEOxFyTUEyOxhVk2M0sp1+5vAm4ha8RyYBx3ibc",
+  };
+  const key = {
+    id: 42,
+    title: desired.title,
+    read_only: false,
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP6IZ9Ak2ilRk61WDzH/1nfF6SWh1FIwd2lg7jtvabb6 v5-release-workflow",
+  };
+
+  assert.equal(selectReleaseDeployKey([key], desired), key);
+  assert.throws(
+    () => selectReleaseDeployKey([key, { ...key, id: 43 }], desired),
+    /deploy key count/,
+  );
+  assert.throws(
+    () =>
+      selectReleaseDeployKey(
+        [{ ...key, key: key.key.replace("abb6", "abb7") }],
+        desired,
+      ),
+    /public key fingerprint/,
+  );
+  assert.deepEqual(
+    resolveRulesetBypassActors(
+      [
+        {
+          actor_id: "$releaseDeployKey",
+          actor_type: "DeployKey",
+          bypass_mode: "always",
+        },
+      ],
+      { releaseIdentityTeamId: 7 },
+    ),
+    [{ actor_id: null, actor_type: "DeployKey", bypass_mode: "always" }],
+  );
+  assert.doesNotThrow(() =>
+    assertReleaseDeployKeySecret([{ name: "RELEASE_TAG_DEPLOY_KEY" }], desired),
+  );
+  assert.throws(
+    () => assertReleaseDeployKeySecret([], desired),
+    /environment secret/,
   );
 });
 

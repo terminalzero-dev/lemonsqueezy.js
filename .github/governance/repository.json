@@ -1,8 +1,10 @@
 {
   "releaseIdentity": {
-    "actionsIntegration": {
-      "id": 15368,
-      "slug": "github-actions"
+    "deployKey": {
+      "title": "v5-release-workflow",
+      "environment": "npm-release",
+      "privateKeySecret": "RELEASE_TAG_DEPLOY_KEY",
+      "fingerprint": "SHA256:canblEOxFyTUEyOxhVk2M0sp1+5vAm4ha8RyYBx3ibc"
     },
     "team": {
       "name": "v5-release-managers",
@@ -59,13 +61,8 @@
       "enforcement": "active",
       "bypass_actors": [
         {
-          "actor_id": "$releaseIdentityTeam",
-          "actor_type": "Team",
-          "bypass_mode": "always"
-        },
-        {
-          "actor_id": "$releaseActionsIntegration",
-          "actor_type": "Integration",
+          "actor_id": "$releaseDeployKey",
+          "actor_type": "DeployKey",
           "bypass_mode": "always"
         }
       ],

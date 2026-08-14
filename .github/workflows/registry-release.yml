@@ -89,9 +89,52 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  tag:
+    name: Create or verify the protected release tag
+    needs: verify
+    if: >-
+      github.actor == vars.RELEASE_MAINTAINER &&
+      (github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/release/v5-beta')
+    environment: npm-release
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with the repository-only release identity
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          ssh-key: ${{ secrets.RELEASE_TAG_DEPLOY_KEY }}
+
+      - name: Create or verify the protected release tag
+        run: |
+          tag="v${EXPECTED_VERSION}"
+          tag_ref=$(gh api \
+            "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>/dev/null || true)
+          if test -z "$tag_ref"; then
+            git tag "$tag" "$EXPECTED_COMMIT"
+            git push origin "refs/tags/$tag:refs/tags/$tag"
+            tag_ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag")
+          fi
+          test -n "$tag_ref"
+          tag_sha=$(printf '%s' "$tag_ref" | jq -r .object.sha)
+          tag_type=$(printf '%s' "$tag_ref" | jq -r .object.type)
+          if test "$tag_type" = "tag"; then
+            tag_sha=$(gh api \
+              "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" \
+              --jq .object.sha)
+          fi
+          test "$tag_sha" = "$EXPECTED_COMMIT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+
   finalize:
     name: Publish the immutable prerelease
-    needs: verify
+    needs: tag
     if: >-
       github.actor == vars.RELEASE_MAINTAINER &&
       (github.ref == 'refs/heads/main' ||
@@ -102,8 +145,10 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout release notes
+      - name: Checkout release notes without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Download the verified closeout bundle
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
@@ -120,18 +165,6 @@ jobs:
             --paginate \
             --jq ".[] | select(.tag_name == \"$tag\") | @base64" | head -n 1)
           if test -z "$encoded_release"; then
-            tag_ref=$(gh api \
-              "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>/dev/null || true)
-            if test -n "$tag_ref"; then
-              tag_sha=$(printf '%s' "$tag_ref" | jq -r .object.sha)
-              tag_type=$(printf '%s' "$tag_ref" | jq -r .object.type)
-              if test "$tag_type" = "tag"; then
-                tag_sha=$(gh api \
-                  "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" \
-                  --jq .object.sha)
-              fi
-              test "$tag_sha" = "$EXPECTED_COMMIT"
-            fi
             gh release create "$tag" \
               .artifacts/package/packages/*.tgz \
               .artifacts/package/artifact.json \
@@ -139,6 +172,7 @@ jobs:
               .artifacts/package/publish-plan.json \
               .artifacts/package/registry-evidence.json \
               --target "$EXPECTED_COMMIT" \
+              --verify-tag \
               --draft \
               --prerelease \
               --latest=false \

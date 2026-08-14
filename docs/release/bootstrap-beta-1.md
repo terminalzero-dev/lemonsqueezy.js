@@ -16,6 +16,11 @@ Release Candidate run.
   offline recovery materials, and public scoped-package permission.
 - No package registry version named `@terminalzero/lemonsqueezy@5.0.0-beta.1`
   exists.
+- The repository-only `v5-release-workflow` deploy key has write access, its
+  private key exists only as `RELEASE_TAG_DEPLOY_KEY` in the protected
+  `npm-release` environment, and the tag creation ruleset grants deploy keys
+  the workflow-only bypass. Governance pins its public SHA-256 fingerprint and
+  rejects any additional writable deploy key.
 
 ## Interactive publication
 
@@ -34,19 +39,22 @@ public --tag beta`. Do not check out source, build, pack, patch, or compress.
    `registry-release.yml`, and environment `npm-release`.
 6. Require 2FA and disallow token publishing for the package, then revoke the
    local bootstrap session or credential.
-7. Run protected registry verification against the same Candidate. Only after
-   registry integrity passes may the controlled workflow create
-   `v5.0.0-beta.1` and an immutable prerelease with the tarball and evidence as
-   assets.
+7. Dispatch `registry-release.yml` against the same Candidate. Its read-only
+   `verify` job must pass registry metadata, integrity, exact tarball, and
+   ESM/CJS installation checks before the protected `tag` job can use the
+   repository-only deploy key to create `v5.0.0-beta.1` at the exact Candidate
+   commit. The separate `finalize` job reads the protected tag back and creates
+   an immutable prerelease with the tarball and evidence as assets without
+   receiving the deploy key.
 
 ## Closeout recovery
 
 The `registry-release.yml` workflow is restricted to `5.0.0-beta.1` and is
 safe to rerun after publication without publishing the npm version again:
 
-- With no Release, it creates a draft against the recorded Candidate commit,
-  uploads only the verified Candidate and registry evidence, then publishes
-  the prerelease.
+- With no tag or Release, it creates the protected tag at the recorded Candidate
+  commit, reads it back, creates a draft with `--verify-tag`, uploads only the
+  verified Candidate and registry evidence, then publishes the prerelease.
 - With an existing draft, it verifies the target commit and uploads any missing
   assets from the newly verified closeout bundle before resuming publish.
 - With an already published Release, it verifies the immutable flag, tag
@@ -60,3 +68,9 @@ Resume only the protected registry verification and GitHub closeout.
 Publication success followed by verification failure is not retried with the
 same version. Preserve evidence, normalize affected dist-tags, and publish a new
 fix version through the approved recovery path.
+
+Rotate the release identity only outside a release run: generate the replacement,
+merge its public fingerprint through the normal PR gate, replace the repository
+deploy key and `npm-release` environment secret, revoke the old key, then rerun
+governance verification. If the private key may be exposed, remove the deploy key
+immediately and pause releases until the full rotation is verified.
