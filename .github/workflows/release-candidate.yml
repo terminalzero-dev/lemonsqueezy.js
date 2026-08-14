@@ -1,0 +1,272 @@
+name: Release Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_version:
+        description: Exact package version to verify
+        required: true
+        type: string
+      expected_commit:
+        description: Full protected-branch commit SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v5-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Clean-build and pack once
+    if: >-
+      github.actor == vars.RELEASE_MAINTAINER &&
+      (github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/release/v5-beta')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the expected commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.expected_commit }}
+
+      - name: Verify protected dispatch identity
+        run: |
+          test "$EXPECTED_COMMIT" = "$DISPATCH_COMMIT"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+        env:
+          DISPATCH_COMMIT: ${{ github.sha }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Use Bun 1.3.14
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.3.14"
+
+      - name: Enable the repository package manager
+        run: corepack enable
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify the requested package version
+        run: >-
+          node -e
+          'const value = require("./package.json").version;
+          if (value !== process.env.EXPECTED_VERSION) process.exit(1)'
+        env:
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+
+      - name: Run credential-free gates and pack exactly once
+        run: pnpm candidate:check
+
+      - name: Upload the exact artifact for all remaining gates
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
+          path: .artifacts/package
+          if-no-files-found: error
+          retention-days: 30
+
+  node-runtime:
+    name: Node ${{ matrix.node-version }} exact-artifact smoke
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22.0.0", "22", "24.0.0", "24"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout consumer tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.expected_commit }}
+
+      - name: Use the matrix Node.js runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Enable the repository package manager
+        run: corepack enable
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download the exact artifact without rebuilding
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
+          path: .artifacts/package
+
+      - name: Exercise ESM and CJS through Node
+        run: pnpm test:package
+        env:
+          PACKAGE_SMOKE_RUNTIME: node
+
+  bun-runtime:
+    name: Bun ${{ matrix.bun-version }} exact-artifact smoke
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        bun-version: ["1.3.14", "1.x"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout consumer tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.expected_commit }}
+
+      - name: Use Node.js 24 as the install host
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Use the matrix Bun runtime
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ matrix.bun-version }}
+
+      - name: Enable the repository package manager
+        run: corepack enable
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download the exact artifact without rebuilding
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
+          path: .artifacts/package
+
+      - name: Exercise ESM and CJS through Bun
+        run: pnpm test:package
+        env:
+          PACKAGE_SMOKE_RUNTIME: bun
+
+  test-mode:
+    name: Protected exact-artifact Test Mode gate
+    needs: build
+    environment: test-mode
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout integration tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.expected_commit }}
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Enable the repository package manager
+        run: corepack enable
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download the exact artifact without rebuilding
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
+          path: .artifacts/package
+
+      - name: Run the protected canary
+        run: pnpm test:integration
+        env:
+          LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
+          LEMON_SQUEEZY_TEST_STORE_ID: ${{ vars.LEMON_SQUEEZY_TEST_STORE_ID }}
+          LEMON_SQUEEZY_TEST_PRODUCT_ID: ${{ vars.LEMON_SQUEEZY_TEST_PRODUCT_ID }}
+          LEMON_SQUEEZY_TEST_LICENSE_KEY: ${{ secrets.LEMON_SQUEEZY_TEST_LICENSE_KEY }}
+          LEMON_SQUEEZY_TEST_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Preserve secret-free fixture journals
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-candidate-fixture-journals-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/consumers/**/**journal.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  candidate:
+    name: Record completed Candidate evidence
+    needs: [build, node-runtime, bun-runtime, test-mode]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout evidence tooling only
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.expected_commit }}
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Download the gated artifact without rebuilding
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
+          path: .artifacts/package
+
+      - name: Record source, artifact, plan, matrix, and run identity
+        run: >-
+          node scripts/create-release-candidate.mjs
+          --expected-version "$EXPECTED_VERSION"
+          --expected-commit "$EXPECTED_COMMIT"
+          --repository "$GITHUB_REPOSITORY"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --workflow-ref "$GITHUB_WORKFLOW_REF"
+        env:
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+
+      - name: Upload the immutable candidate bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-candidate-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
+          path: .artifacts/package
+          if-no-files-found: error
+          retention-days: 30
+
+  pre-publish:
+    name: Verify candidate before any future publish
+    needs: candidate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout verification tooling only
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.expected_commit }}
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Download the candidate without rebuilding
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: release-candidate-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
+          path: .artifacts/package
+
+      - name: Recheck digests, gates, plan, and registry absence
+        run: >-
+          node scripts/verify-release-candidate.mjs
+          --expected-version "$EXPECTED_VERSION"
+          --expected-commit "$EXPECTED_COMMIT"
+        env:
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}

@@ -1,0 +1,69 @@
+name: Test Mode Canary
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v5-release
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    name: Protected Test Mode canary
+    if: >-
+      github.event_name == 'schedule' ||
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/release/v5-beta'
+    environment: test-mode
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Use Bun 1.3.14
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.3.14"
+
+      - name: Enable the repository package manager
+        run: corepack enable
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and run credential-free gates
+        run: pnpm check
+
+      - name: Reap bounded stale fixtures
+        run: pnpm test:integration:reap
+        env:
+          LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
+          LEMON_SQUEEZY_TEST_STORE_ID: ${{ vars.LEMON_SQUEEZY_TEST_STORE_ID }}
+
+      - name: Run the exact-artifact Test Mode canary
+        run: pnpm test:integration
+        env:
+          LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
+          LEMON_SQUEEZY_TEST_STORE_ID: ${{ vars.LEMON_SQUEEZY_TEST_STORE_ID }}
+          LEMON_SQUEEZY_TEST_PRODUCT_ID: ${{ vars.LEMON_SQUEEZY_TEST_PRODUCT_ID }}
+          LEMON_SQUEEZY_TEST_LICENSE_KEY: ${{ secrets.LEMON_SQUEEZY_TEST_LICENSE_KEY }}
+          LEMON_SQUEEZY_TEST_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Preserve secret-free fixture journals
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-mode-fixture-journals-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/consumers/**/**journal.json
+          if-no-files-found: warn
+          retention-days: 30
