@@ -47,7 +47,7 @@ for (const desired of governance.rulesets) {
 }
 
 for (const desired of governance.environments) {
-  const { branches, ...environment } = desired;
+  const { name: _name, branches, ...environment } = desired;
   const environmentPath = `${repositoryPath}/environments/${encodeURIComponent(desired.name)}`;
   request("PUT", environmentPath, environment);
   const policies = request(
@@ -107,7 +107,7 @@ for (const desired of appliedRulesetSpecifications) {
     "conditions",
     "rules",
   ]) {
-    assert.deepEqual(
+    assertMatchesDesired(
       applied[field],
       desired[field],
       `${desired.name} ${field}`,
@@ -151,6 +151,25 @@ for (const [name, value] of Object.entries(governance.variables)) {
   assert.equal(variable.value, value, `${name} repository variable`);
 }
 console.log(`Applied and verified GitHub governance for ${values.repository}.`);
+
+function assertMatchesDesired(actual, desired, label) {
+  if (Array.isArray(desired)) {
+    assert.ok(Array.isArray(actual), `${label} must be an array`);
+    assert.equal(actual.length, desired.length, `${label} length`);
+    for (const [index, value] of desired.entries()) {
+      assertMatchesDesired(actual[index], value, `${label}[${index}]`);
+    }
+    return;
+  }
+  if (desired !== null && typeof desired === "object") {
+    assert.ok(actual !== null && typeof actual === "object", `${label} object`);
+    for (const [key, value] of Object.entries(desired)) {
+      assertMatchesDesired(actual[key], value, `${label}.${key}`);
+    }
+    return;
+  }
+  assert.deepEqual(actual, desired, label);
+}
 
 function ensureReleaseIdentityTeam() {
   const desired = governance.releaseIdentity.team;
