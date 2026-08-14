@@ -2,8 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   cleanupRegisteredFixtures,
+  createFixtureDiscountCode,
   registerFixture,
 } from "../integration/fixture-safety.mjs";
+
+void test("fixture discount codes satisfy the public contract", () => {
+  const code = createFixtureDiscountCode("sdk-ci-31785179293-1");
+
+  assert.equal(code, "SDKCI317851792931");
+  assert.match(code, /^[A-Z0-9]{3,256}$/);
+});
 
 void test("a created fixture remains cleanup-visible when journaling fails", async () => {
   const journal = { fixtures: [] };
