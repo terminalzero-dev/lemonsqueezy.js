@@ -29,6 +29,7 @@ if (values["dry-run"]) {
 const repositoryPath = `repos/${values.repository}`;
 const [owner, repository] = values.repository.split("/");
 const releaseIdentityTeam = ensureReleaseIdentityTeam();
+const releaseActionsIntegration = ensureReleaseActionsIntegration();
 const existingRulesets = request("GET", `${repositoryPath}/rulesets`);
 const appliedRulesetSpecifications = [];
 for (const desired of governance.rulesets) {
@@ -36,6 +37,9 @@ for (const desired of governance.rulesets) {
   for (const actor of specification.bypass_actors) {
     if (actor.actor_id === "$releaseIdentityTeam") {
       actor.actor_id = releaseIdentityTeam.id;
+    }
+    if (actor.actor_id === "$releaseActionsIntegration") {
+      actor.actor_id = releaseActionsIntegration.id;
     }
   }
   const existing = existingRulesets.find(({ name }) => name === desired.name);
@@ -77,6 +81,9 @@ request(
   `${repositoryPath}/actions/permissions/workflow`,
   governance.workflowPermissions,
 );
+if (governance.immutableReleases) {
+  request("PUT", `${repositoryPath}/immutable-releases`);
+}
 const existingVariables = request(
   "GET",
   `${repositoryPath}/actions/variables?per_page=100`,
@@ -143,6 +150,11 @@ const workflowPermissions = request(
 );
 assert.equal(workflowPermissions.default_workflow_permissions, "read");
 assert.equal(workflowPermissions.can_approve_pull_request_reviews, false);
+const immutableReleases = request(
+  "GET",
+  `${repositoryPath}/immutable-releases`,
+);
+assert.equal(immutableReleases.enabled, governance.immutableReleases);
 for (const [name, value] of Object.entries(governance.variables)) {
   const variable = request(
     "GET",
@@ -217,6 +229,18 @@ function ensureReleaseIdentityTeam() {
     "release identity repository permission",
   );
   return team;
+}
+
+function ensureReleaseActionsIntegration() {
+  const desired = governance.releaseIdentity.actionsIntegration;
+  const integration = request("GET", `apps/${desired.slug}`);
+  assert.equal(integration.id, desired.id, "release Actions integration id");
+  assert.equal(
+    integration.slug,
+    desired.slug,
+    "release Actions integration slug",
+  );
+  return integration;
 }
 
 function request(method, endpoint, body) {

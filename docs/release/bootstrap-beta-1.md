@@ -30,14 +30,32 @@ public --tag beta`. Do not check out source, build, pack, patch, or compress.
    remove the `latest` tag before any announcement; `beta` must resolve to the
    verified version.
 5. Configure npm Trusted Publisher for repository
-   `terminalzero-dev/lemonsqueezy.js`, the exact future registry-release
-   workflow filename, and environment `npm-release`.
+   `terminalzero-dev/lemonsqueezy.js`, workflow filename
+   `registry-release.yml`, and environment `npm-release`.
 6. Require 2FA and disallow token publishing for the package, then revoke the
    local bootstrap session or credential.
 7. Run protected registry verification against the same Candidate. Only after
    registry integrity passes may the controlled workflow create
    `v5.0.0-beta.1` and an immutable prerelease with the tarball and evidence as
    assets.
+
+## Closeout recovery
+
+The `registry-release.yml` workflow is restricted to `5.0.0-beta.1` and is
+safe to rerun after publication without publishing the npm version again:
+
+- With no Release, it creates a draft against the recorded Candidate commit,
+  uploads only the verified Candidate and registry evidence, then publishes
+  the prerelease.
+- With an existing draft, it verifies the target commit and uploads any missing
+  assets from the newly verified closeout bundle before resuming publish.
+- With an already published Release, it verifies the immutable flag, tag
+  commit, prerelease state, and complete asset names without changing them.
+- A tag without a Release is retained and used as-is only when it resolves to
+  the recorded Candidate commit. A different target fails closed.
+
+Never rerun the interactive npm publish after the registry version exists.
+Resume only the protected registry verification and GitHub closeout.
 
 Publication success followed by verification failure is not retried with the
 same version. Preserve evidence, normalize affected dist-tags, and publish a new

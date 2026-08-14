@@ -1,0 +1,260 @@
+name: Registry Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run_id:
+        description: Successful Release Candidate workflow run ID
+        required: true
+        type: string
+      expected_version:
+        description: Exact package version already published to npm
+        required: true
+        type: string
+      expected_commit:
+        description: Full protected-branch Candidate commit SHA
+        required: true
+        type: string
+      expected_sha256:
+        description: Canonical Package Artifact SHA-256
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v5-release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify Candidate against the public registry
+    if: >-
+      github.actor == vars.RELEASE_MAINTAINER &&
+      (github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/release/v5-beta')
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Enable the repository package manager
+        run: corepack enable
+
+      - name: Download the completed Candidate without rebuilding
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: release-candidate-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
+          path: .artifacts/package
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.candidate_run_id }}
+
+      - name: Verify Candidate run, registry metadata, bytes, and dist-tags
+        run: >-
+          node scripts/verify-registry-release.mjs
+          --expected-version "$EXPECTED_VERSION"
+          --expected-commit "$EXPECTED_COMMIT"
+          --expected-sha256 "$EXPECTED_SHA256"
+          --expected-run-id "$CANDIDATE_RUN_ID"
+          --repository "$GITHUB_REPOSITORY"
+        env:
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Install the exact registry version and exercise ESM and CJS
+        run: pnpm test:package
+        env:
+          PACKAGE_SMOKE_SPEC: "@terminalzero/lemonsqueezy@${{ inputs.expected_version }}"
+          PACKAGE_SMOKE_EXPECTED_VERSION: ${{ inputs.expected_version }}
+          PACKAGE_SMOKE_RUNTIME: node
+
+      - name: Preserve the verified closeout bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: registry-release-evidence-${{ inputs.expected_version }}-${{ inputs.expected_sha256 }}
+          path: .artifacts/package
+          if-no-files-found: error
+          retention-days: 30
+
+  finalize:
+    name: Publish the immutable prerelease
+    needs: verify
+    if: >-
+      github.actor == vars.RELEASE_MAINTAINER &&
+      (github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/release/v5-beta')
+    environment: npm-release
+    permissions:
+      actions: read
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release notes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download the verified closeout bundle
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: registry-release-evidence-${{ inputs.expected_version }}-${{ inputs.expected_sha256 }}
+          path: .artifacts/package
+
+      - name: Create or resume the draft prerelease
+        id: release
+        run: |
+          tag="v${EXPECTED_VERSION}"
+          encoded_release=$(gh api \
+            "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --paginate \
+            --jq ".[] | select(.tag_name == \"$tag\") | @base64" | head -n 1)
+          if test -z "$encoded_release"; then
+            tag_ref=$(gh api \
+              "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>/dev/null || true)
+            if test -n "$tag_ref"; then
+              tag_sha=$(printf '%s' "$tag_ref" | jq -r .object.sha)
+              tag_type=$(printf '%s' "$tag_ref" | jq -r .object.type)
+              if test "$tag_type" = "tag"; then
+                tag_sha=$(gh api \
+                  "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" \
+                  --jq .object.sha)
+              fi
+              test "$tag_sha" = "$EXPECTED_COMMIT"
+            fi
+            gh release create "$tag" \
+              .artifacts/package/packages/*.tgz \
+              .artifacts/package/artifact.json \
+              .artifacts/package/candidate.json \
+              .artifacts/package/publish-plan.json \
+              .artifacts/package/registry-evidence.json \
+              --target "$EXPECTED_COMMIT" \
+              --draft \
+              --prerelease \
+              --latest=false \
+              --title "$tag" \
+              --notes-file docs/release/beta-1-release-notes.md
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          release=$(printf '%s' "$encoded_release" | base64 --decode)
+          if test "$(printf '%s' "$release" | jq -r .draft)" = "true"; then
+            test "$(printf '%s' "$release" | jq -r .target_commitish)" = "$EXPECTED_COMMIT"
+            assets=$(printf '%s' "$release" | jq -r '.assets[].name')
+            missing=()
+            for file in \
+              .artifacts/package/packages/*.tgz \
+              .artifacts/package/artifact.json \
+              .artifacts/package/candidate.json \
+              .artifacts/package/publish-plan.json \
+              .artifacts/package/registry-evidence.json; do
+              if ! printf '%s\n' "$assets" | grep -Fxq "$(basename "$file")"; then
+                missing+=("$file")
+              fi
+            done
+            if test "${#missing[@]}" -gt 0; then
+              gh release upload "$tag" "${missing[@]}"
+            fi
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          test "$(printf '%s' "$release" | jq -r .prerelease)" = "true"
+          test "$(printf '%s' "$release" | jq -r .immutable)" = "true"
+          tag_ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag")
+          tag_sha=$(printf '%s' "$tag_ref" | jq -r .object.sha)
+          if test "$(printf '%s' "$tag_ref" | jq -r .object.type)" = "tag"; then
+            tag_sha=$(gh api \
+              "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" \
+              --jq .object.sha)
+          fi
+          test "$tag_sha" = "$EXPECTED_COMMIT"
+          echo "already_published=true" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+
+      - name: Verify every retained evidence asset byte
+        run: |
+          tag="v${EXPECTED_VERSION}"
+          release=$(gh api \
+            "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --paginate \
+            --jq ".[] | select(.tag_name == \"$tag\")")
+          test -n "$release"
+          asset_directory=$(mktemp -d)
+          trap 'rm -rf "$asset_directory"' EXIT
+          for file in \
+            .artifacts/package/packages/*.tgz \
+            .artifacts/package/artifact.json \
+            .artifacts/package/candidate.json \
+            .artifacts/package/publish-plan.json \
+            .artifacts/package/registry-evidence.json; do
+            name=$(basename "$file")
+            asset_id=$(printf '%s' "$release" | \
+              jq -r --arg name "$name" \
+              '.assets[] | select(.name == $name) | .id' | head -n 1)
+            test -n "$asset_id"
+            gh api \
+              -H "Accept: application/octet-stream" \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+              > "$asset_directory/$name"
+            local_sha=$(sha256sum "$file" | cut -d ' ' -f 1)
+            remote_sha=$(sha256sum "$asset_directory/$name" | cut -d ' ' -f 1)
+            test "$remote_sha" = "$local_sha"
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+
+      - name: Publish the immutable non-latest prerelease
+        if: steps.release.outputs.already_published != 'true'
+        run: >-
+          gh release edit "v${EXPECTED_VERSION}"
+          --draft=false
+          --prerelease
+          --latest=false
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+
+      - name: Verify the immutable tag, Release, and evidence assets
+        run: |
+          tag="v${EXPECTED_VERSION}"
+          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag")
+          test "$(printf '%s' "$release" | jq -r .draft)" = "false"
+          test "$(printf '%s' "$release" | jq -r .prerelease)" = "true"
+          test "$(printf '%s' "$release" | jq -r .immutable)" = "true"
+          tag_ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag")
+          tag_sha=$(printf '%s' "$tag_ref" | jq -r .object.sha)
+          if test "$(printf '%s' "$tag_ref" | jq -r .object.type)" = "tag"; then
+            tag_sha=$(gh api \
+              "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" \
+              --jq .object.sha)
+          fi
+          test "$tag_sha" = "$EXPECTED_COMMIT"
+          assets=$(printf '%s' "$release" | jq -r '.assets[].name')
+          for file in \
+            .artifacts/package/packages/*.tgz \
+            .artifacts/package/artifact.json \
+            .artifacts/package/candidate.json \
+            .artifacts/package/publish-plan.json \
+            .artifacts/package/registry-evidence.json; do
+            printf '%s\n' "$assets" | grep -Fx "$(basename "$file")"
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_VERSION: ${{ inputs.expected_version }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
