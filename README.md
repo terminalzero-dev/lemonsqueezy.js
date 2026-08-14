@@ -3,164 +3,137 @@
 > Experimental community-maintained SDK maintained by Terminal Zero. Not
 > affiliated with or endorsed by Lemon Squeezy.
 
-[![NPM version](https://img.shields.io/npm/v/%40terminalzero%2Flemonsqueezy?label=&color=%230d9488)](https://www.npmjs.com/package/@terminalzero/lemonsqueezy)
-[![Functions usage](https://img.shields.io/badge/Wiki-%237c3aed)](https://github.com/lmsqueezy/lemonsqueezy.js/wiki)
-[![APIs Count](https://img.shields.io/badge/59_Functions-%232563eb)](https://github.com/lmsqueezy/lemonsqueezy.js/wiki)
-[![Weekly downloads](https://img.shields.io/npm/dw/@terminalzero/lemonsqueezy)](https://www.npmjs.com/package/@terminalzero/lemonsqueezy)
-![NPM Downloads](https://img.shields.io/npm/d18m/%40terminalzero%2Flemonsqueezy)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Flmsqueezy%2Flemonsqueezy.js.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Flmsqueezy%2Flemonsqueezy.js?ref=badge_shield)
-
-## Introduction
-
-This experimental community-maintained JavaScript SDK makes it easier to
-incorporate [Lemon Squeezy](https://lemonsqueezy.com) billing into JavaScript
-applications.
-
-- Read [API Reference](https://docs.lemonsqueezy.com/api) to understand how the Lemon Squeezy API works.
-- Visit [Wiki page](https://github.com/lmsqueezy/lemonsqueezy.js/wiki) for function usage.
-
-## Features
-
-- Type-safe: Written in [TypeScript](https://www.typescriptlang.org/) and documented with [TSDoc](https://github.com/microsoft/tsdoc).
-- Tree-shakeable: Use only the functions you need. See [bundle size](#bundle-size).
+`@terminalzero/lemonsqueezy` is a typed JavaScript and TypeScript SDK for the
+Lemon Squeezy API. It ships native ESM and CJS for Node.js 22 and 24 and Bun
+1.3.14 through 1.x.
 
 ## Installation
 
-### Install the package
+Install and deploy an exact version. The examples use the first v5 beta target.
 
-```bash
-# bun
-bun install @terminalzero/lemonsqueezy
+```sh
+pnpm add --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.1
 ```
 
-```bash
-# pnpm
-pnpm install @terminalzero/lemonsqueezy
+```sh
+npm install --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.1
 ```
 
-```bash
-# npm
-npm install @terminalzero/lemonsqueezy
+```sh
+bun add --exact @terminalzero/lemonsqueezy@5.0.0-beta.1
 ```
 
-### Create an API key
+Existing v4 applications should follow the
+[Compatibility-first migration guide](./MIGRATION.md) before changing API
+usage. It includes the behavior audit, canary plan, and exact rollback steps.
 
-Create a new API key from [Settings > API](https://app.lemonsqueezy.com/settings/api) in your Lemon Squeezy dashboard.
+## Greenfield: Explicit Client
 
-Add this API key into your project, for example as `LEMONSQUEEZY_API_KEY` in your `.env` file.
+New projects should create an isolated Explicit Client and use its resource
+namespaces. Each client captures immutable configuration and returns direct API
+bodies. Errors reject with a typed `LemonSqueezyError`.
 
-> [!CAUTION]
->
-> Do not use this package directly in the browser, as this will expose your API key. This would give anyone full API access to your Lemon Squeezy account and store(s). For more information [see here](https://docs.lemonsqueezy.com/api#authentication).
+```ts
+import {
+  createClient,
+  isLemonSqueezyError,
+} from "@terminalzero/lemonsqueezy/client";
 
-### Using the API in test mode
+const client = createClient({
+  apiKey: process.env.LEMONSQUEEZY_API_KEY,
+});
 
-You can build and test a full API integration with Lemon Squeezy using [Test Mode](https://docs.lemonsqueezy.com/help/getting-started/test-mode).
+try {
+  const response = await client.orders.list({
+    filter: { storeId: 1 },
+  });
+  console.log(response.data);
+} catch (error) {
+  if (isLemonSqueezyError(error)) {
+    console.error(error.code, error.statusCode);
+  } else {
+    throw error;
+  }
+}
+```
 
-Any API keys created in test mode will interact with your test mode store data.
+Create separate clients for separate credentials or tenants. Credential
+rotation creates a new client.
 
-When you are ready to go live with your integration, make sure to create an API key in live mode and use that in your production application.
+## Existing v4 applications: Compatibility-first
 
-## Usage
+The supported Compatibility facade preserves the v4 flat functions, root
+types, argument shapes, and `{ statusCode, data, error }` envelope. First
+change only the dependency and module specifier:
 
-```tsx
+```ts
 import {
   getAuthenticatedUser,
   lemonSqueezySetup,
 } from "@terminalzero/lemonsqueezy";
 
-const apiKey = import.meta.env.LEMON_SQUEEZY_API_KEY;
-
 lemonSqueezySetup({
-  apiKey,
-  onError: (error) => console.error("Error!", error),
+  apiKey: process.env.LEMONSQUEEZY_API_KEY,
+  onError: (error) => console.error(error),
 });
 
-const { data, error } = await getAuthenticatedUser();
+const { data, error, statusCode } = await getAuthenticatedUser();
+```
 
-if (error) {
-  console.log(error.message);
-} else {
-  console.log(data);
+The same facade is available from `@terminalzero/lemonsqueezy/compat` when an
+explicit application boundary is useful. The Compatibility facade remains a
+supported v5 interface. Adopting the Explicit Client later is optional and can
+be done one complete call site or namespace at a time.
+
+Read [MIGRATION.md](./MIGRATION.md) before rollout. v5 corrects observable v4
+defects involving empty responses, error status, update defaults, validation,
+observer behavior, and public declarations.
+
+## Inbound Webhooks
+
+Webhook registration management is available on `client.webhooks`. Signed
+Inbound Webhook delivery is an independent root function:
+
+```ts
+import { parseWebhookEvent } from "@terminalzero/lemonsqueezy";
+
+const event = parseWebhookEvent({
+  secret: process.env.LEMONSQUEEZY_WEBHOOK_SECRET!,
+  rawBody,
+  signature,
+});
+
+if (event.known && event.eventName === "order_created") {
+  console.log(event.data.attributes);
 }
 ```
 
-For more functions usage, see [Wiki](https://github.com/lmsqueezy/lemonsqueezy.js/wiki).
+Pass the exact unparsed request-body bytes. The SDK does not send HTTP
+acknowledgments or manage retries or idempotency for your endpoint.
 
-## Bundle size
+## Public entries
 
-<details>
-  <summary>Click to view</summary>
+- `@terminalzero/lemonsqueezy`: Compatibility facade, Client conveniences,
+  and Inbound Webhook receiver.
+- `@terminalzero/lemonsqueezy/client`: Explicit Client and typed Client errors.
+- `@terminalzero/lemonsqueezy/compat`: Compatibility facade only.
+- `@terminalzero/lemonsqueezy/types`: type-only Canonical and Compatibility
+  types.
 
-| Export                          | min+brotli |
-| ------------------------------- | ---------- |
-| createDiscount                  | 1.01 kB    |
-| createCheckout                  | 888 B      |
-| updateSubscriptionItem          | 856 B      |
-| updateSubscription              | 838 B      |
-| listCheckouts                   | 824 B      |
-| listDiscountRedemptions         | 819 B      |
-| listLicenseKeyInstances         | 818 B      |
-| listSubscriptionInvoices        | 816 B      |
-| listLicenseKeys                 | 815 B      |
-| listOrderItems                  | 815 B      |
-| listSubscriptionItems           | 815 B      |
-| listUsageRecords                | 814 B      |
-| listSubscriptions               | 812 B      |
-| listWebhooks                    | 812 B      |
-| listCustomers                   | 811 B      |
-| listDiscounts                   | 811 B      |
-| listFiles                       | 811 B      |
-| listOrders                      | 811 B      |
-| listPrices                      | 811 B      |
-| listProducts                    | 811 B      |
-| listStores                      | 811 B      |
-| listVariants                    | 811 B      |
-| updateLicenseKey                | 811 B      |
-| createWebhook                   | 806 B      |
-| issueSubscriptionInvoiceRefund  | 796 B      |
-| issueOrderRefund                | 795 B      |
-| updateWebhook                   | 792 B      |
-| generateSubscriptionInvoice     | 787 B      |
-| generateOrderInvoice            | 785 B      |
-| validateLicense                 | 761 B      |
-| activateLicense                 | 760 B      |
-| deactivateLicense               | 759 B      |
-| createUsageRecord               | 724 B      |
-| getDiscountRedemption           | 702 B      |
-| getLicenseKeyInstance           | 702 B      |
-| getSubscriptionInvoice          | 699 B      |
-| getSubscriptionItem             | 698 B      |
-| getUsageRecord                  | 698 B      |
-| getOrderItem                    | 697 B      |
-| getWebhook                      | 697 B      |
-| getLicenseKey                   | 695 B      |
-| getCheckout                     | 694 B      |
-| getStore                        | 694 B      |
-| getSubscription                 | 694 B      |
-| getCustomer                     | 692 B      |
-| getFile                         | 692 B      |
-| getOrder                        | 692 B      |
-| getPrice                        | 692 B      |
-| getDiscount                     | 691 B      |
-| getProduct                      | 691 B      |
-| archiveCustomer                 | 690 B      |
-| getVariant                      | 690 B      |
-| createCustomer                  | 686 B      |
-| updateCustomer                  | 682 B      |
-| deleteWebhook                   | 660 B      |
-| cancelSubscription              | 658 B      |
-| deleteDiscount                  | 656 B      |
-| getSubscriptionItemCurrentUsage | 650 B      |
-| getAuthenticatedUser            | 595 B      |
-| lemonSqueezySetup               | 106 B      |
+Resource, transport, testing, source, and distribution deep imports are not
+public entries.
 
-</details>
+## Security
+
+Use API credentials only in trusted server-side code. Do not expose an API key
+or Webhook secret in browser code, logs, migration reports, or issue reports.
+Use Lemon Squeezy Test Mode for integration canaries before a production
+rollout.
 
 ## Contributing
 
-See the [Contributing Guide](https://github.com/terminalzero-dev/lemonsqueezy.js/blob/main/CONTRIBUTING.md).
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Flmsqueezy%2Flemonsqueezy.js.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Flmsqueezy%2Flemonsqueezy.js?ref=badge_large)
+[MIT](./LICENSE)

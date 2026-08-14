@@ -8,5 +8,11 @@
     "strict": true,
     "types": []
   },
-  "files": ["esm.mts", "cjs.cts"]
+  "files": [
+    "esm.mts",
+    "cjs.cts",
+    "v4-calls.mts",
+    "v4-root-types.mts",
+    "v4-compat-types.mts"
+  ]
 }
