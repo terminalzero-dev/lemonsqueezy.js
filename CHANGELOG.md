@@ -19,6 +19,8 @@ Migration guide:
   Subscription Item declarations, falsy validation, Promise rejection, and
   `onError` isolation. Review every applicable row in the tagged Migration
   Behavior Audit before rollout.
+- Correct list response page metadata types to the API's documented camelCase
+  fields (`currentPage`, `lastPage`, and `perPage`).
 - Ship exact-tarball ESM/CJS, TypeScript, runtime, and migration-example
   verification.
 

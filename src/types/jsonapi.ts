@@ -86,10 +86,10 @@ export interface JSONAPIListLinks {
 }
 
 export interface JSONAPIPageMeta {
-  readonly current_page: number;
+  readonly currentPage: number;
   readonly from: number;
-  readonly last_page: number;
-  readonly per_page: number;
+  readonly lastPage: number;
+  readonly perPage: number;
   readonly to: number;
   readonly total: number;
 }
