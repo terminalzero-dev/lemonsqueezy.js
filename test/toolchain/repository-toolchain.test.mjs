@@ -185,6 +185,7 @@ void test("artifact uploads use the Node.js 24 action runtime", () => {
 });
 
 void test("Test Mode integration is an exact-tarball, fail-closed protected canary", () => {
+  assert.match(packageJson.scripts["test:repository"], /reaper\.test\.mjs/);
   assert.equal(
     packageJson.scripts["test:integration"],
     "node scripts/test-integration.mjs",

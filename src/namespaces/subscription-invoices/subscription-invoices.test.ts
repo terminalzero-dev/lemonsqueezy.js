@@ -50,10 +50,10 @@ const subscriptionInvoiceListResponse = {
   },
   meta: {
     page: {
-      current_page: 1,
+      currentPage: 1,
       from: 1,
-      last_page: 1,
-      per_page: 10,
+      lastPage: 1,
+      perPage: 10,
       to: 1,
       total: 1,
     },

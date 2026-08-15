@@ -6,7 +6,6 @@ export async function collectCandidates({
   list,
   storeId,
   now = Date.now(),
-  onPageBound = console.warn,
 }) {
   const candidates = [];
 
@@ -29,10 +28,10 @@ export async function collectCandidates({
     }
 
     const pageMeta = response.meta.page;
-    if (pageMeta.current_page >= pageMeta.last_page) return candidates;
+    if (pageMeta.currentPage >= pageMeta.lastPage) return candidates;
     if (page === MAX_PAGES) {
-      onPageBound(
-        `Reaper ${type} scan stopped at page ${pageMeta.current_page} of ${pageMeta.last_page} (${pageMeta.per_page} per page, ${pageMeta.total} total); older resources require manual inspection.`,
+      throw new Error(
+        `Reaper ${type} page bound reached at page ${pageMeta.currentPage} of ${pageMeta.lastPage} (${pageMeta.perPage} per page, ${pageMeta.total} total); manual inspection required.`,
       );
     }
   }
