@@ -77,7 +77,7 @@ jobs:
       - name: Install the exact registry version and exercise ESM and CJS
         run: pnpm test:package
         env:
-          PACKAGE_SMOKE_SPEC: "@terminalzero/lemonsqueezy@${{ inputs.expected_version }}"
+          PACKAGE_SMOKE_SPEC: "${{ inputs.expected_version }}"
           PACKAGE_SMOKE_EXPECTED_VERSION: ${{ inputs.expected_version }}
           PACKAGE_SMOKE_RUNTIME: node
 

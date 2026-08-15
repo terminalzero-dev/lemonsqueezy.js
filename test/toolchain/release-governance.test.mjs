@@ -498,6 +498,14 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   assert.match(workflow, /github-token: \$\{\{ github\.token \}\}/);
   assert.match(workflow, /verify-registry-release\.mjs/);
   assert.match(workflow, /PACKAGE_SMOKE_SPEC/);
+  assert.match(
+    workflow,
+    /PACKAGE_SMOKE_SPEC: "\$\{\{ inputs\.expected_version \}\}"/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /PACKAGE_SMOKE_SPEC: "@terminalzero\/lemonsqueezy@/,
+  );
   assert.match(workflow, /PACKAGE_SMOKE_EXPECTED_VERSION/);
   assert.match(workflow, /run: pnpm test:package/);
   assert.match(workflow, /gh release create/);
