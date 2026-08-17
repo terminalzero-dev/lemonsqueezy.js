@@ -10,6 +10,99 @@ export const PUBLIC_PACKAGE_ENTRIES = Object.freeze([
   "@terminalzero/lemonsqueezy/types",
 ]);
 
+export const REQUIRED_USAGE_GUIDES = Object.freeze([
+  "docs/usage/catalog-checkout.md",
+  "docs/usage/client.md",
+  "docs/usage/getting-started.md",
+]);
+
+export const LEMONSQUEEZY_ERROR_CODES = Object.freeze([
+  "aborted",
+  "configuration",
+  "http",
+  "invalid_response",
+  "network",
+  "timeout",
+  "validation",
+]);
+
+export const CATALOG_CHECKOUT_OPERATIONS = Object.freeze([
+  "affiliates.get",
+  "affiliates.list",
+  "checkouts.create",
+  "checkouts.get",
+  "checkouts.list",
+  "customers.archive",
+  "customers.create",
+  "customers.get",
+  "customers.list",
+  "customers.update",
+  "files.get",
+  "files.list",
+  "prices.get",
+  "prices.list",
+  "products.get",
+  "products.list",
+  "stores.get",
+  "stores.list",
+  "users.getAuthenticated",
+  "variants.get",
+  "variants.list",
+]);
+
+export const REQUIRED_OFFICIAL_REFERENCE_LINKS = Object.freeze({
+  "docs/usage/client.md": Object.freeze([
+    "https://docs.lemonsqueezy.com/api",
+    "https://docs.lemonsqueezy.com/api/getting-started/requests",
+    "https://docs.lemonsqueezy.com/api/getting-started/responses",
+  ]),
+  "docs/usage/catalog-checkout.md": Object.freeze([
+    "https://docs.lemonsqueezy.com/api/affiliates/list-all-affiliates",
+    "https://docs.lemonsqueezy.com/api/affiliates/retrieve-affiliate",
+    "https://docs.lemonsqueezy.com/api/checkouts/create-checkout",
+    "https://docs.lemonsqueezy.com/api/checkouts/list-all-checkouts",
+    "https://docs.lemonsqueezy.com/api/checkouts/retrieve-checkout",
+    "https://docs.lemonsqueezy.com/api/customers/create-customer",
+    "https://docs.lemonsqueezy.com/api/customers/list-all-customers",
+    "https://docs.lemonsqueezy.com/api/customers/retrieve-customer",
+    "https://docs.lemonsqueezy.com/api/customers/update-customer",
+    "https://docs.lemonsqueezy.com/api/files/list-all-files",
+    "https://docs.lemonsqueezy.com/api/files/retrieve-file",
+    "https://docs.lemonsqueezy.com/api/prices/list-all-prices",
+    "https://docs.lemonsqueezy.com/api/prices/retrieve-price",
+    "https://docs.lemonsqueezy.com/api/products/list-all-products",
+    "https://docs.lemonsqueezy.com/api/products/retrieve-product",
+    "https://docs.lemonsqueezy.com/api/stores/list-all-stores",
+    "https://docs.lemonsqueezy.com/api/stores/retrieve-store",
+    "https://docs.lemonsqueezy.com/api/users/retrieve-user",
+    "https://docs.lemonsqueezy.com/api/variants/list-all-variants",
+    "https://docs.lemonsqueezy.com/api/variants/retrieve-variant",
+    "https://docs.lemonsqueezy.com/help/getting-started/test-mode",
+  ]),
+});
+
+const extraOfficialReferenceLinks = Object.freeze([
+  "https://docs.lemonsqueezy.com/api",
+  "https://docs.lemonsqueezy.com/api/affiliates/the-affiliate-object",
+  "https://docs.lemonsqueezy.com/api/checkouts/the-checkout-object",
+  "https://docs.lemonsqueezy.com/api/customers/the-customer-object",
+  "https://docs.lemonsqueezy.com/api/files/the-file-object",
+  "https://docs.lemonsqueezy.com/api/getting-started/requests",
+  "https://docs.lemonsqueezy.com/api/getting-started/responses",
+  "https://docs.lemonsqueezy.com/api/prices/the-price-object",
+  "https://docs.lemonsqueezy.com/api/products/the-product-object",
+  "https://docs.lemonsqueezy.com/api/stores/the-store-object",
+  "https://docs.lemonsqueezy.com/api/users/the-user-object",
+  "https://docs.lemonsqueezy.com/api/variants/the-variant-object",
+  "https://docs.lemonsqueezy.com/guides/developer-guide/testing-going-live",
+  "https://docs.lemonsqueezy.com/help/getting-started/test-mode",
+]);
+
+const allowedOfficialReferenceLinks = new Set([
+  ...extraOfficialReferenceLinks,
+  ...Object.values(REQUIRED_OFFICIAL_REFERENCE_LINKS).flat(),
+]);
+
 const publicPackageEntries = new Set(PUBLIC_PACKAGE_ENTRIES);
 const fencedCodePattern =
   /```(?:ts|typescript|js|javascript|mts|cts)\n([\s\S]*?)\n```/g;
@@ -22,9 +115,10 @@ const headingPattern = /^(#{1,6})\s+(.+?)\s*$/gm;
 const requiredLandingRoutes = [
   { href: "#installation", label: "Installation" },
   { href: "docs/usage/getting-started.md", label: "Getting Started" },
+  { href: "docs/usage/client.md", label: "API usage" },
   {
-    href: "docs/usage/getting-started.md#make-a-first-request",
-    label: "API usage",
+    href: "docs/usage/catalog-checkout.md",
+    label: "catalog, customers, and checkouts",
   },
   {
     href: "#existing-v4-applications-compatibility-first",
@@ -157,6 +251,70 @@ export function assertLandingPageRoutes(readme) {
       `README must route readers to ${label} via ${href}`,
     );
   }
+}
+
+export function collectOfficialReferenceHrefs(markdown) {
+  markdownLinkPattern.lastIndex = 0;
+  const hrefs = [];
+  for (const match of markdown.matchAll(markdownLinkPattern)) {
+    const href = match[1];
+    if (href.startsWith("https://docs.lemonsqueezy.com/")) {
+      hrefs.push(href);
+    }
+  }
+  return hrefs;
+}
+
+export function assertRequiredTokens(markdown, origin, tokens) {
+  for (const token of tokens) {
+    assert.equal(
+      markdown.includes(token),
+      true,
+      `${origin} is missing required token ${token}`,
+    );
+  }
+}
+
+export function assertRequiredOfficialReferenceLinks(markdown, origin) {
+  const required = REQUIRED_OFFICIAL_REFERENCE_LINKS[origin];
+  if (!required) return;
+
+  assertRequiredTokens(markdown, origin, required);
+
+  for (const href of collectOfficialReferenceHrefs(markdown)) {
+    assert.equal(
+      allowedOfficialReferenceLinks.has(href),
+      true,
+      `${origin} links to unknown official reference ${href}`,
+    );
+  }
+}
+
+export function assertClientGuideContract(markdown, origin) {
+  assertRequiredTokens(markdown, origin, [
+    ...PUBLIC_PACKAGE_ENTRIES.slice(1),
+    ...LEMONSQUEEZY_ERROR_CODES.map((code) => `\`${code}\``),
+    "timeoutMs",
+    "AbortSignal",
+    "does not retry",
+    "currentPage",
+    "Compatibility facade",
+  ]);
+  assert.match(
+    markdown,
+    /@terminalzero\/lemonsqueezy(?!\/)/,
+    `${origin} must introduce the root package entry`,
+  );
+  assertRequiredOfficialReferenceLinks(markdown, origin);
+}
+
+export function assertCatalogCheckoutGuideContract(markdown, origin) {
+  assertRequiredTokens(markdown, origin, [
+    ...CATALOG_CHECKOUT_OPERATIONS.map((operation) => `\`${operation}\``),
+    "checkoutData.custom",
+    "Opaque user data",
+  ]);
+  assertRequiredOfficialReferenceLinks(markdown, origin);
 }
 
 export async function listDocumentationFiles(root) {

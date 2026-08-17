@@ -3,6 +3,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { prepareConsumer, root, run } from "./lib/canonical-artifact.mjs";
 import {
+  assertCatalogCheckoutGuideContract,
+  assertClientGuideContract,
   assertDocumentationSafety,
   assertLandingPageRoutes,
   assertLocalDocumentationLinks,
@@ -10,12 +12,13 @@ import {
   collectMarkdownCodeBlocks,
   extractDocumentationExamples,
   listDocumentationFiles,
+  REQUIRED_USAGE_GUIDES,
 } from "./lib/docs-contract.mjs";
 
 const documentationFiles = await listDocumentationFiles(root);
 assert.deepEqual(
-  documentationFiles.filter((file) => file === "docs/usage/getting-started.md"),
-  ["docs/usage/getting-started.md"],
+  documentationFiles.filter((file) => REQUIRED_USAGE_GUIDES.includes(file)),
+  [...REQUIRED_USAGE_GUIDES],
 );
 
 const examples = [];
@@ -23,6 +26,12 @@ for (const relativePath of documentationFiles) {
   const markdown = await readFile(join(root, relativePath), "utf8");
   assertDocumentationSafety(markdown, relativePath);
   assertLocalDocumentationLinks(markdown, relativePath, root);
+  if (relativePath === "docs/usage/client.md") {
+    assertClientGuideContract(markdown, relativePath);
+  }
+  if (relativePath === "docs/usage/catalog-checkout.md") {
+    assertCatalogCheckoutGuideContract(markdown, relativePath);
+  }
   for (const block of collectMarkdownCodeBlocks(markdown)) {
     assertSupportedPackageImports(block.source, `${relativePath} example`);
   }
@@ -48,6 +57,8 @@ await mkdir(exampleDirectory, { recursive: true });
 const exampleGlobals = [
   "declare const process: { readonly env: Record<string, string | undefined> };",
   "declare const console: { error(...values: unknown[]): void; log(...values: unknown[]): void };",
+  'declare class AbortSignal { readonly aborted: boolean; readonly reason: unknown; addEventListener(type: "abort", listener: () => void): void; removeEventListener(type: "abort", listener: () => void): void; }',
+  "declare class AbortController { readonly signal: AbortSignal; abort(reason?: unknown): void; }",
 ].join("\n");
 
 for (const example of examples) {
