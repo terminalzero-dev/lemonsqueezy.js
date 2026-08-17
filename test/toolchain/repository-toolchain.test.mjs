@@ -262,7 +262,7 @@ void test("the credential-free gate exercises exact-tarball bundler graphs", () 
   );
   assert.match(
     packageJson.scripts.check,
-    /pack:artifact.*test:artifact.*test:types.*test:package.*test:bundlers/,
+    /pack:artifact.*test:artifact.*test:types.*test:docs.*test:package.*test:bundlers/,
   );
   assert.equal(
     existsSync(new URL("../../scripts/test-bundlers.mjs", import.meta.url)),
@@ -272,6 +272,49 @@ void test("the credential-free gate exercises exact-tarball bundler graphs", () 
     existsSync(new URL("../package/bundlers/client.mjs", import.meta.url)),
     true,
   );
+});
+
+void test("the documentation contract is a finite installed-package gate", () => {
+  assert.equal(packageJson.scripts["test:docs"], "node scripts/test-docs.mjs");
+  assert.match(
+    packageJson.scripts["candidate:check"],
+    /pack:artifact.*test:artifact.*test:types.*test:docs.*test:bundlers/,
+  );
+  assert.match(
+    packageJson.scripts["test:repository"],
+    /docs-contract\.test\.mjs/,
+  );
+  assert.equal(
+    existsSync(new URL("../../scripts/test-docs.mjs", import.meta.url)),
+    true,
+  );
+  assert.equal(
+    existsSync(new URL("../../docs/usage/getting-started.md", import.meta.url)),
+    true,
+  );
+
+  const testDocs = readRootText("scripts/test-docs.mjs");
+  const contributing = readRootText("CONTRIBUTING.md");
+  assert.match(testDocs, /prepareConsumer\("docs"\)/);
+  assert.doesNotMatch(
+    testDocs,
+    /vitepress|docusaurus|typedoc|createServer|\bwatch\b/,
+  );
+  assert.match(contributing, /test:docs/);
+
+  const allDependencies = {
+    ...packageJson.dependencies,
+    ...packageJson.devDependencies,
+  };
+  for (const dependency of [
+    "@docusaurus/core",
+    "docusaurus",
+    "typedoc",
+    "vitepress",
+    "nextra",
+  ]) {
+    assert.equal(allDependencies[dependency], undefined, dependency);
+  }
 });
 
 void test("package installation is independent from the consumer runtime", () => {

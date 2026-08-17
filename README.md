@@ -7,6 +7,16 @@
 Lemon Squeezy API. It ships native ESM and CJS for Node.js 22 and 24 and Bun
 1.3.14 through 1.x.
 
+## Documentation
+
+- [Installation](#installation)
+- [Getting Started](./docs/usage/getting-started.md)
+- [API usage](./docs/usage/getting-started.md#make-a-first-request)
+- [Compatibility API](#existing-v4-applications-compatibility-first)
+- [Webhooks](#inbound-webhooks)
+- [Migration](./MIGRATION.md)
+- [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api)
+
 ## Installation
 
 Install and deploy an exact version. The examples use the first v5 beta target.
@@ -32,6 +42,8 @@ usage. It includes the behavior audit, canary plan, and exact rollback steps.
 New projects should create an isolated Explicit Client and use its resource
 namespaces. Each client captures immutable configuration and returns direct API
 bodies. Errors reject with a typed `LemonSqueezyError`.
+
+<!-- fixture: readme-client.ts -->
 
 ```ts
 import {
@@ -65,6 +77,8 @@ rotation creates a new client.
 The supported Compatibility facade preserves the v4 flat functions, root
 types, argument shapes, and `{ statusCode, data, error }` envelope. First
 change only the dependency and module specifier:
+
+<!-- fixture: readme-compat.ts -->
 
 ```ts
 import {
