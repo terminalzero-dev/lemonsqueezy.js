@@ -13,7 +13,10 @@ export const PUBLIC_PACKAGE_ENTRIES = Object.freeze([
 export const REQUIRED_USAGE_GUIDES = Object.freeze([
   "docs/usage/catalog-checkout.md",
   "docs/usage/client.md",
+  "docs/usage/discounts-licensing.md",
   "docs/usage/getting-started.md",
+  "docs/usage/orders-subscriptions.md",
+  "docs/usage/webhooks.md",
 ]);
 
 export const LEMONSQUEEZY_ERROR_CODES = Object.freeze([
@@ -50,6 +53,75 @@ export const CATALOG_CHECKOUT_OPERATIONS = Object.freeze([
   "variants.list",
 ]);
 
+export const ORDERS_SUBSCRIPTIONS_OPERATIONS = Object.freeze([
+  "orderItems.get",
+  "orderItems.list",
+  "orders.generateInvoice",
+  "orders.get",
+  "orders.list",
+  "orders.refund",
+  "subscriptionInvoices.generateInvoice",
+  "subscriptionInvoices.get",
+  "subscriptionInvoices.list",
+  "subscriptionInvoices.refund",
+  "subscriptionItems.currentUsage",
+  "subscriptionItems.get",
+  "subscriptionItems.list",
+  "subscriptionItems.update",
+  "subscriptions.cancel",
+  "subscriptions.get",
+  "subscriptions.list",
+  "subscriptions.update",
+  "usageRecords.create",
+  "usageRecords.get",
+  "usageRecords.list",
+]);
+
+export const DISCOUNTS_LICENSING_OPERATIONS = Object.freeze([
+  "discountRedemptions.get",
+  "discountRedemptions.list",
+  "discounts.create",
+  "discounts.delete",
+  "discounts.get",
+  "discounts.list",
+  "license.activate",
+  "license.deactivate",
+  "license.validate",
+  "licenseKeyInstances.get",
+  "licenseKeyInstances.list",
+  "licenseKeys.get",
+  "licenseKeys.list",
+  "licenseKeys.update",
+]);
+
+export const WEBHOOK_MANAGEMENT_OPERATIONS = Object.freeze([
+  "webhooks.create",
+  "webhooks.delete",
+  "webhooks.get",
+  "webhooks.list",
+  "webhooks.update",
+]);
+
+export const KNOWN_WEBHOOK_EVENT_NAMES = Object.freeze([
+  "affiliate_activated",
+  "customer_updated",
+  "license_key_created",
+  "license_key_updated",
+  "order_created",
+  "order_refunded",
+  "subscription_cancelled",
+  "subscription_created",
+  "subscription_expired",
+  "subscription_paused",
+  "subscription_payment_failed",
+  "subscription_payment_recovered",
+  "subscription_payment_refunded",
+  "subscription_payment_success",
+  "subscription_resumed",
+  "subscription_unpaused",
+  "subscription_updated",
+]);
+
 export const REQUIRED_OFFICIAL_REFERENCE_LINKS = Object.freeze({
   "docs/usage/client.md": Object.freeze([
     "https://docs.lemonsqueezy.com/api",
@@ -79,6 +151,59 @@ export const REQUIRED_OFFICIAL_REFERENCE_LINKS = Object.freeze({
     "https://docs.lemonsqueezy.com/api/variants/retrieve-variant",
     "https://docs.lemonsqueezy.com/help/getting-started/test-mode",
   ]),
+  "docs/usage/orders-subscriptions.md": Object.freeze([
+    "https://docs.lemonsqueezy.com/api/order-items/list-all-order-items",
+    "https://docs.lemonsqueezy.com/api/order-items/retrieve-order-item",
+    "https://docs.lemonsqueezy.com/api/orders/generate-order-invoice",
+    "https://docs.lemonsqueezy.com/api/orders/issue-refund",
+    "https://docs.lemonsqueezy.com/api/orders/list-all-orders",
+    "https://docs.lemonsqueezy.com/api/orders/retrieve-order",
+    "https://docs.lemonsqueezy.com/api/subscription-invoices/generate-subscription-invoice",
+    "https://docs.lemonsqueezy.com/api/subscription-invoices/issue-refund",
+    "https://docs.lemonsqueezy.com/api/subscription-invoices/list-all-subscription-invoices",
+    "https://docs.lemonsqueezy.com/api/subscription-invoices/retrieve-subscription-invoice",
+    "https://docs.lemonsqueezy.com/api/subscription-items/list-all-subscription-items",
+    "https://docs.lemonsqueezy.com/api/subscription-items/retrieve-subscription-item",
+    "https://docs.lemonsqueezy.com/api/subscription-items/retrieve-subscription-item-current-usage",
+    "https://docs.lemonsqueezy.com/api/subscription-items/update-subscription-item",
+    "https://docs.lemonsqueezy.com/api/subscriptions/cancel-subscription",
+    "https://docs.lemonsqueezy.com/api/subscriptions/list-all-subscriptions",
+    "https://docs.lemonsqueezy.com/api/subscriptions/retrieve-subscription",
+    "https://docs.lemonsqueezy.com/api/subscriptions/update-subscription",
+    "https://docs.lemonsqueezy.com/api/usage-records/create-usage-record",
+    "https://docs.lemonsqueezy.com/api/usage-records/list-all-usage-records",
+    "https://docs.lemonsqueezy.com/api/usage-records/retrieve-usage-record",
+    "https://docs.lemonsqueezy.com/help/getting-started/test-mode",
+  ]),
+  "docs/usage/discounts-licensing.md": Object.freeze([
+    "https://docs.lemonsqueezy.com/api/discount-redemptions/list-all-discount-redemptions",
+    "https://docs.lemonsqueezy.com/api/discount-redemptions/retrieve-discount-redemption",
+    "https://docs.lemonsqueezy.com/api/discounts/create-discount",
+    "https://docs.lemonsqueezy.com/api/discounts/delete-discount",
+    "https://docs.lemonsqueezy.com/api/discounts/list-all-discounts",
+    "https://docs.lemonsqueezy.com/api/discounts/retrieve-discount",
+    "https://docs.lemonsqueezy.com/api/license-api/activate-license-key",
+    "https://docs.lemonsqueezy.com/api/license-api/deactivate-license-key",
+    "https://docs.lemonsqueezy.com/api/license-api/validate-license-key",
+    "https://docs.lemonsqueezy.com/api/license-key-instances/list-all-license-key-instances",
+    "https://docs.lemonsqueezy.com/api/license-key-instances/retrieve-license-key-instance",
+    "https://docs.lemonsqueezy.com/api/license-keys/list-all-license-keys",
+    "https://docs.lemonsqueezy.com/api/license-keys/retrieve-license-key",
+    "https://docs.lemonsqueezy.com/api/license-keys/update-license-key",
+    "https://docs.lemonsqueezy.com/help/getting-started/test-mode",
+  ]),
+  "docs/usage/webhooks.md": Object.freeze([
+    "https://docs.lemonsqueezy.com/api/webhooks/create-webhook",
+    "https://docs.lemonsqueezy.com/api/webhooks/delete-webhook",
+    "https://docs.lemonsqueezy.com/api/webhooks/list-all-webhooks",
+    "https://docs.lemonsqueezy.com/api/webhooks/retrieve-webhook",
+    "https://docs.lemonsqueezy.com/api/webhooks/update-webhook",
+    "https://docs.lemonsqueezy.com/help/getting-started/test-mode",
+    "https://docs.lemonsqueezy.com/help/webhooks/event-types",
+    "https://docs.lemonsqueezy.com/help/webhooks/signing-requests",
+    "https://docs.lemonsqueezy.com/help/webhooks/simulate-webhook-events",
+    "https://docs.lemonsqueezy.com/help/webhooks/webhook-requests",
+  ]),
 });
 
 const extraOfficialReferenceLinks = Object.freeze([
@@ -86,14 +211,25 @@ const extraOfficialReferenceLinks = Object.freeze([
   "https://docs.lemonsqueezy.com/api/affiliates/the-affiliate-object",
   "https://docs.lemonsqueezy.com/api/checkouts/the-checkout-object",
   "https://docs.lemonsqueezy.com/api/customers/the-customer-object",
+  "https://docs.lemonsqueezy.com/api/discount-redemptions/the-discount-redemption-object",
+  "https://docs.lemonsqueezy.com/api/discounts/the-discount-object",
   "https://docs.lemonsqueezy.com/api/files/the-file-object",
   "https://docs.lemonsqueezy.com/api/getting-started/requests",
   "https://docs.lemonsqueezy.com/api/getting-started/responses",
+  "https://docs.lemonsqueezy.com/api/license-key-instances/the-license-key-instance-object",
+  "https://docs.lemonsqueezy.com/api/license-keys/the-license-key-object",
+  "https://docs.lemonsqueezy.com/api/order-items/the-order-item-object",
+  "https://docs.lemonsqueezy.com/api/orders/the-order-object",
   "https://docs.lemonsqueezy.com/api/prices/the-price-object",
   "https://docs.lemonsqueezy.com/api/products/the-product-object",
   "https://docs.lemonsqueezy.com/api/stores/the-store-object",
+  "https://docs.lemonsqueezy.com/api/subscription-invoices/the-subscription-invoice-object",
+  "https://docs.lemonsqueezy.com/api/subscription-items/the-subscription-item-object",
+  "https://docs.lemonsqueezy.com/api/subscriptions/the-subscription-object",
+  "https://docs.lemonsqueezy.com/api/usage-records/the-usage-record-object",
   "https://docs.lemonsqueezy.com/api/users/the-user-object",
   "https://docs.lemonsqueezy.com/api/variants/the-variant-object",
+  "https://docs.lemonsqueezy.com/api/webhooks/the-webhook-object",
   "https://docs.lemonsqueezy.com/guides/developer-guide/testing-going-live",
   "https://docs.lemonsqueezy.com/help/getting-started/test-mode",
 ]);
@@ -120,6 +256,15 @@ const requiredLandingRoutes = [
     href: "docs/usage/catalog-checkout.md",
     label: "catalog, customers, and checkouts",
   },
+  {
+    href: "docs/usage/orders-subscriptions.md",
+    label: "orders, subscriptions, and metering",
+  },
+  {
+    href: "docs/usage/discounts-licensing.md",
+    label: "discounts and licensing",
+  },
+  { href: "docs/usage/webhooks.md", label: "webhook management" },
   {
     href: "#existing-v4-applications-compatibility-first",
     label: "Compatibility API",
@@ -238,8 +383,55 @@ export function assertDocumentationSafety(markdown, origin) {
   );
   assert.doesNotMatch(
     markdown,
+    /\blicenseKey\s*:\s*["'][^"']+["']/,
+    `${origin} hard-codes a License Key`,
+  );
+  assert.doesNotMatch(
+    markdown,
+    /\binstanceId\s*:\s*["'][^"']+["']/,
+    `${origin} hard-codes a License API instance identifier`,
+  );
+  assert.doesNotMatch(
+    markdown,
+    /\bsecret\s*:\s*["'][^"']{16,}["']/,
+    `${origin} hard-codes a long secret literal`,
+  );
+  assert.doesNotMatch(
+    markdown,
+    /\bBearer\s+(?:sk_|eyJ|[A-Za-z0-9._~+/-]{16,})/,
+    `${origin} embeds an authorization header`,
+  );
+  assert.doesNotMatch(
+    markdown,
     /window\.[A-Z0-9_]*API_KEY|window\.[A-Z0-9_]*SECRET/i,
     `${origin} exposes a credential to browser code`,
+  );
+  assert.doesNotMatch(
+    markdown,
+    /console\.(?:log|error|info|debug|warn)\([^;]{0,200}(?:licenseKey|license_key|instanceId|instance_id|\.secret\b|apiKey)/,
+    `${origin} logs a secret-like value`,
+  );
+  assert.doesNotMatch(
+    markdown,
+    /(?<!\bnot )(?<!\bnever )use (?:these |this )?(?:examples?|samples?) (?:in|against|with) (?:live mode|production)/i,
+    `${origin} recommends Live Mode or production sample usage`,
+  );
+}
+
+export function assertNoParseBeforeVerify(markdown, origin) {
+  for (const block of collectMarkdownCodeBlocks(markdown)) {
+    const parseIndex = block.source.search(/JSON\.parse\s*\(/);
+    const verifyIndex = block.source.search(/\bparseWebhookEvent\s*\(/);
+    if (parseIndex !== -1 && (verifyIndex === -1 || parseIndex < verifyIndex)) {
+      assert.fail(
+        `${origin} parses JSON before webhook signature verification`,
+      );
+    }
+  }
+  assert.doesNotMatch(
+    markdown,
+    /parse(?:s| the)? (?:the )?(?:JSON|body|payload).{0,60}(?:then|before).{0,40}(?:verif|authenticat|signatur)/i,
+    `${origin} recommends parsing before signature verification`,
   );
 }
 
@@ -314,6 +506,49 @@ export function assertCatalogCheckoutGuideContract(markdown, origin) {
     "checkoutData.custom",
     "Opaque user data",
   ]);
+  assertRequiredOfficialReferenceLinks(markdown, origin);
+}
+
+export function assertOrdersSubscriptionsGuideContract(markdown, origin) {
+  assertRequiredTokens(markdown, origin, [
+    ...ORDERS_SUBSCRIPTIONS_OPERATIONS.map((operation) => `\`${operation}\``),
+    "currentPage",
+    "download_invoice",
+    "period_start",
+    "Test Mode",
+  ]);
+  assertRequiredOfficialReferenceLinks(markdown, origin);
+}
+
+export function assertDiscountsLicensingGuideContract(markdown, origin) {
+  assertRequiredTokens(markdown, origin, [
+    ...DISCOUNTS_LICENSING_OPERATIONS.map((operation) => `\`${operation}\``),
+    "application/x-www-form-urlencoded",
+    "activated",
+    "deactivated",
+    ".valid",
+    "Test Mode",
+  ]);
+  assertRequiredOfficialReferenceLinks(markdown, origin);
+}
+
+export function assertWebhookGuideContract(markdown, origin) {
+  assertRequiredTokens(markdown, origin, [
+    ...WEBHOOK_MANAGEMENT_OPERATIONS.map((operation) => `\`${operation}\``),
+    ...KNOWN_WEBHOOK_EVENT_NAMES.map((eventName) => `\`${eventName}\``),
+    "parseWebhookEvent",
+    "HMAC-SHA256",
+    "X-Signature",
+    "invalid_signature",
+    "invalid_payload",
+    "Test Mode",
+  ]);
+  assert.match(
+    markdown,
+    /\bknown:\s*false\b|\bknown\s*===\s*false\b|!\s*\w+\.known|\.known\s*===\s*false/,
+    `${origin} must show how authenticated unknown events remain representable`,
+  );
+  assertNoParseBeforeVerify(markdown, origin);
   assertRequiredOfficialReferenceLinks(markdown, origin);
 }
 

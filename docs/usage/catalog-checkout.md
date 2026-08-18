@@ -267,5 +267,11 @@ try {
 - [Explicit Client](./client.md) for construction, request options,
   pagination, and failures
 - [Getting Started](./getting-started.md) for install and the first read
+- [Orders, subscriptions, and metering](./orders-subscriptions.md) for
+  post-purchase billing
+- [Discounts and licensing](./discounts-licensing.md) for promotions and
+  License Keys
+- [Webhook management and inbound delivery](./webhooks.md) for signed
+  event delivery
 - [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api) for
   resource fields and checkout business rules

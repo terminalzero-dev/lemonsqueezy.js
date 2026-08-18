@@ -13,6 +13,9 @@ Lemon Squeezy API. It ships native ESM and CJS for Node.js 22 and 24 and Bun
 - [Getting Started](./docs/usage/getting-started.md)
 - [API usage](./docs/usage/client.md)
 - [Catalog, customers, and checkouts](./docs/usage/catalog-checkout.md)
+- [Orders, subscriptions, and metering](./docs/usage/orders-subscriptions.md)
+- [Discounts and licensing](./docs/usage/discounts-licensing.md)
+- [Webhook management and inbound delivery](./docs/usage/webhooks.md)
 - [Compatibility API](#existing-v4-applications-compatibility-first)
 - [Webhooks](#inbound-webhooks)
 - [Migration](./MIGRATION.md)
@@ -107,7 +110,9 @@ observer behavior, and public declarations.
 ## Inbound Webhooks
 
 Webhook registration management is available on `client.webhooks`. Signed
-Inbound Webhook delivery is an independent root function:
+Inbound Webhook delivery is an independent root function. Follow
+[Webhook management and inbound delivery](./docs/usage/webhooks.md) for
+the complete management and receiver path.
 
 ```ts
 import { parseWebhookEvent } from "@terminalzero/lemonsqueezy";
@@ -119,7 +124,7 @@ const event = parseWebhookEvent({
 });
 
 if (event.known && event.eventName === "order_created") {
-  console.log(event.data.attributes);
+  console.log(event.eventName, event.data.type);
 }
 ```
 
