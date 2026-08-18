@@ -100,8 +100,10 @@ Use Lemon Squeezy Test Mode for any follow-up request that talks to the API.
 
 - [Public package entries](../../README.md#public-entries) for the four
   supported imports and the unsupported deep paths
-- [API usage](#make-a-first-request) continues on the Explicit Client; later
-  guides cover resource workflows in more detail
+- [Explicit Client](./client.md) for construction, request options,
+  pagination, and failures
+- [Catalog, customers, and checkouts](./catalog-checkout.md) for store
+  discovery through checkout creation
 - [Compatibility API](../../README.md#existing-v4-applications-compatibility-first)
   and [MIGRATION.md](../../MIGRATION.md) for existing v4 applications
 - [Inbound Webhooks](../../README.md#inbound-webhooks) for signed event

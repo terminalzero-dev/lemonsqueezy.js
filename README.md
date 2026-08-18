@@ -11,7 +11,8 @@ Lemon Squeezy API. It ships native ESM and CJS for Node.js 22 and 24 and Bun
 
 - [Installation](#installation)
 - [Getting Started](./docs/usage/getting-started.md)
-- [API usage](./docs/usage/getting-started.md#make-a-first-request)
+- [API usage](./docs/usage/client.md)
+- [Catalog, customers, and checkouts](./docs/usage/catalog-checkout.md)
 - [Compatibility API](#existing-v4-applications-compatibility-first)
 - [Webhooks](#inbound-webhooks)
 - [Migration](./MIGRATION.md)
