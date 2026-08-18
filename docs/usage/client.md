@@ -231,6 +231,12 @@ export async function readStores() {
   authenticated read
 - [Catalog, customers, and checkouts](./catalog-checkout.md) for store
   discovery through checkout creation
+- [Orders, subscriptions, and metering](./orders-subscriptions.md) for
+  refunds, invoices, cancellation, and usage
+- [Discounts and licensing](./discounts-licensing.md) for promotions and
+  the public License API
+- [Webhook management and inbound delivery](./webhooks.md) for endpoint
+  CRUD and signed event parsing
 - [Compatibility API](../../README.md#existing-v4-applications-compatibility-first)
   and [MIGRATION.md](../../MIGRATION.md) for existing v4 applications
 - [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api) for

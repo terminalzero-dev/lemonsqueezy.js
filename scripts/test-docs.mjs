@@ -5,10 +5,13 @@ import { prepareConsumer, root, run } from "./lib/canonical-artifact.mjs";
 import {
   assertCatalogCheckoutGuideContract,
   assertClientGuideContract,
+  assertDiscountsLicensingGuideContract,
   assertDocumentationSafety,
   assertLandingPageRoutes,
   assertLocalDocumentationLinks,
+  assertOrdersSubscriptionsGuideContract,
   assertSupportedPackageImports,
+  assertWebhookGuideContract,
   collectMarkdownCodeBlocks,
   extractDocumentationExamples,
   listDocumentationFiles,
@@ -31,6 +34,15 @@ for (const relativePath of documentationFiles) {
   }
   if (relativePath === "docs/usage/catalog-checkout.md") {
     assertCatalogCheckoutGuideContract(markdown, relativePath);
+  }
+  if (relativePath === "docs/usage/orders-subscriptions.md") {
+    assertOrdersSubscriptionsGuideContract(markdown, relativePath);
+  }
+  if (relativePath === "docs/usage/discounts-licensing.md") {
+    assertDiscountsLicensingGuideContract(markdown, relativePath);
+  }
+  if (relativePath === "docs/usage/webhooks.md") {
+    assertWebhookGuideContract(markdown, relativePath);
   }
   for (const block of collectMarkdownCodeBlocks(markdown)) {
     assertSupportedPackageImports(block.source, `${relativePath} example`);

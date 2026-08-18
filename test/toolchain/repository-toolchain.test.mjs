@@ -302,6 +302,22 @@ void test("the documentation contract is a finite installed-package gate", () =>
     ),
     true,
   );
+  assert.equal(
+    existsSync(
+      new URL("../../docs/usage/orders-subscriptions.md", import.meta.url),
+    ),
+    true,
+  );
+  assert.equal(
+    existsSync(
+      new URL("../../docs/usage/discounts-licensing.md", import.meta.url),
+    ),
+    true,
+  );
+  assert.equal(
+    existsSync(new URL("../../docs/usage/webhooks.md", import.meta.url)),
+    true,
+  );
 
   const testDocs = readRootText("scripts/test-docs.mjs");
   const contributing = readRootText("CONTRIBUTING.md");
