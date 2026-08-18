@@ -12,7 +12,9 @@ export const PUBLIC_PACKAGE_ENTRIES = Object.freeze([
 
 export const REQUIRED_USAGE_GUIDES = Object.freeze([
   "docs/usage/catalog-checkout.md",
+  "docs/usage/client-api.md",
   "docs/usage/client.md",
+  "docs/usage/compatibility-api.md",
   "docs/usage/discounts-licensing.md",
   "docs/usage/getting-started.md",
   "docs/usage/orders-subscriptions.md",
@@ -252,6 +254,7 @@ const requiredLandingRoutes = [
   { href: "#installation", label: "Installation" },
   { href: "docs/usage/getting-started.md", label: "Getting Started" },
   { href: "docs/usage/client.md", label: "API usage" },
+  { href: "docs/usage/client-api.md", label: "Client API" },
   {
     href: "docs/usage/catalog-checkout.md",
     label: "catalog, customers, and checkouts",
@@ -265,11 +268,16 @@ const requiredLandingRoutes = [
     label: "discounts and licensing",
   },
   { href: "docs/usage/webhooks.md", label: "webhook management" },
+  { href: "docs/usage/compatibility-api.md", label: "Compatibility API" },
   {
     href: "#existing-v4-applications-compatibility-first",
-    label: "Compatibility API",
+    label: "Compatibility-first",
   },
   { href: "#inbound-webhooks", label: "webhooks" },
+  {
+    href: "docs/usage/webhooks.md#known-inbound-webhook-events",
+    label: "webhook events",
+  },
   { href: "MIGRATION.md", label: "migration" },
   { href: "https://docs.lemonsqueezy.com/api", label: "official API" },
 ];
@@ -467,11 +475,17 @@ export function assertRequiredTokens(markdown, origin, tokens) {
   }
 }
 
+export function allowAdditionalOfficialReferenceLinks(urls) {
+  for (const url of urls) {
+    allowedOfficialReferenceLinks.add(url);
+  }
+}
+
 export function assertRequiredOfficialReferenceLinks(markdown, origin) {
   const required = REQUIRED_OFFICIAL_REFERENCE_LINKS[origin];
-  if (!required) return;
-
-  assertRequiredTokens(markdown, origin, required);
+  if (required) {
+    assertRequiredTokens(markdown, origin, required);
+  }
 
   for (const href of collectOfficialReferenceHrefs(markdown)) {
     assert.equal(
@@ -530,6 +544,217 @@ export function assertDiscountsLicensingGuideContract(markdown, origin) {
     "Test Mode",
   ]);
   assertRequiredOfficialReferenceLinks(markdown, origin);
+}
+
+function collectHeadingTitles(markdown) {
+  headingPattern.lastIndex = 0;
+  return [...markdown.matchAll(headingPattern)].map((match) =>
+    match[2].replaceAll("`", "").trim(),
+  );
+}
+
+function collectIndexTableRows(markdown) {
+  return [...markdown.matchAll(/^\| `([^`]+)`[^|]*\|(.*)$/gm)].map((match) => ({
+    key: match[1],
+    row: match[0],
+  }));
+}
+
+function usageGuideHref(path) {
+  return `./${path.replace(/^docs\/usage\//, "")}`;
+}
+
+function sortedStrings(values) {
+  return [...values].sort((left, right) => left.localeCompare(right));
+}
+
+export function assertCatalogCoverage(catalog) {
+  assert.equal(catalog.namespaces.length, 21);
+  assert.equal(catalog.operations.length, 61);
+  assert.equal(
+    new Set(catalog.operations.map((operation) => operation.key)).size,
+    61,
+  );
+  assert.equal(Object.keys(catalog.compatibility).length, 59);
+  assert.equal(new Set(Object.values(catalog.compatibility)).size, 59);
+  assert.equal(catalog.webhookEvents.length, 17);
+
+  const operationKeys = new Set(
+    catalog.operations.map((operation) => operation.key),
+  );
+  assert.deepEqual(
+    sortedStrings([
+      ...CATALOG_CHECKOUT_OPERATIONS,
+      ...ORDERS_SUBSCRIPTIONS_OPERATIONS,
+      ...DISCOUNTS_LICENSING_OPERATIONS,
+      ...WEBHOOK_MANAGEMENT_OPERATIONS,
+    ]),
+    sortedStrings(operationKeys),
+    "task guides must cover the canonical operation catalog",
+  );
+  assert.deepEqual(
+    sortedStrings(KNOWN_WEBHOOK_EVENT_NAMES),
+    sortedStrings(catalog.webhookEvents.map((event) => event.name)),
+    "webhook guide events must match the canonical event catalog",
+  );
+
+  for (const operation of catalog.operations) {
+    assert.equal(
+      typeof operation.officialEndpoint,
+      "string",
+      `${operation.key} is missing an official endpoint`,
+    );
+    assert.equal(
+      typeof operation.taskGuide,
+      "string",
+      `${operation.key} is missing a task guide`,
+    );
+  }
+  for (const [facade, clientKey] of Object.entries(catalog.compatibility)) {
+    assert.equal(
+      operationKeys.has(clientKey),
+      true,
+      `${facade} maps to unknown Client operation ${clientKey}`,
+    );
+  }
+  for (const event of catalog.webhookEvents) {
+    assert.equal(
+      typeof event.taskGuide,
+      "string",
+      `${event.name} is missing a task guide`,
+    );
+    assert.equal(
+      event.officialReference,
+      "https://docs.lemonsqueezy.com/help/webhooks/event-types",
+    );
+  }
+}
+
+export function assertClientApiIndexContract(markdown, origin, catalog) {
+  const headings = collectHeadingTitles(markdown).filter((title) =>
+    catalog.namespaces.includes(title),
+  );
+  assert.deepEqual(
+    sortedStrings(headings),
+    sortedStrings(catalog.namespaces),
+    `${origin} must heading-index every public namespace`,
+  );
+
+  const rows = collectIndexTableRows(markdown).filter((row) =>
+    row.key.includes("."),
+  );
+  assert.deepEqual(
+    sortedStrings(rows.map((row) => row.key)),
+    sortedStrings(catalog.operations.map((operation) => operation.key)),
+    `${origin} Client method coverage`,
+  );
+
+  const operationsByKey = new Map(
+    catalog.operations.map((operation) => [operation.key, operation]),
+  );
+  for (const row of rows) {
+    const operation = operationsByKey.get(row.key);
+    assert.ok(operation, `${origin} indexes unknown operation ${row.key}`);
+    const guideHref = usageGuideHref(operation.taskGuide);
+    assert.equal(
+      row.row.includes(guideHref),
+      true,
+      `${origin} ${row.key} is missing task guide ${guideHref}`,
+    );
+    assert.equal(
+      row.row.includes(operation.officialEndpoint),
+      true,
+      `${origin} ${row.key} is missing official reference ${operation.officialEndpoint}`,
+    );
+  }
+}
+
+export function assertCompatibilityApiIndexContract(markdown, origin, catalog) {
+  assert.match(
+    markdown,
+    /lemonSqueezySetup/,
+    `${origin} must document lemonSqueezySetup as special Default Client behavior`,
+  );
+
+  const operationsByKey = new Map(
+    catalog.operations.map((operation) => [operation.key, operation]),
+  );
+  const rows = collectIndexTableRows(markdown).filter(
+    (row) => !row.key.includes("."),
+  );
+  assert.deepEqual(
+    sortedStrings(rows.map((row) => row.key)),
+    sortedStrings(Object.keys(catalog.compatibility)),
+    `${origin} Compatibility facade coverage`,
+  );
+
+  for (const row of rows) {
+    const clientKey = catalog.compatibility[row.key];
+    assert.equal(
+      typeof clientKey,
+      "string",
+      `${origin} indexes unknown facade function ${row.key}`,
+    );
+    assert.equal(
+      row.row.includes(`\`${clientKey}\``),
+      true,
+      `${origin} ${row.key} must map to ${clientKey}`,
+    );
+    const operation = operationsByKey.get(clientKey);
+    assert.ok(operation, `${origin} ${row.key} maps to unknown ${clientKey}`);
+    const guideHref = usageGuideHref(operation.taskGuide);
+    assert.equal(
+      row.row.includes(guideHref),
+      true,
+      `${origin} ${row.key} is missing task guide ${guideHref}`,
+    );
+    assert.equal(
+      row.row.includes(operation.officialEndpoint),
+      true,
+      `${origin} ${row.key} is missing official reference ${operation.officialEndpoint}`,
+    );
+  }
+}
+
+export function assertWebhookEventIndexContract(markdown, origin, catalog) {
+  assert.match(
+    markdown,
+    /authenticated unknown events remain supported/i,
+    `${origin} must state that authenticated unknown events remain supported`,
+  );
+
+  const rows = collectIndexTableRows(markdown).filter((row) =>
+    row.key.includes("_"),
+  );
+  assert.deepEqual(
+    sortedStrings(rows.map((row) => row.key)),
+    sortedStrings(catalog.webhookEvents.map((event) => event.name)),
+    `${origin} webhook event coverage`,
+  );
+
+  const eventsByName = new Map(
+    catalog.webhookEvents.map((event) => [event.name, event]),
+  );
+  for (const row of rows) {
+    const event = eventsByName.get(row.key);
+    assert.ok(event, `${origin} indexes unknown event ${row.key}`);
+    assert.equal(
+      row.row.includes(`\`${event.resourceType}\``),
+      true,
+      `${origin} ${row.key} is missing resource type ${event.resourceType}`,
+    );
+    const guideHref = usageGuideHref(event.taskGuide);
+    assert.equal(
+      row.row.includes(guideHref),
+      true,
+      `${origin} ${row.key} is missing task guide ${guideHref}`,
+    );
+    assert.equal(
+      row.row.includes(event.officialReference),
+      true,
+      `${origin} ${row.key} is missing official reference ${event.officialReference}`,
+    );
+  }
 }
 
 export function assertWebhookGuideContract(markdown, origin) {

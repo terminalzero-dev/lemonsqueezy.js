@@ -258,9 +258,11 @@ try {
 
 - [Explicit Client](./client.md) for construction, request options, and
   failures
+- [Client API](./client-api.md) for every namespace method
 - [Orders, subscriptions, and metering](./orders-subscriptions.md) for
   the orders that redeem discounts and issue License Keys
 - [Webhook management and inbound delivery](./webhooks.md) for
   `license_key_created` and `license_key_updated`
+- [Compatibility API](./compatibility-api.md) for facade equivalents
 - [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api) for
   resource fields and licensing rules

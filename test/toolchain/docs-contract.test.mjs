@@ -3,9 +3,19 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+import {
+  loadCanonicalDocumentationCatalog,
+  parseCompatibilityOperationCatalog,
+  parseKnownWebhookEventCatalog,
+  parseNamespaceOperations,
+} from "../../scripts/lib/docs-catalog.mjs";
 import {
   assertCatalogCheckoutGuideContract,
+  assertCatalogCoverage,
+  assertClientApiIndexContract,
   assertClientGuideContract,
+  assertCompatibilityApiIndexContract,
   assertDiscountsLicensingGuideContract,
   assertDocumentationSafety,
   assertLandingPageRoutes,
@@ -13,6 +23,7 @@ import {
   assertNoParseBeforeVerify,
   assertOrdersSubscriptionsGuideContract,
   assertSupportedPackageImports,
+  assertWebhookEventIndexContract,
   assertWebhookGuideContract,
   CATALOG_CHECKOUT_OPERATIONS,
   collectMarkdownCodeBlocks,
@@ -27,6 +38,8 @@ import {
   REQUIRED_USAGE_GUIDES,
   WEBHOOK_MANAGEMENT_OPERATIONS,
 } from "../../scripts/lib/docs-contract.mjs";
+
+const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 void test("public package entries are the four documented specifiers", () => {
   assert.deepEqual(
@@ -263,12 +276,15 @@ void test("the landing page routes readers through the v5 documentation path", (
     "[Installation](#installation)",
     "[Getting Started](./docs/usage/getting-started.md)",
     "[API usage](./docs/usage/client.md)",
+    "[Client API](./docs/usage/client-api.md)",
     "[Catalog, customers, and checkouts](./docs/usage/catalog-checkout.md)",
     "[Orders, subscriptions, and metering](./docs/usage/orders-subscriptions.md)",
     "[Discounts and licensing](./docs/usage/discounts-licensing.md)",
     "[Webhook management and inbound delivery](./docs/usage/webhooks.md)",
-    "[Compatibility API](#existing-v4-applications-compatibility-first)",
+    "[Compatibility API](./docs/usage/compatibility-api.md)",
+    "[Compatibility-first](#existing-v4-applications-compatibility-first)",
     "[Webhooks](#inbound-webhooks)",
+    "[Webhook events](./docs/usage/webhooks.md#known-inbound-webhook-events)",
     "[Migration](./MIGRATION.md)",
     "[Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api)",
   ].join("\n");
@@ -285,8 +301,11 @@ void test("the landing page routes readers through the v5 documentation path", (
           "[Installation](#installation)",
           "[Getting Started](./docs/usage/getting-started.md)",
           "[API usage](./docs/usage/getting-started.md#make-a-first-request)",
-          "[Compatibility API](#existing-v4-applications-compatibility-first)",
+          "[Client API](./docs/usage/client-api.md)",
+          "[Compatibility API](./docs/usage/compatibility-api.md)",
+          "[Compatibility-first](#existing-v4-applications-compatibility-first)",
           "[Webhooks](#inbound-webhooks)",
+          "[Webhook events](./docs/usage/webhooks.md#known-inbound-webhook-events)",
           "[Migration](./MIGRATION.md)",
           "[Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api)",
         ].join("\n"),
@@ -315,7 +334,9 @@ void test("required usage guides cover the documented v5 workflow slices", () =>
     [...REQUIRED_USAGE_GUIDES],
     [
       "docs/usage/catalog-checkout.md",
+      "docs/usage/client-api.md",
       "docs/usage/client.md",
+      "docs/usage/compatibility-api.md",
       "docs/usage/discounts-licensing.md",
       "docs/usage/getting-started.md",
       "docs/usage/orders-subscriptions.md",
@@ -585,5 +606,251 @@ void test("webhook documentation rejects parse-before-verify examples", () => {
         "docs/usage/webhooks.md",
       ),
     /recommends parsing before signature verification/,
+  );
+});
+
+void test("namespace contracts expose operation keys and official evidence", () => {
+  const operations = parseNamespaceOperations(
+    [
+      "const objectEvidence =",
+      '  "https://docs.lemonsqueezy.com/api/stores/the-store-object";',
+      "const evidence = {",
+      '  get: "https://docs.lemonsqueezy.com/api/stores/retrieve-store",',
+      "  list:",
+      '    "https://docs.lemonsqueezy.com/api/stores/list-all-stores",',
+      "} as const;",
+      "export const getStoreOperation = {",
+      '  key: "stores.get",',
+      "  evidence: [evidence.get, objectEvidence],",
+      "};",
+      "export const listStoresOperation = {",
+      '  key: "stores.list",',
+      "  evidence: [evidence.list, objectEvidence],",
+      "};",
+    ].join("\n"),
+  );
+
+  assert.deepEqual(
+    operations.map((operation) => [
+      operation.key,
+      operation.officialEndpoint,
+      operation.taskGuide,
+    ]),
+    [
+      [
+        "stores.get",
+        "https://docs.lemonsqueezy.com/api/stores/retrieve-store",
+        "docs/usage/catalog-checkout.md",
+      ],
+      [
+        "stores.list",
+        "https://docs.lemonsqueezy.com/api/stores/list-all-stores",
+        "docs/usage/catalog-checkout.md",
+      ],
+    ],
+  );
+});
+
+void test("compatibility and webhook catalogs parse identity maps", () => {
+  assert.deepEqual(
+    parseCompatibilityOperationCatalog(
+      [
+        "export const compatibilityOperationCatalog = {",
+        '  getStore: "stores.get",',
+        '  listStores: "stores.list",',
+        "} as const;",
+      ].join("\n"),
+    ),
+    { getStore: "stores.get", listStores: "stores.list" },
+  );
+  assert.deepEqual(
+    parseKnownWebhookEventCatalog(
+      [
+        "export const knownWebhookEventCatalog = {",
+        '  order_created: "orders",',
+        '  affiliate_activated: "affiliates",',
+        "} as const satisfies {",
+      ].join("\n"),
+    ),
+    [
+      {
+        name: "order_created",
+        resourceType: "orders",
+        taskGuide: "docs/usage/orders-subscriptions.md",
+        officialReference:
+          "https://docs.lemonsqueezy.com/help/webhooks/event-types",
+      },
+      {
+        name: "affiliate_activated",
+        resourceType: "affiliates",
+        taskGuide: "docs/usage/catalog-checkout.md",
+        officialReference:
+          "https://docs.lemonsqueezy.com/help/webhooks/event-types",
+      },
+    ],
+  );
+});
+
+void test("the repository catalog is 21 namespaces, 61 methods, 59 facade functions, and 17 events", async () => {
+  const catalog = await loadCanonicalDocumentationCatalog(repoRoot);
+  assertCatalogCoverage(catalog);
+});
+
+void test("the Client API index accounts for every catalog namespace and method", () => {
+  const catalog = {
+    namespaces: ["stores", "users"],
+    operations: [
+      {
+        key: "stores.list",
+        namespace: "stores",
+        officialEndpoint:
+          "https://docs.lemonsqueezy.com/api/stores/list-all-stores",
+        taskGuide: "docs/usage/catalog-checkout.md",
+      },
+      {
+        key: "users.getAuthenticated",
+        namespace: "users",
+        officialEndpoint:
+          "https://docs.lemonsqueezy.com/api/users/retrieve-user",
+        taskGuide: "docs/usage/catalog-checkout.md",
+      },
+    ],
+    compatibility: {},
+    webhookEvents: [],
+  };
+  const markdown = [
+    "## users",
+    "",
+    "| Method | Task guide | Official API |",
+    "| ------ | ---------- | ------------ |",
+    "| `users.getAuthenticated` | [Catalog](./catalog-checkout.md) | [Retrieve](https://docs.lemonsqueezy.com/api/users/retrieve-user) |",
+    "",
+    "## stores",
+    "",
+    "| Method | Task guide | Official API |",
+    "| ------ | ---------- | ------------ |",
+    "| `stores.list` | [Catalog](./catalog-checkout.md) | [List](https://docs.lemonsqueezy.com/api/stores/list-all-stores) |",
+    "",
+  ].join("\n");
+
+  assert.doesNotThrow(() =>
+    assertClientApiIndexContract(markdown, "docs/usage/client-api.md", catalog),
+  );
+  assert.throws(
+    () =>
+      assertClientApiIndexContract(
+        [
+          "## users",
+          "",
+          "| `users.getAuthenticated` | [Catalog](./catalog-checkout.md) | [Retrieve](https://docs.lemonsqueezy.com/api/users/retrieve-user) |",
+          "",
+          "## stores",
+          "",
+        ].join("\n"),
+        "docs/usage/client-api.md",
+        catalog,
+      ),
+    /stores\.list/,
+  );
+});
+
+void test("the Compatibility API index maps every facade function to its Client equivalent", () => {
+  const markdown = [
+    "`lemonSqueezySetup` configures the Default Client.",
+    "",
+    "| Facade | Explicit Client | Task guide | Official API |",
+    "| ------ | --------------- | ---------- | ------------ |",
+    "| `getStore` | `stores.get` | [Catalog](./catalog-checkout.md) | [Retrieve](https://docs.lemonsqueezy.com/api/stores/retrieve-store) |",
+    "| `listStores` | `stores.list` | [Catalog](./catalog-checkout.md) | [List](https://docs.lemonsqueezy.com/api/stores/list-all-stores) |",
+    "",
+  ].join("\n");
+
+  const fullCatalog = {
+    namespaces: [],
+    operations: [
+      {
+        key: "stores.get",
+        namespace: "stores",
+        officialEndpoint:
+          "https://docs.lemonsqueezy.com/api/stores/retrieve-store",
+        taskGuide: "docs/usage/catalog-checkout.md",
+      },
+      {
+        key: "stores.list",
+        namespace: "stores",
+        officialEndpoint:
+          "https://docs.lemonsqueezy.com/api/stores/list-all-stores",
+        taskGuide: "docs/usage/catalog-checkout.md",
+      },
+    ],
+    compatibility: { getStore: "stores.get", listStores: "stores.list" },
+    webhookEvents: [],
+  };
+
+  assert.doesNotThrow(() =>
+    assertCompatibilityApiIndexContract(
+      markdown,
+      "docs/usage/compatibility-api.md",
+      fullCatalog,
+    ),
+  );
+  assert.throws(
+    () =>
+      assertCompatibilityApiIndexContract(
+        "`lemonSqueezySetup`\n| `getStore` | `stores.get` | [Catalog](./catalog-checkout.md) | [Retrieve](https://docs.lemonsqueezy.com/api/stores/retrieve-store) |\n",
+        "docs/usage/compatibility-api.md",
+        fullCatalog,
+      ),
+    /listStores/,
+  );
+});
+
+void test("the webhook event index accounts for known names and unknown authenticated events", () => {
+  const catalog = {
+    namespaces: [],
+    operations: [],
+    compatibility: {},
+    webhookEvents: [
+      {
+        name: "order_created",
+        resourceType: "orders",
+        taskGuide: "docs/usage/orders-subscriptions.md",
+        officialReference:
+          "https://docs.lemonsqueezy.com/help/webhooks/event-types",
+      },
+      {
+        name: "affiliate_activated",
+        resourceType: "affiliates",
+        taskGuide: "docs/usage/catalog-checkout.md",
+        officialReference:
+          "https://docs.lemonsqueezy.com/help/webhooks/event-types",
+      },
+    ],
+  };
+  const markdown = [
+    "Authenticated unknown events remain supported.",
+    "",
+    "| Event name | Resource type | Task guide | Official |",
+    "| ---------- | ------------- | ---------- | -------- |",
+    "| `order_created` | `orders` | [Orders](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |",
+    "| `affiliate_activated` | `affiliates` | [Catalog](./catalog-checkout.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |",
+    "",
+  ].join("\n");
+
+  assert.doesNotThrow(() =>
+    assertWebhookEventIndexContract(
+      markdown,
+      "docs/usage/webhooks.md",
+      catalog,
+    ),
+  );
+  assert.throws(
+    () =>
+      assertWebhookEventIndexContract(
+        "Authenticated unknown events remain supported.\n| `order_created` | `orders` | [Orders](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |\n",
+        "docs/usage/webhooks.md",
+        catalog,
+      ),
+    /affiliate_activated/,
   );
 });

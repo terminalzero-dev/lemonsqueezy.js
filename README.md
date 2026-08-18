@@ -12,12 +12,15 @@ Lemon Squeezy API. It ships native ESM and CJS for Node.js 22 and 24 and Bun
 - [Installation](#installation)
 - [Getting Started](./docs/usage/getting-started.md)
 - [API usage](./docs/usage/client.md)
+- [Client API](./docs/usage/client-api.md)
 - [Catalog, customers, and checkouts](./docs/usage/catalog-checkout.md)
 - [Orders, subscriptions, and metering](./docs/usage/orders-subscriptions.md)
 - [Discounts and licensing](./docs/usage/discounts-licensing.md)
 - [Webhook management and inbound delivery](./docs/usage/webhooks.md)
-- [Compatibility API](#existing-v4-applications-compatibility-first)
+- [Compatibility API](./docs/usage/compatibility-api.md)
+- [Compatibility-first](#existing-v4-applications-compatibility-first)
 - [Webhooks](#inbound-webhooks)
+- [Webhook events](./docs/usage/webhooks.md#known-inbound-webhook-events)
 - [Migration](./MIGRATION.md)
 - [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api)
 
@@ -101,7 +104,9 @@ const { data, error, statusCode } = await getAuthenticatedUser();
 The same facade is available from `@terminalzero/lemonsqueezy/compat` when an
 explicit application boundary is useful. The Compatibility facade remains a
 supported v5 interface. Adopting the Explicit Client later is optional and can
-be done one complete call site or namespace at a time.
+be done one complete call site or namespace at a time. The complete function
+mapping is in the [Compatibility API](./docs/usage/compatibility-api.md)
+index.
 
 Read [MIGRATION.md](./MIGRATION.md) before rollout. v5 corrects observable v4
 defects involving empty responses, error status, update defaults, validation,

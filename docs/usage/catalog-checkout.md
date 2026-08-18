@@ -266,6 +266,7 @@ try {
 
 - [Explicit Client](./client.md) for construction, request options,
   pagination, and failures
+- [Client API](./client-api.md) for every namespace method
 - [Getting Started](./getting-started.md) for install and the first read
 - [Orders, subscriptions, and metering](./orders-subscriptions.md) for
   post-purchase billing
@@ -273,5 +274,6 @@ try {
   License Keys
 - [Webhook management and inbound delivery](./webhooks.md) for signed
   event delivery
+- [Compatibility API](./compatibility-api.md) for facade equivalents
 - [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api) for
   resource fields and checkout business rules
