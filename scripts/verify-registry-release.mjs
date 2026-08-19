@@ -168,9 +168,9 @@ assert.equal(
 const distTags = await distTagsResponse.json();
 assert.equal(distTags.beta, candidate.version);
 assert.equal(
-  "latest" in distTags,
-  false,
-  "latest must not resolve to a prerelease",
+  distTags.latest,
+  candidate.version,
+  "latest must resolve to the current recommended Candidate",
 );
 
 const evidence = {

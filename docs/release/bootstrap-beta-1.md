@@ -38,9 +38,9 @@ Release Candidate run.
 3. Publish the exact tarball path once with `pnpm publish <exact.tgz> --access
 public --tag beta`. Do not check out source, build, pack, patch, or compress.
 4. Read back the exact version metadata, SHA-512 registry integrity, tarball
-   bytes, and all dist-tags. If the new package automatically gained `latest`,
-   remove the `latest` tag before any announcement; `beta` must resolve to the
-   verified version.
+   bytes, and all dist-tags. While the package has no Stable release, `latest`
+   is the current recommended release; `latest` and `beta` must resolve to the
+   same exact verified version.
 5. Configure npm Trusted Publisher for repository
    `terminalzero-dev/lemonsqueezy.js`, workflow filename
    `registry-release.yml`, and environment `npm-release`.

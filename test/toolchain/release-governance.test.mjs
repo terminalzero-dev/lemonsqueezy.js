@@ -272,7 +272,7 @@ void test("pre-publish verification rejects changed candidate bytes", async () =
   );
 });
 
-void test("post-publish verification binds registry bytes to the Candidate", async () => {
+void test("post-publish verification binds registry bytes and recommended tags to the Candidate", async () => {
   const artifactDirectory = await mkdtemp(
     join(tmpdir(), "lemonsqueezy-registry-verification-"),
   );
@@ -356,7 +356,9 @@ void test("post-publish verification binds registry bytes to the Candidate", asy
     }
     if (request.url === "/-/package/%40terminalzero%2Flemonsqueezy/dist-tags") {
       response.setHeader("content-type", "application/json");
-      response.end(JSON.stringify({ beta: bootstrapVersion }));
+      response.end(
+        JSON.stringify({ beta: bootstrapVersion, latest: bootstrapVersion }),
+      );
       return;
     }
     if (
@@ -426,7 +428,10 @@ void test("post-publish verification binds registry bytes to the Candidate", asy
   );
   assert.equal(evidence.registry.integrity, integrity);
   assert.equal(evidence.registry.downloadedSha256, sha256);
-  assert.deepEqual(evidence.registry.distTags, { beta: bootstrapVersion });
+  assert.deepEqual(evidence.registry.distTags, {
+    beta: bootstrapVersion,
+    latest: bootstrapVersion,
+  });
 });
 
 void test("manual Release Candidates reuse one artifact without registry mutation", () => {
@@ -940,7 +945,8 @@ void test("beta.1 runbooks preserve the bootstrap and version-PR boundaries", ()
   assert.match(bootstrap, /exact.*\.tgz/is);
   assert.match(bootstrap, /SHA-256/);
   assert.match(bootstrap, /--tag beta/);
-  assert.match(bootstrap, /remove.*latest/is);
+  assert.match(bootstrap, /latest.*current recommended release/is);
+  assert.match(bootstrap, /latest.*beta.*same exact verified version/is);
   assert.match(bootstrap, /Trusted Publisher/);
   assert.match(bootstrap, /revoke/is);
   assert.doesNotMatch(bootstrap, /NPM_TOKEN|recovery code:|OTP:/i);
