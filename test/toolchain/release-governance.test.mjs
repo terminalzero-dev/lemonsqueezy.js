@@ -527,6 +527,10 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   assert.match(workflow, /steps\.audit-token\.outputs\.app-slug/);
   assert.match(workflow, /verify-release-installation\.mjs/);
   assert.match(workflow, /persist-credentials: true/);
+  assert.match(
+    workflow,
+    /Checkout with the repository-only release identity[\s\S]*ref: \$\{\{ inputs\.expected_commit \}\}/,
+  );
   assert.equal(workflow.match(/RELEASE_GITHUB_APP_PRIVATE_KEY/g)?.length, 4);
   assert.equal(
     workflow.match(/actions\/create-github-app-token@[0-9a-f]{40}/g)?.length,
