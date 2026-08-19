@@ -106,7 +106,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download the exact artifact without rebuilding
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
           path: .artifacts/package
@@ -157,7 +157,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download the exact artifact without rebuilding
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
           path: .artifacts/package
@@ -190,7 +190,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download the exact artifact without rebuilding
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
           path: .artifacts/package
@@ -230,7 +230,7 @@ jobs:
           node-version: "24"
 
       - name: Download the gated artifact without rebuilding
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-candidate-input-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
           path: .artifacts/package
@@ -273,7 +273,7 @@ jobs:
           node-version: "24"
 
       - name: Download the candidate without rebuilding
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-candidate-${{ inputs.expected_version }}-${{ inputs.expected_commit }}
           path: .artifacts/package

@@ -184,6 +184,23 @@ void test("artifact uploads use the Node.js 24 action runtime", () => {
   );
 });
 
+void test("artifact downloads use the Node.js 24 action runtime", () => {
+  const workflows = readdirSync(
+    new URL("../../.github/workflows", import.meta.url),
+  ).filter((name) => name.endsWith(".yml"));
+  const downloadArtifact =
+    /actions\/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8\.0\.1/g;
+
+  let downloadCount = 0;
+  for (const workflow of workflows) {
+    const source = readRootText(`.github/workflows/${workflow}`);
+    downloadCount += source.match(downloadArtifact)?.length ?? 0;
+    assert.doesNotMatch(source, /actions\/download-artifact@(?!3e5f45b2)/);
+  }
+
+  assert.equal(downloadCount, 7);
+});
+
 void test("Test Mode integration is an exact-tarball, fail-closed protected canary", () => {
   assert.match(packageJson.scripts["test:repository"], /reaper\.test\.mjs/);
   assert.equal(
