@@ -117,29 +117,31 @@ Event names come from signed `meta.event_name`, not from `X-Event-Name`.
 The 17 known names and their JSON:API resource types are listed below and
 in official
 [Event Types](https://docs.lemonsqueezy.com/help/webhooks/event-types).
-Authenticated unknown names stay representable: `known` is false, and
+Authenticated unknown events remain supported: `known` is false, and
 the original name, metadata, resource, and unknown fields are preserved.
 Do not discard them.
 
-| Event name                       | Resource type           |
-| -------------------------------- | ----------------------- |
-| `order_created`                  | `orders`                |
-| `order_refunded`                 | `orders`                |
-| `customer_updated`               | `customers`             |
-| `subscription_created`           | `subscriptions`         |
-| `subscription_updated`           | `subscriptions`         |
-| `subscription_cancelled`         | `subscriptions`         |
-| `subscription_resumed`           | `subscriptions`         |
-| `subscription_expired`           | `subscriptions`         |
-| `subscription_paused`            | `subscriptions`         |
-| `subscription_unpaused`          | `subscriptions`         |
-| `subscription_payment_success`   | `subscription-invoices` |
-| `subscription_payment_failed`    | `subscription-invoices` |
-| `subscription_payment_recovered` | `subscription-invoices` |
-| `subscription_payment_refunded`  | `subscription-invoices` |
-| `license_key_created`            | `license-keys`          |
-| `license_key_updated`            | `license-keys`          |
-| `affiliate_activated`            | `affiliates`            |
+## Known inbound webhook events
+
+| Event name                       | Resource type           | Task guide                                                       | Official                                                               |
+| -------------------------------- | ----------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `order_created`                  | `orders`                | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `order_refunded`                 | `orders`                | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `customer_updated`               | `customers`             | [Catalog, customers, and checkouts](./catalog-checkout.md)       | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_created`           | `subscriptions`         | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_updated`           | `subscriptions`         | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_cancelled`         | `subscriptions`         | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_resumed`           | `subscriptions`         | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_expired`           | `subscriptions`         | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_paused`            | `subscriptions`         | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_unpaused`          | `subscriptions`         | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_payment_success`   | `subscription-invoices` | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_payment_failed`    | `subscription-invoices` | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_payment_recovered` | `subscription-invoices` | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `subscription_payment_refunded`  | `subscription-invoices` | [Orders, subscriptions, and metering](./orders-subscriptions.md) | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `license_key_created`            | `license-keys`          | [Discounts and licensing](./discounts-licensing.md)              | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `license_key_updated`            | `license-keys`          | [Discounts and licensing](./discounts-licensing.md)              | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
+| `affiliate_activated`            | `affiliates`            | [Catalog, customers, and checkouts](./catalog-checkout.md)       | [Event types](https://docs.lemonsqueezy.com/help/webhooks/event-types) |
 
 The following vectors are synthetic. They exercise the receiver offline
 and must not be used as production secrets.
@@ -209,8 +211,10 @@ try {
 
 - [Explicit Client](./client.md) for construction, request options, and
   failures
+- [Client API](./client-api.md) for all 21 namespaces and 61 methods
 - [Orders, subscriptions, and metering](./orders-subscriptions.md) and
   [Discounts and licensing](./discounts-licensing.md) for the resources
   carried by known events
+- [Compatibility API](./compatibility-api.md) for facade equivalents
 - [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api) for
   webhook registration fields

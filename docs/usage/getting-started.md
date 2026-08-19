@@ -102,6 +102,7 @@ Use Lemon Squeezy Test Mode for any follow-up request that talks to the API.
   supported imports and the unsupported deep paths
 - [Explicit Client](./client.md) for construction, request options,
   pagination, and failures
+- [Client API](./client-api.md) for all 21 namespaces and 61 methods
 - [Catalog, customers, and checkouts](./catalog-checkout.md) for store
   discovery through checkout creation
 - [Orders, subscriptions, and metering](./orders-subscriptions.md) for
@@ -110,7 +111,8 @@ Use Lemon Squeezy Test Mode for any follow-up request that talks to the API.
   the public License API
 - [Webhook management and inbound delivery](./webhooks.md) for endpoint
   CRUD and signed event parsing
-- [Compatibility API](../../README.md#existing-v4-applications-compatibility-first)
+- [Compatibility API](./compatibility-api.md) for the 59 facade functions
+- [Compatibility-first](../../README.md#existing-v4-applications-compatibility-first)
   and [MIGRATION.md](../../MIGRATION.md) for existing v4 applications
 - [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api) for resource
   fields, filters, and business rules

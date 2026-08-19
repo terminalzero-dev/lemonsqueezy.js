@@ -318,11 +318,13 @@ try {
 
 - [Explicit Client](./client.md) for construction, request options,
   pagination, and failures
+- [Client API](./client-api.md) for every namespace method
 - [Catalog, customers, and checkouts](./catalog-checkout.md) for the path
   that creates the orders billed here
 - [Discounts and licensing](./discounts-licensing.md) for promotions and
   License Keys attached to orders
 - [Webhook management and inbound delivery](./webhooks.md) for order and
   subscription events
+- [Compatibility API](./compatibility-api.md) for facade equivalents
 - [Official Lemon Squeezy API](https://docs.lemonsqueezy.com/api) for
   resource fields and billing rules

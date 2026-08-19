@@ -297,6 +297,16 @@ void test("the documentation contract is a finite installed-package gate", () =>
     true,
   );
   assert.equal(
+    existsSync(new URL("../../docs/usage/client-api.md", import.meta.url)),
+    true,
+  );
+  assert.equal(
+    existsSync(
+      new URL("../../docs/usage/compatibility-api.md", import.meta.url),
+    ),
+    true,
+  );
+  assert.equal(
     existsSync(
       new URL("../../docs/usage/catalog-checkout.md", import.meta.url),
     ),
@@ -322,6 +332,8 @@ void test("the documentation contract is a finite installed-package gate", () =>
   const testDocs = readRootText("scripts/test-docs.mjs");
   const contributing = readRootText("CONTRIBUTING.md");
   assert.match(testDocs, /prepareConsumer\("docs"\)/);
+  assert.match(testDocs, /loadCanonicalDocumentationCatalog/);
+  assert.match(testDocs, /assertCatalogCoverage/);
   assert.doesNotMatch(
     testDocs,
     /vitepress|docusaurus|typedoc|createServer|\bwatch\b/,

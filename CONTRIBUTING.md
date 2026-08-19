@@ -62,8 +62,11 @@ Contract Catalog, public types, or serializers and omits opaque data values.
 `pnpm test:docs` is the Installed-package Documentation Contract. After the
 Canonical Package Artifact exists, it installs that exact tarball into an
 isolated consumer, compiles documented TypeScript examples, and runs
-credential-free example behavior on Node.js and Bun. It does not start a
-documentation server, watcher, or real Lemon Squeezy request.
+credential-free example behavior on Node.js and Bun. It also checks catalog
+coverage for the 21 namespaces, 61 Client methods, 59 Compatibility facade
+functions, and 17 known webhook events, plus local links, official-reference
+links, and documentation safety. It does not start a documentation server,
+watcher, or real Lemon Squeezy request.
 
 ## Changes and releases
 

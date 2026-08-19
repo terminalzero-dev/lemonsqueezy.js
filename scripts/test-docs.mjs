@@ -4,19 +4,29 @@ import { join } from "node:path";
 import { prepareConsumer, root, run } from "./lib/canonical-artifact.mjs";
 import {
   assertCatalogCheckoutGuideContract,
+  assertCatalogCoverage,
+  assertClientApiIndexContract,
   assertClientGuideContract,
+  assertCompatibilityApiIndexContract,
   assertDiscountsLicensingGuideContract,
   assertDocumentationSafety,
   assertLandingPageRoutes,
   assertLocalDocumentationLinks,
   assertOrdersSubscriptionsGuideContract,
+  assertRequiredOfficialReferenceLinks,
   assertSupportedPackageImports,
+  assertWebhookEventIndexContract,
   assertWebhookGuideContract,
+  allowAdditionalOfficialReferenceLinks,
   collectMarkdownCodeBlocks,
   extractDocumentationExamples,
   listDocumentationFiles,
   REQUIRED_USAGE_GUIDES,
 } from "./lib/docs-contract.mjs";
+import {
+  collectCatalogOfficialReferenceLinks,
+  loadCanonicalDocumentationCatalog,
+} from "./lib/docs-catalog.mjs";
 
 const documentationFiles = await listDocumentationFiles(root);
 assert.deepEqual(
@@ -24,13 +34,26 @@ assert.deepEqual(
   [...REQUIRED_USAGE_GUIDES],
 );
 
+const catalog = await loadCanonicalDocumentationCatalog(root);
+assertCatalogCoverage(catalog);
+allowAdditionalOfficialReferenceLinks(
+  collectCatalogOfficialReferenceLinks(catalog),
+);
+
 const examples = [];
 for (const relativePath of documentationFiles) {
   const markdown = await readFile(join(root, relativePath), "utf8");
   assertDocumentationSafety(markdown, relativePath);
   assertLocalDocumentationLinks(markdown, relativePath, root);
+  assertRequiredOfficialReferenceLinks(markdown, relativePath);
   if (relativePath === "docs/usage/client.md") {
     assertClientGuideContract(markdown, relativePath);
+  }
+  if (relativePath === "docs/usage/client-api.md") {
+    assertClientApiIndexContract(markdown, relativePath, catalog);
+  }
+  if (relativePath === "docs/usage/compatibility-api.md") {
+    assertCompatibilityApiIndexContract(markdown, relativePath, catalog);
   }
   if (relativePath === "docs/usage/catalog-checkout.md") {
     assertCatalogCheckoutGuideContract(markdown, relativePath);
@@ -43,6 +66,7 @@ for (const relativePath of documentationFiles) {
   }
   if (relativePath === "docs/usage/webhooks.md") {
     assertWebhookGuideContract(markdown, relativePath);
+    assertWebhookEventIndexContract(markdown, relativePath, catalog);
   }
   for (const block of collectMarkdownCodeBlocks(markdown)) {
     assertSupportedPackageImports(block.source, `${relativePath} example`);
