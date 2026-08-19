@@ -516,6 +516,14 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   assert.match(workflow, /gh release create/);
   assert.match(workflow, /Create or verify the protected release tag/);
   assert.match(workflow, /git push origin/);
+  assert.match(
+    workflow,
+    /if existing_tag_ref=\$\(gh api[\s\S]*tag_ref=\$existing_tag_ref[\s\S]*fi/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /git\/ref\/tags\/\$tag" 2>\/dev\/null \|\| true/,
+  );
   assert.match(workflow, /actions\/create-github-app-token@[0-9a-f]{40}/);
   assert.match(workflow, /RELEASE_GITHUB_APP_PRIVATE_KEY/);
   assert.match(workflow, /RELEASE_GITHUB_APP_CLIENT_ID/);
