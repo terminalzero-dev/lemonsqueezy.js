@@ -147,8 +147,11 @@ jobs:
       - name: Create or verify the protected release tag
         run: |
           tag="v${EXPECTED_VERSION}"
-          tag_ref=$(gh api \
-            "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>/dev/null || true)
+          tag_ref=
+          if existing_tag_ref=$(gh api \
+            "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>/dev/null); then
+            tag_ref=$existing_tag_ref
+          fi
           if test -z "$tag_ref"; then
             git tag "$tag" "$EXPECTED_COMMIT"
             git push origin "refs/tags/$tag:refs/tags/$tag"
