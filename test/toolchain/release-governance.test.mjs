@@ -1322,9 +1322,8 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   const finalizeWorkflow = workflow.slice(workflow.indexOf("\n  finalize:"));
   assert.match(
     finalizeWorkflow,
-    /Mint the repository-only Release identity[\s\S]*permission-contents: write/,
+    /Mint the repository-only Release identity[\s\S]*permission-contents: write[\s\S]*permission-workflows: write/,
   );
-  assert.doesNotMatch(finalizeWorkflow, /permission-workflows:/);
   assert.doesNotMatch(finalizeWorkflow, /GH_TOKEN: \$\{\{ github\.token \}\}/);
   assert.match(
     finalizeWorkflow,

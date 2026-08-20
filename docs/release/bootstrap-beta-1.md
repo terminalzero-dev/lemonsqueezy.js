@@ -54,9 +54,11 @@ public --tag beta`. Do not check out source, build, pack, patch, or compress.
    repository-only GitHub App installation token to create `v5.0.0-beta.1` at
    the exact Candidate commit. The action revokes the short-lived token when the
    job ends. The separate `finalize` job reads the protected tag back and mints
-   a new repository-only, Contents-write App token to create an immutable
-   prerelease with the tarball and evidence as assets. Each job-local token is
-   revoked when its job ends.
+   a new repository-only App token with Contents write and Workflows write to
+   create an immutable prerelease with the tarball and evidence as assets.
+   GitHub requires Workflows write because the Release target contains workflow
+   changes relative to the default branch. Each job-local token is revoked when
+   its job ends.
 
 ## Closeout recovery
 
