@@ -272,7 +272,7 @@ void test("pre-publish verification rejects changed candidate bytes", async () =
   );
 });
 
-void test("post-publish verification binds registry bytes and recommended tags to the Candidate", async () => {
+void test("post-publish verification binds registry bytes, provenance, and recommended tags to the Candidate", async () => {
   const artifactDirectory = await mkdtemp(
     join(tmpdir(), "lemonsqueezy-registry-verification-"),
   );
@@ -330,19 +330,72 @@ void test("post-publish verification binds registry bytes and recommended tags t
     )}\n`,
   );
 
-  const releaseIdentity = join(artifactDirectory, "release-identity.json");
+  const provenanceStatement = {
+    _type: "https://in-toto.io/Statement/v1",
+    subject: [
+      {
+        name: `pkg:npm/%40terminalzero/lemonsqueezy@${bootstrapVersion}`,
+        digest: {
+          sha512: createHash("sha512").update(tarball).digest("hex"),
+        },
+      },
+    ],
+    predicateType: "https://slsa.dev/provenance/v1",
+    predicate: {
+      buildDefinition: {
+        externalParameters: {
+          workflow: {
+            ref: "refs/heads/release/v5-beta",
+            repository: "https://github.com/terminalzero-dev/lemonsqueezy.js",
+            path: ".github/workflows/registry-release.yml",
+          },
+        },
+        resolvedDependencies: [
+          {
+            uri: "git+https://github.com/terminalzero-dev/lemonsqueezy.js@refs/heads/release/v5-beta",
+            digest: {
+              gitCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            },
+          },
+        ],
+      },
+      runDetails: {
+        builder: {
+          id: "https://github.com/actions/runner/github-hosted",
+        },
+      },
+    },
+  };
+  const provenanceEvidence = join(artifactDirectory, "provenance-audit.json");
   await writeFile(
-    releaseIdentity,
+    provenanceEvidence,
     `${JSON.stringify(
       {
-        schemaVersion: 1,
-        package: "@terminalzero/lemonsqueezy",
-        version: bootstrapVersion,
-        sourceCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        sha256,
-        sha512: createHash("sha512").update(tarball).digest("hex"),
-        integrity,
-        candidateRunId: "12345",
+        invalid: [],
+        missing: [],
+        verified: [
+          {
+            name: "@terminalzero/lemonsqueezy",
+            version: bootstrapVersion,
+            attestations: {
+              provenance: {
+                predicateType: "https://slsa.dev/provenance/v1",
+              },
+            },
+            attestationBundles: [
+              {
+                predicateType: "https://slsa.dev/provenance/v1",
+                bundle: {
+                  dsseEnvelope: {
+                    payload: Buffer.from(
+                      JSON.stringify(provenanceStatement),
+                    ).toString("base64"),
+                  },
+                },
+              },
+            ],
+          },
+        ],
       },
       null,
       2,
@@ -415,8 +468,8 @@ void test("post-publish verification binds registry bytes and recommended tags t
       `http://127.0.0.1:${server.address().port}`,
       "--github-api",
       `http://127.0.0.1:${server.address().port}`,
-      "--release-identity",
-      releaseIdentity,
+      "--provenance-evidence",
+      provenanceEvidence,
     ]);
   } finally {
     server.close();
@@ -432,6 +485,167 @@ void test("post-publish verification binds registry bytes and recommended tags t
     beta: bootstrapVersion,
     latest: bootstrapVersion,
   });
+  assert.deepEqual(evidence.registry.provenance, {
+    verified: true,
+    subject: `pkg:npm/%40terminalzero/lemonsqueezy@${bootstrapVersion}`,
+    sha512: createHash("sha512").update(tarball).digest("hex"),
+    repository: "https://github.com/terminalzero-dev/lemonsqueezy.js",
+    workflow: ".github/workflows/registry-release.yml",
+    ref: "refs/heads/release/v5-beta",
+    commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    builder: "https://github.com/actions/runner/github-hosted",
+  });
+});
+
+void test("OIDC dist-tag promotion and rollback restore both recommended tags", async () => {
+  const evidenceDirectory = await mkdtemp(
+    join(tmpdir(), "lemonsqueezy-dist-tag-drill-"),
+  );
+  const currentVersion = "5.0.0-beta.2";
+  const lastKnownGoodVersion = "5.0.0-beta.1";
+  const tags = {
+    beta: lastKnownGoodVersion,
+    latest: lastKnownGoodVersion,
+  };
+  const requests = [];
+  const server = createServer((request, response) => {
+    void handleRequest(request, response).catch((error) => {
+      response.statusCode = 500;
+      response.end(JSON.stringify({ error: String(error) }));
+    });
+  });
+  const handleRequest = async (request, response) => {
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    requests.push({
+      method: request.method,
+      url: request.url,
+      authorization: request.headers.authorization,
+      body,
+    });
+    response.setHeader("content-type", "application/json");
+    if (
+      request.url ===
+      "/-/npm/v1/oidc/token/exchange/package/%40terminalzero%2Flemonsqueezy"
+    ) {
+      response.end(JSON.stringify({ token: "short-lived-registry-token" }));
+      return;
+    }
+    const match = request.url.match(
+      /^\/-\/package\/%40terminalzero%2Flemonsqueezy\/dist-tags(?:\/(beta|latest))?$/,
+    );
+    assert.ok(match, `unexpected registry request ${request.url}`);
+    if (request.method === "PUT") {
+      assert.equal(
+        request.headers.authorization,
+        "Bearer short-lived-registry-token",
+      );
+      tags[match[1]] = JSON.parse(body);
+      response.end(JSON.stringify({}));
+      return;
+    }
+    response.end(JSON.stringify(tags));
+  };
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const registry = `http://127.0.0.1:${server.address().port}`;
+
+  try {
+    await execute(
+      process.execPath,
+      [
+        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
+          .pathname,
+        "probe",
+        "--package",
+        "@terminalzero/lemonsqueezy",
+        "--current-version",
+        currentVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
+        "--registry",
+        registry,
+        "--evidence",
+        join(evidenceDirectory, "probe.json"),
+      ],
+      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
+    );
+    assert.deepEqual(tags, {
+      beta: lastKnownGoodVersion,
+      latest: lastKnownGoodVersion,
+    });
+
+    tags.beta = currentVersion;
+    await execute(
+      process.execPath,
+      [
+        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
+          .pathname,
+        "promote",
+        "--package",
+        "@terminalzero/lemonsqueezy",
+        "--current-version",
+        currentVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
+        "--registry",
+        registry,
+        "--evidence",
+        join(evidenceDirectory, "promotion.json"),
+      ],
+      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
+    );
+    assert.deepEqual(tags, {
+      beta: currentVersion,
+      latest: currentVersion,
+    });
+
+    await execute(
+      process.execPath,
+      [
+        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
+          .pathname,
+        "rollback",
+        "--package",
+        "@terminalzero/lemonsqueezy",
+        "--current-version",
+        currentVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
+        "--registry",
+        registry,
+        "--evidence",
+        join(evidenceDirectory, "rollback.json"),
+      ],
+      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
+    );
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+
+  assert.deepEqual(tags, {
+    beta: currentVersion,
+    latest: currentVersion,
+  });
+  const rollback = JSON.parse(
+    await readFile(join(evidenceDirectory, "rollback.json")),
+  );
+  assert.deepEqual(rollback.states, [
+    { beta: currentVersion, latest: currentVersion },
+    { beta: lastKnownGoodVersion, latest: lastKnownGoodVersion },
+    { beta: currentVersion, latest: currentVersion },
+  ]);
+  assert.equal(rollback.auth, "oidc-trusted-publishing");
+  assert.doesNotMatch(
+    JSON.stringify(rollback),
+    /test-oidc-token|registry-token/,
+  );
+  assert.ok(
+    requests.some(
+      ({ authorization }) => authorization === "Bearer test-oidc-token",
+    ),
+  );
 });
 
 void test("manual Release Candidates reuse one artifact without registry mutation", () => {
@@ -474,7 +688,7 @@ void test("manual Release Candidates reuse one artifact without registry mutatio
   }
 });
 
-void test("protected bootstrap closeout verifies the registry before publishing an immutable prerelease", () => {
+void test("protected OIDC release publishes, verifies, rolls back, and only then finalizes", () => {
   const workflow = readRootText(".github/workflows/registry-release.yml");
 
   assert.match(workflow, /workflow_dispatch:/);
@@ -482,17 +696,34 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   assert.match(workflow, /expected_version:/);
   assert.match(workflow, /expected_commit:/);
   assert.match(workflow, /expected_sha256:/);
+  assert.match(workflow, /last_known_good_version:/);
   assert.match(workflow, /group: v5-release/);
   assert.match(workflow, /cancel-in-progress: false/);
   assert.match(workflow, /github\.actor == vars\.RELEASE_MAINTAINER/);
   assert.match(workflow, /environment: npm-release/);
   assert.match(
     workflow,
-    /verify:[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
+    /stage:[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
   );
   assert.match(
     workflow,
-    /tag:[\s\S]*needs: verify[\s\S]*permissions:\n\s+contents: read/,
+    /publish:[\s\S]*needs: stage[\s\S]*environment: npm-release[\s\S]*permissions:\n\s+contents: read\n\s+id-token: write/,
+  );
+  assert.doesNotMatch(
+    workflow.match(/publish:[\s\S]*?\n  promote:/)?.[0] ?? "",
+    /actions: read|contents: write/,
+  );
+  assert.match(
+    workflow,
+    /verify:[\s\S]*needs: promote[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
+  );
+  assert.match(
+    workflow,
+    /rollback:[\s\S]*needs: verify[\s\S]*environment: npm-release[\s\S]*id-token: write/,
+  );
+  assert.match(
+    workflow,
+    /tag:[\s\S]*needs: rollback[\s\S]*permissions:\n\s+contents: read/,
   );
   assert.match(
     workflow,
@@ -502,6 +733,15 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   assert.match(workflow, /run-id: \$\{\{ inputs\.candidate_run_id \}\}/);
   assert.match(workflow, /github-token: \$\{\{ github\.token \}\}/);
   assert.match(workflow, /verify-registry-release\.mjs/);
+  assert.match(workflow, /verify-release-candidate\.mjs/);
+  assert.match(
+    workflow,
+    /pnpm publish "\$tarball" --tag beta --access public --provenance --no-git-checks/,
+  );
+  assert.match(workflow, /npm audit signatures --json --include-attestations/);
+  assert.match(workflow, /exercise-dist-tags\.mjs promote/);
+  assert.match(workflow, /exercise-dist-tags\.mjs probe/);
+  assert.match(workflow, /exercise-dist-tags\.mjs rollback/);
   assert.match(workflow, /PACKAGE_SMOKE_SPEC/);
   assert.match(
     workflow,
@@ -559,10 +799,10 @@ void test("protected bootstrap closeout verifies the registry before publishing 
   assert.match(workflow, /already_published/);
   assert.match(workflow, /Verify every retained evidence asset byte/);
   assert.match(workflow, /sha256sum/);
-  assert.doesNotMatch(workflow, /--release-identity/);
+  assert.match(workflow, /--provenance-evidence/);
   assert.doesNotMatch(
     workflow,
-    /(?:pnpm|npm|changeset) publish|NPM_TOKEN|pull_request_target/,
+    /NPM_TOKEN|NODE_AUTH_TOKEN|_authToken|pull_request_target/,
   );
 
   for (const [, reference] of workflow.matchAll(/uses: ([^\s]+)/g)) {
@@ -973,4 +1213,28 @@ void test("beta.1 runbooks preserve the bootstrap and version-PR boundaries", ()
   const packageSmoke = readRootText("scripts/test-package.mjs");
   assert.doesNotMatch(packageSmoke, /5\.0\.0-beta\.0/);
   assert.match(packageSmoke, /PACKAGE_SMOKE_RUNTIME/);
+});
+
+void test("beta.2 records recoverable release and Stable Readiness evidence", () => {
+  const operations = readRootText("docs/release/beta-2-operations.md");
+  const notes = readRootText("docs/release/beta-2-release-notes.md");
+
+  assert.match(operations, /publish succeeded.*finalization failed/is);
+  assert.match(operations, /deprecat/i);
+  assert.match(operations, /unpublish policy/i);
+  assert.match(operations, /first Stable.*without.*Last Known Good/is);
+  assert.match(operations, /resume_published/);
+  assert.match(operations, /never\s+republish/i);
+  assert.match(operations, /latest.*beta.*5\.0\.0-beta\.1/is);
+  assert.match(operations, /latest.*beta.*5\.0\.0-beta\.2/is);
+  assert.match(operations, /dist-tag-rollback-evidence\.json/);
+  assert.match(operations, /dist-tag-auth-probe-evidence\.json/);
+  assert.match(operations, /provenance-audit\.json/);
+  assert.match(operations, /account recovery/i);
+  assert.doesNotMatch(operations, /NPM_TOKEN|NODE_AUTH_TOKEN|recovery code:/i);
+
+  assert.match(notes, /Migration impact: (?:Additive|Behavior correction)/);
+  assert.match(notes, /5\.0\.0-beta\.1/);
+  assert.match(notes, /OIDC\s+Trusted\s+Publishing/);
+  assert.match(notes, /latest.*beta/is);
 });

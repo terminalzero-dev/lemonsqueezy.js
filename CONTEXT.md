@@ -53,7 +53,7 @@ The release-note classification that tells a beta consumer whether a version req
 _Avoid_: SemVer bump, generic breaking-change label, changelog heading
 
 **v5 beta**:
-The first externally testable release target for the redesigned SDK, beginning at `5.0.0-beta.1` and published only through the npm `beta` dist-tag. Promotion to stable and the `latest` dist-tag depends on explicit acceptance criteria and beta feedback.
+The first externally testable release target for the redesigned SDK, beginning at `5.0.0-beta.1` and published explicitly through the npm `beta` dist-tag. Before the first Stable release, both `latest` and `beta` identify the current verified Last Known Good beta; Stable promotion remains dependent on explicit acceptance criteria and beta feedback.
 _Avoid_: v5 stable, final release
 
 **Supported runtime**:
