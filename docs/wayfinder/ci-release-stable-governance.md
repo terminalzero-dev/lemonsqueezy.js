@@ -174,6 +174,8 @@ reviewed version commit
   -> pnpm OIDC trusted publishing
   -> npm beta dist-tag
   -> registry integrity + provenance verification
+  -> maintainer npm web login + 2FA dist-tag drill
+  -> public Issue evidence + live tag verification
   -> npm latest + beta point to the verified recommended beta
   -> protected Git tag
   -> immutable GitHub prerelease
@@ -181,14 +183,16 @@ reviewed version commit
 
 正常 publish job：
 
-1. 不提供 `NPM_TOKEN` fallback，使用 GitHub OIDC 换取短期 package-scoped credential；
+1. 不提供 `NPM_TOKEN` fallback，publish 使用 GitHub OIDC 换取短期 package-scoped credential；OIDC 不用于 npm 不支持的 dist-tag mutation；
 2. 使用 pnpm 11.21.0 上传 exact `.tgz`，显式指定 public access、正确 dist-tag 与 provenance；
 3. 发布成功后读取 exact registry metadata，比较 `dist.integrity` 与 candidate SHA-512，并重新下载 exact version 复核 bytes；
 4. 验证 npm provenance 指向正确 repository、workflow、commit、package version 和 tarball subject；
 5. 从隔离 consumer 对 registry exact version 运行最小 ESM/CJS install smoke 和 registry signature/provenance verification；
-6. 在首个 Stable 发布前，将 `latest` 与 prerelease tag 一起绑定到已验证的当前推荐 beta，并回读两个 dist-tags；Stable 发布后，`latest` 只跟随当前推荐 Stable；
-7. 所有 registry 验证成功后才创建受保护的 `v<version>` tag；
-8. 使用 `--verify-tag` 语义建立 draft GitHub Release、上传 exact `.tgz`、digest manifest 与 evidence，再发布为 immutable Release。
+6. registry 验证后，由维护者通过 `npm login --auth-type=web` 与 Passkey/TOTP 的短期会话移动 dist-tags；不得把 token、OTP、Passkey 或 recovery material 写入仓库、Issue、Actions 或日志；
+7. 将 promote、rollback、restore 的完整状态与时间线作为 secret-free JSON 发布到公开 Issue，CI 验证作者、Candidate identity、证据内容和 live tags；
+8. 在首个 Stable 发布前，将 `latest` 与 prerelease tag 一起绑定到已验证的当前推荐 beta，并回读两个 dist-tags；Stable 发布后，`latest` 只跟随当前推荐 Stable；
+9. 所有 registry 与 dist-tag evidence 验证成功后才创建受保护的 `v<version>` tag；
+10. 使用 `--verify-tag` 语义建立 draft GitHub Release、上传 exact `.tgz`、digest manifest 与 evidence，再发布为 immutable Release。
 
 Beta GitHub Release 明确设置 prerelease 且 `latest=false`。Stable GitHub Release不是 prerelease，并在全部 Stable post-publish verification 通过后成为 latest Release。
 
@@ -218,7 +222,7 @@ npm dist-tags 与 GitHub prerelease/latest 状态彼此独立，每次发布后�
 任何 version 都不可覆盖或重发。问题发布的标准动作顺序是：
 
 1. 识别受影响 dist-tags 和对应 Last Known Good version；
-2. 将这些 dist-tags 移回 Last Known Good；
+2. 使用维护者短期 npm web/2FA 会话将这些 dist-tags 移回 Last Known Good，回读状态并立即 logout；
 3. deprecate 问题 version，消息包含影响、替代 version 与升级/降级指引；
 4. 开公开 incident/issue，记录时间线、artifact identity、影响和恢复动作；
 5. 发布新的修复 prerelease 或 patch version；
@@ -343,7 +347,7 @@ Stable 前必须至少完成：
 1. `beta.1` Bootstrap publish，以及自动 `latest` 与 `beta` 同时指向已验证当前推荐版本的现场检查；
 2. `beta.2+` exact tarball OIDC/provenance live publish；
 3. publish success 后 registry integrity、downloaded bytes 与 provenance 验证；
-4. 在公开公告前短暂把 `beta` 从新 LKG 移回前一个已验证 beta、验证解析，再恢复到新 LKG 的 dist-tag rollback drill；
+4. 在公开公告前通过短期 npm web/2FA 会话，把 `latest` 与 `beta` 从新 LKG 移回前一个已验证 beta、验证解析，再恢复到新 LKG；将 secret-free drill evidence 发布到 Issue 并由 CI 复核；
 5. deprecate、unpublish policy、publish-succeeded/finalization-failed 和首个 Stable 无 LKG 的桌面演练；
 6. GitHub/npm account recovery tabletop；
 7. immutable tag/Release assets 与 evidence 恢复验证。
@@ -360,7 +364,7 @@ Stable 前必须至少完成：
 4. Release Candidate 的 version、commit、digest、plan 与 gate evidence 是机械关联的；
 5. Package Smoke、Test Mode integration 与 publish 使用同一 exact `.tgz`；
 6. `beta.1` bootstrap credential 不进入 GitHub 且发布后撤销；
-7. `beta.2+` 不存在 `NPM_TOKEN` fallback，只用 `npm-release` environment + OIDC；
+7. `beta.2+` publish 不存在 `NPM_TOKEN` fallback，只用 `npm-release` environment + OIDC；dist-tag 只用维护者短期 npm web/2FA 会话并立即 logout；
 8. registry integrity、downloaded bytes、provenance、npm dist-tags 与 GitHub Release 状态分别验证；
 9. registry verification 前不创建 Git tag/Release；GitHub Release 保存长期 evidence assets；
 10. release concurrency 不取消进行中的 publish，并在 mutation 前重查 version/tag state；
@@ -372,6 +376,7 @@ Stable 前必须至少完成：
 - 双人 release quorum、required external reviewer 或 prevent-self-review；
 - 单维护者模式下绕过 CI、手工修改 tarball 或自动 push-to-publish；
 - GitHub/npm 共享账号、共享 OTP、长期 `NPM_TOKEN` 或 bootstrap token fallback；
+- 通过 OIDC Trusted Publishing credential 调用 npm dist-tag API，或把人工 npm session 搬进 CI；
 - 在 publish job rebuild、repack 或对 Changesets plan digest 不复核；
 - registry verification 前创建 tag 或 GitHub Release；
 - `latest` 不指向当前推荐版本，或 Stable 发布后让 `beta` 长期停留在旧 beta；
