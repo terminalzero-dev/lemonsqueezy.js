@@ -1307,6 +1307,7 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(workflow, /RELEASE_GITHUB_APP_PRIVATE_KEY/);
   assert.match(workflow, /RELEASE_GITHUB_APP_CLIENT_ID/);
   assert.match(workflow, /permission-contents: write/);
+  assert.match(workflow, /permission-workflows: write/);
   assert.match(workflow, /permission-metadata: read/);
   assert.match(workflow, /owner: \$\{\{ github\.repository_owner \}\}/);
   assert.match(workflow, /steps\.audit-token\.outputs\.token/);
@@ -1418,7 +1419,11 @@ void test("repository governance protects release refs without a review quorum",
       installationId: 153681769,
       environment: "npm-release",
       privateKeySecret: "RELEASE_GITHUB_APP_PRIVATE_KEY",
-      permissions: { contents: "write", metadata: "read" },
+      permissions: {
+        contents: "write",
+        metadata: "read",
+        workflows: "write",
+      },
       events: [],
       repositorySelection: "selected",
       repositories: ["terminalzero-dev/lemonsqueezy.js"],
@@ -1470,7 +1475,11 @@ void test("release governance pins and resolves its GitHub App identity", () => 
     installationId: 153681769,
     environment: "npm-release",
     privateKeySecret: "RELEASE_GITHUB_APP_PRIVATE_KEY",
-    permissions: { contents: "write", metadata: "read" },
+    permissions: {
+      contents: "write",
+      metadata: "read",
+      workflows: "write",
+    },
     events: [],
     repositorySelection: "selected",
     repositories: ["terminalzero-dev/lemonsqueezy.js"],
@@ -1629,7 +1638,11 @@ void test("release installation verifier audits the owner-wide token scope", asy
           account: { login: "terminalzero-dev" },
           suspended_at: null,
           repository_selection: "selected",
-          permissions: { contents: "write", metadata: "read" },
+          permissions: {
+            contents: "write",
+            metadata: "read",
+            workflows: "write",
+          },
           events: [],
         }
       : {
