@@ -1,5 +1,12 @@
 # @terminalzero/lemonsqueezy
 
+## 5.0.0-beta.2
+
+### Patch Changes
+
+- [#92](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/92) [`68b982f`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/68b982f028cab94c14e3fb447817e10e24b541a9) Thanks [@keyding](https://github.com/keyding)! - Publish beta.2 with corrected pagination metadata, complete v5 documentation,
+  and the normal exact-artifact OIDC release path.
+
 ## 5.0.0-beta.1
 
 ### Minor Changes
