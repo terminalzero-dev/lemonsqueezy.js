@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash, generateKeyPairSync, verify } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -462,6 +462,10 @@ void test("post-publish verification binds registry bytes, provenance, and recom
       sha256,
       "--expected-run-id",
       "12345",
+      "--expected-beta-version",
+      bootstrapVersion,
+      "--expected-latest-version",
+      bootstrapVersion,
       "--repository",
       "terminalzero-dev/lemonsqueezy.js",
       "--registry",
@@ -497,156 +501,339 @@ void test("post-publish verification binds registry bytes, provenance, and recom
   });
 });
 
-void test("OIDC dist-tag promotion and rollback restore both recommended tags", async () => {
+void test("interactive npm 2FA dist-tag drill is complete and independently verifiable", async () => {
   const evidenceDirectory = await mkdtemp(
     join(tmpdir(), "lemonsqueezy-dist-tag-drill-"),
   );
   const currentVersion = "5.0.0-beta.2";
   const lastKnownGoodVersion = "5.0.0-beta.1";
-  const tags = {
-    beta: lastKnownGoodVersion,
-    latest: lastKnownGoodVersion,
-  };
-  const requests = [];
-  const server = createServer((request, response) => {
-    void handleRequest(request, response).catch((error) => {
-      response.statusCode = 500;
-      response.end(JSON.stringify({ error: String(error) }));
-    });
+  const sourceCommit = "a".repeat(40);
+  const artifactSha256 = "b".repeat(64);
+  const registryReleaseRunId = "98765";
+  const npmActor = "npm-maintainer";
+  const statePath = join(evidenceDirectory, "tags.json");
+  const logPath = join(evidenceDirectory, "npm.jsonl");
+  const npmPath = join(evidenceDirectory, "fake-npm.mjs");
+  const npmUserconfig = join(evidenceDirectory, "npmrc");
+  const evidencePath = join(evidenceDirectory, "evidence.json");
+  await writeFile(npmUserconfig, "");
+  await writeFile(
+    statePath,
+    JSON.stringify({ beta: currentVersion, latest: lastKnownGoodVersion }),
+  );
+  await writeFile(
+    npmPath,
+    `#!/usr/bin/env node
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+const args = process.argv.slice(2);
+appendFileSync(process.env.FAKE_NPM_LOG, JSON.stringify(args) + "\\n");
+const tags = JSON.parse(readFileSync(process.env.FAKE_NPM_STATE, "utf8"));
+if (args[0] === "view") {
+  process.stdout.write(JSON.stringify(tags));
+  process.exit(0);
+}
+if (args[0] === "dist-tag" && args[1] === "add") {
+  if (args[2] === process.env.FAKE_NPM_SIGNAL_SPEC && !existsSync(process.env.FAKE_NPM_SIGNAL_MARKER)) {
+    writeFileSync(process.env.FAKE_NPM_SIGNAL_MARKER, "signalled once");
+    process.kill(process.ppid, "SIGINT");
+    process.exit(130);
+  }
+  if (args[2] === process.env.FAKE_NPM_FAIL_SPEC && !existsSync(process.env.FAKE_NPM_FAIL_MARKER)) {
+    writeFileSync(process.env.FAKE_NPM_FAIL_MARKER, "failed once");
+    process.exit(1);
+  }
+  const spec = args[2];
+  const version = spec.slice(spec.lastIndexOf("@") + 1);
+  tags[args[3]] = version;
+  writeFileSync(process.env.FAKE_NPM_STATE, JSON.stringify(tags));
+  process.exit(0);
+}
+process.exit(2);
+`,
+  );
+  await chmod(npmPath, 0o755);
+
+  await execute(
+    process.execPath,
+    [
+      new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url).pathname,
+      "--package",
+      "@terminalzero/lemonsqueezy",
+      "--current-version",
+      currentVersion,
+      "--last-known-good-version",
+      lastKnownGoodVersion,
+      "--source-commit",
+      sourceCommit,
+      "--artifact-sha256",
+      artifactSha256,
+      "--registry-release-run-id",
+      registryReleaseRunId,
+      "--npm-actor",
+      npmActor,
+      "--account-recovery-confirmed",
+      "--npm-command",
+      npmPath,
+      "--npm-userconfig",
+      npmUserconfig,
+      "--evidence",
+      evidencePath,
+    ],
+    {
+      env: {
+        ...process.env,
+        FAKE_NPM_LOG: logPath,
+        FAKE_NPM_STATE: statePath,
+      },
+    },
+  );
+
+  assert.deepEqual(JSON.parse(await readFile(statePath)), {
+    beta: currentVersion,
+    latest: currentVersion,
   });
-  const handleRequest = async (request, response) => {
-    let body = "";
-    for await (const chunk of request) body += chunk;
-    requests.push({
-      method: request.method,
-      url: request.url,
-      authorization: request.headers.authorization,
-      body,
-    });
+  const evidence = JSON.parse(await readFile(evidencePath));
+  assert.equal(evidence.status, "completed");
+  assert.deepEqual(
+    evidence.states.map(({ phase, beta, latest }) => ({ phase, beta, latest })),
+    [
+      {
+        phase: "published",
+        beta: currentVersion,
+        latest: lastKnownGoodVersion,
+      },
+      { phase: "promoted", beta: currentVersion, latest: currentVersion },
+      {
+        phase: "rolled-back",
+        beta: lastKnownGoodVersion,
+        latest: lastKnownGoodVersion,
+      },
+      { phase: "restored", beta: currentVersion, latest: currentVersion },
+    ],
+  );
+  assert.equal(evidence.auth, "interactive-npm-cli-2fa");
+  assert.equal(evidence.accountRecovery.confirmed, true);
+  assert.equal(evidence.registryReleaseRunId, registryReleaseRunId);
+  assert.equal(evidence.npmActor, npmActor);
+  assert.doesNotMatch(JSON.stringify(evidence), /token|recovery code/i);
+
+  await writeFile(
+    statePath,
+    JSON.stringify({ beta: currentVersion, latest: lastKnownGoodVersion }),
+  );
+  await assert.rejects(
+    execute(
+      process.execPath,
+      [
+        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
+          .pathname,
+        "--package",
+        "@terminalzero/lemonsqueezy",
+        "--current-version",
+        currentVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
+        "--source-commit",
+        sourceCommit,
+        "--artifact-sha256",
+        artifactSha256,
+        "--registry-release-run-id",
+        registryReleaseRunId,
+        "--npm-actor",
+        npmActor,
+        "--account-recovery-confirmed",
+        "--npm-command",
+        npmPath,
+        "--npm-userconfig",
+        npmUserconfig,
+        "--evidence",
+        join(evidenceDirectory, "failed.json"),
+      ],
+      {
+        env: {
+          ...process.env,
+          FAKE_NPM_FAIL_MARKER: join(evidenceDirectory, "failed-once"),
+          FAKE_NPM_FAIL_SPEC: `@terminalzero/lemonsqueezy@${lastKnownGoodVersion}`,
+          FAKE_NPM_LOG: logPath,
+          FAKE_NPM_STATE: statePath,
+        },
+      },
+    ),
+  );
+  assert.deepEqual(JSON.parse(await readFile(statePath)), {
+    beta: currentVersion,
+    latest: currentVersion,
+  });
+  const failedEvidence = JSON.parse(
+    await readFile(join(evidenceDirectory, "failed.json")),
+  );
+  assert.equal(failedEvidence.status, "failed");
+  assert.equal(failedEvidence.states.at(-1).phase, "restored-after-failure");
+
+  await writeFile(
+    statePath,
+    JSON.stringify({ beta: currentVersion, latest: lastKnownGoodVersion }),
+  );
+  const signalEvidencePath = join(evidenceDirectory, "signal.json");
+  await assert.rejects(
+    execute(
+      process.execPath,
+      [
+        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
+          .pathname,
+        "--package",
+        "@terminalzero/lemonsqueezy",
+        "--current-version",
+        currentVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
+        "--source-commit",
+        sourceCommit,
+        "--artifact-sha256",
+        artifactSha256,
+        "--registry-release-run-id",
+        registryReleaseRunId,
+        "--npm-actor",
+        npmActor,
+        "--account-recovery-confirmed",
+        "--npm-command",
+        npmPath,
+        "--npm-userconfig",
+        npmUserconfig,
+        "--evidence",
+        signalEvidencePath,
+      ],
+      {
+        env: {
+          ...process.env,
+          FAKE_NPM_LOG: logPath,
+          FAKE_NPM_SIGNAL_MARKER: join(evidenceDirectory, "signalled-once"),
+          FAKE_NPM_SIGNAL_SPEC: `@terminalzero/lemonsqueezy@${lastKnownGoodVersion}`,
+          FAKE_NPM_STATE: statePath,
+        },
+      },
+    ),
+    /interrupted by SIGINT/,
+  );
+  assert.deepEqual(JSON.parse(await readFile(statePath)), {
+    beta: currentVersion,
+    latest: currentVersion,
+  });
+  const signalEvidence = JSON.parse(await readFile(signalEvidencePath));
+  assert.equal(signalEvidence.status, "failed");
+  assert.equal(signalEvidence.states.at(-1).phase, "restored-after-failure");
+
+  const server = createServer((request, response) => {
     response.setHeader("content-type", "application/json");
+    if (request.url === "/-/package/%40terminalzero%2Flemonsqueezy/dist-tags") {
+      response.end(
+        JSON.stringify({ beta: currentVersion, latest: currentVersion }),
+      );
+      return;
+    }
+    if (request.url === "/%40terminalzero%2Flemonsqueezy") {
+      response.end(JSON.stringify({ maintainers: [{ name: npmActor }] }));
+      return;
+    }
     if (
       request.url ===
-      "/-/npm/v1/oidc/token/exchange/package/%40terminalzero%2Flemonsqueezy"
+      "/repos/terminalzero-dev/lemonsqueezy.js/issues/comments/123456"
     ) {
-      response.statusCode = 201;
-      response.end(JSON.stringify({ token: "short-lived-registry-token" }));
-      return;
-    }
-    const match = request.url.match(
-      /^\/-\/package\/%40terminalzero%2Flemonsqueezy\/dist-tags(?:\/(beta|latest))?$/,
-    );
-    assert.ok(match, `unexpected registry request ${request.url}`);
-    if (request.method === "PUT") {
-      assert.equal(
-        request.headers.authorization,
-        "Bearer short-lived-registry-token",
+      response.end(
+        JSON.stringify({
+          id: 123456,
+          html_url:
+            "https://github.com/terminalzero-dev/lemonsqueezy.js/issues/35#issuecomment-123456",
+          issue_url: `${origin}/repos/terminalzero-dev/lemonsqueezy.js/issues/35`,
+          user: { login: "release-maintainer" },
+          body: `Interactive dist-tag evidence\n\n\`\`\`json\n${JSON.stringify(evidence)}\n\`\`\``,
+        }),
       );
-      tags[match[1]] = JSON.parse(body);
-      response.end(JSON.stringify({}));
       return;
     }
-    response.end(JSON.stringify(tags));
-  };
+    if (
+      request.url ===
+      `/repos/terminalzero-dev/lemonsqueezy.js/actions/runs/${registryReleaseRunId}`
+    ) {
+      response.end(
+        JSON.stringify({
+          id: Number(registryReleaseRunId),
+          name: "Registry Release",
+          path: ".github/workflows/registry-release.yml",
+          event: "workflow_dispatch",
+          conclusion: "success",
+          head_sha: sourceCommit,
+          head_branch: "release/v5-beta",
+        }),
+      );
+      return;
+    }
+    if (
+      request.url ===
+      `/repos/terminalzero-dev/lemonsqueezy.js/actions/runs/${registryReleaseRunId}/artifacts`
+    ) {
+      response.end(
+        JSON.stringify({
+          artifacts: [
+            {
+              name: `registry-release-verified-${currentVersion}-${artifactSha256}`,
+              expired: false,
+            },
+          ],
+        }),
+      );
+      return;
+    }
+    response.statusCode = 404;
+    response.end(JSON.stringify({ error: "not found" }));
+  });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
-  const registry = `http://127.0.0.1:${server.address().port}`;
+  const origin = `http://127.0.0.1:${server.address().port}`;
 
   try {
-    await execute(
-      process.execPath,
-      [
-        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
-          .pathname,
-        "probe",
-        "--package",
-        "@terminalzero/lemonsqueezy",
-        "--current-version",
-        currentVersion,
-        "--last-known-good-version",
-        lastKnownGoodVersion,
-        "--registry",
-        registry,
-        "--evidence",
-        join(evidenceDirectory, "probe.json"),
-      ],
-      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
-    );
-    assert.deepEqual(tags, {
-      beta: lastKnownGoodVersion,
-      latest: lastKnownGoodVersion,
-    });
-
-    tags.beta = currentVersion;
-    await execute(
-      process.execPath,
-      [
-        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
-          .pathname,
-        "promote",
-        "--package",
-        "@terminalzero/lemonsqueezy",
-        "--current-version",
-        currentVersion,
-        "--last-known-good-version",
-        lastKnownGoodVersion,
-        "--registry",
-        registry,
-        "--evidence",
-        join(evidenceDirectory, "promotion.json"),
-      ],
-      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
-    );
-    assert.deepEqual(tags, {
-      beta: currentVersion,
-      latest: currentVersion,
-    });
-
-    await execute(
-      process.execPath,
-      [
-        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
-          .pathname,
-        "rollback",
-        "--package",
-        "@terminalzero/lemonsqueezy",
-        "--current-version",
-        currentVersion,
-        "--last-known-good-version",
-        lastKnownGoodVersion,
-        "--registry",
-        registry,
-        "--evidence",
-        join(evidenceDirectory, "rollback.json"),
-      ],
-      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
-    );
+    await execute(process.execPath, [
+      new URL("../../scripts/verify-dist-tag-evidence.mjs", import.meta.url)
+        .pathname,
+      "--comment-id",
+      "123456",
+      "--issue",
+      "35",
+      "--expected-author",
+      "release-maintainer",
+      "--package",
+      "@terminalzero/lemonsqueezy",
+      "--current-version",
+      currentVersion,
+      "--last-known-good-version",
+      lastKnownGoodVersion,
+      "--source-commit",
+      sourceCommit,
+      "--artifact-sha256",
+      artifactSha256,
+      "--repository",
+      "terminalzero-dev/lemonsqueezy.js",
+      "--registry",
+      origin,
+      "--github-api",
+      origin,
+      "--output",
+      join(evidenceDirectory, "verified.json"),
+    ]);
   } finally {
     server.close();
     await once(server, "close");
   }
-
-  assert.deepEqual(tags, {
+  const verified = JSON.parse(
+    await readFile(join(evidenceDirectory, "verified.json")),
+  );
+  assert.equal(verified.github.commentId, "123456");
+  assert.equal(verified.github.author, "release-maintainer");
+  assert.equal(verified.verifiedRegistryReleaseRunId, registryReleaseRunId);
+  assert.deepEqual(verified.verifiedTags, {
     beta: currentVersion,
     latest: currentVersion,
   });
-  const rollback = JSON.parse(
-    await readFile(join(evidenceDirectory, "rollback.json")),
-  );
-  assert.deepEqual(rollback.states, [
-    { beta: currentVersion, latest: currentVersion },
-    { beta: lastKnownGoodVersion, latest: lastKnownGoodVersion },
-    { beta: currentVersion, latest: currentVersion },
-  ]);
-  assert.equal(rollback.auth, "oidc-trusted-publishing");
-  assert.doesNotMatch(
-    JSON.stringify(rollback),
-    /test-oidc-token|registry-token/,
-  );
-  assert.ok(
-    requests.some(
-      ({ authorization }) => authorization === "Bearer test-oidc-token",
-    ),
-  );
 });
 
 void test("manual Release Candidates reuse one artifact without registry mutation", () => {
@@ -689,8 +876,9 @@ void test("manual Release Candidates reuse one artifact without registry mutatio
   }
 });
 
-void test("protected OIDC release publishes, verifies, rolls back, and only then finalizes", () => {
+void test("OIDC publish waits for verified interactive dist-tag evidence before finalization", () => {
   const workflow = readRootText(".github/workflows/registry-release.yml");
+  const wizard = readRootText("scripts/release-dist-tags-wizard.sh");
 
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /candidate_run_id:/);
@@ -698,6 +886,7 @@ void test("protected OIDC release publishes, verifies, rolls back, and only then
   assert.match(workflow, /expected_commit:/);
   assert.match(workflow, /expected_sha256:/);
   assert.match(workflow, /last_known_good_version:/);
+  assert.match(workflow, /dist_tag_evidence_comment_id:/);
   assert.match(workflow, /group: v5-release/);
   assert.match(workflow, /cancel-in-progress: false/);
   assert.match(workflow, /github\.actor == vars\.RELEASE_MAINTAINER/);
@@ -711,20 +900,20 @@ void test("protected OIDC release publishes, verifies, rolls back, and only then
     /publish:[\s\S]*needs: stage[\s\S]*environment: npm-release[\s\S]*permissions:\n\s+contents: read\n\s+id-token: write/,
   );
   assert.doesNotMatch(
-    workflow.match(/publish:[\s\S]*?\n  promote:/)?.[0] ?? "",
+    workflow.match(/publish:[\s\S]*?\n  verify:/)?.[0] ?? "",
     /actions: read|contents: write/,
   );
   assert.match(
     workflow,
-    /verify:[\s\S]*needs: promote[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
+    /verify:[\s\S]*needs: publish[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
   );
   assert.match(
     workflow,
-    /rollback:[\s\S]*needs: verify[\s\S]*environment: npm-release[\s\S]*id-token: write/,
+    /manual_evidence:[\s\S]*needs: verify[\s\S]*issues: read/,
   );
   assert.match(
     workflow,
-    /tag:[\s\S]*needs: rollback[\s\S]*permissions:\n\s+contents: read/,
+    /tag:[\s\S]*needs: manual_evidence[\s\S]*permissions:\n\s+contents: read/,
   );
   assert.match(
     workflow,
@@ -740,9 +929,24 @@ void test("protected OIDC release publishes, verifies, rolls back, and only then
     /pnpm publish "\$tarball" --tag beta --access public --provenance --no-git-checks/,
   );
   assert.match(workflow, /npm audit signatures --json --include-attestations/);
-  assert.match(workflow, /exercise-dist-tags\.mjs promote/);
-  assert.match(workflow, /exercise-dist-tags\.mjs probe/);
-  assert.match(workflow, /exercise-dist-tags\.mjs rollback/);
+  assert.match(workflow, /verify-dist-tag-evidence\.mjs/);
+  assert.match(workflow, /--expected-beta-version "\$EXPECTED_VERSION"/);
+  assert.match(
+    workflow,
+    /--expected-latest-version "\$EXPECTED_LATEST_VERSION"/,
+  );
+  assert.match(workflow, /dist-tag-interactive-evidence\.json/);
+  assert.doesNotMatch(
+    workflow,
+    /exercise-dist-tags\.mjs|oidc\/token\/exchange/,
+  );
+  assert.match(workflow, /inputs\.resume_published == true/);
+  assert.match(wizard, /REGISTRY_RELEASE_RUN_ID/);
+  assert.match(wizard, /registry-release-verified-/);
+  assert.match(wizard, /NPM_CONFIG_USERCONFIG="\$WIZARD_TEMP\/npmrc"/);
+  assert.match(wizard, /npm login --auth-type=web --registry="\$REGISTRY_URL"/);
+  assert.match(wizard, /https:\/\/registry\.npmjs\.org\//);
+  assert.match(wizard, /\.artifacts\/manual-dist-tag/);
   assert.match(workflow, /PACKAGE_SMOKE_SPEC/);
   assert.match(
     workflow,
@@ -1228,8 +1432,8 @@ void test("beta.2 records recoverable release and Stable Readiness evidence", ()
   assert.match(operations, /never\s+republish/i);
   assert.match(operations, /latest.*beta.*5\.0\.0-beta\.1/is);
   assert.match(operations, /latest.*beta.*5\.0\.0-beta\.2/is);
-  assert.match(operations, /dist-tag-rollback-evidence\.json/);
-  assert.match(operations, /dist-tag-auth-probe-evidence\.json/);
+  assert.match(operations, /dist-tag-interactive-evidence\.json/);
+  assert.match(operations, /npm login --auth-type=web/);
   assert.match(operations, /provenance-audit\.json/);
   assert.match(operations, /account recovery/i);
   assert.doesNotMatch(operations, /NPM_TOKEN|NODE_AUTH_TOKEN|recovery code:/i);

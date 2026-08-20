@@ -1,233 +1,228 @@
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 
-const { positionals, values } = parseArgs({
-  allowPositionals: true,
+const { values } = parseArgs({
   options: {
     package: { type: "string" },
     "current-version": { type: "string" },
     "last-known-good-version": { type: "string" },
+    "source-commit": { type: "string" },
+    "artifact-sha256": { type: "string" },
+    "registry-release-run-id": { type: "string" },
+    "npm-actor": { type: "string" },
+    "account-recovery-confirmed": { type: "boolean", default: false },
     registry: {
       type: "string",
-      default: process.env.npm_config_registry ?? "https://registry.npmjs.org",
+      default: "https://registry.npmjs.org/",
     },
     evidence: { type: "string" },
+    "npm-command": { type: "string", default: "npm" },
+    "npm-userconfig": { type: "string" },
   },
   strict: true,
 });
 
-const [mode] = positionals;
-assert.match(mode ?? "", /^(?:probe|promote|rollback)$/);
 for (const name of [
   "package",
   "current-version",
   "last-known-good-version",
+  "source-commit",
+  "artifact-sha256",
+  "registry-release-run-id",
+  "npm-actor",
   "evidence",
+  "npm-userconfig",
 ]) {
   assert.ok(values[name]?.trim(), `Missing --${name}`);
 }
 assert.notEqual(values["current-version"], values["last-known-good-version"]);
-
-const registry = new URL(
-  values.registry.endsWith("/") ? values.registry : `${values.registry}/`,
+assert.match(values["source-commit"], /^[0-9a-f]{40}$/);
+assert.match(values["artifact-sha256"], /^[0-9a-f]{64}$/);
+assert.match(values["registry-release-run-id"], /^[1-9][0-9]*$/);
+assert.match(values["npm-actor"], /^[A-Za-z0-9_-]+$/);
+assert.equal(
+  values["account-recovery-confirmed"],
+  true,
+  "Account recovery availability must be confirmed without recording recovery material",
 );
-const packagePath = encodeURIComponent(values.package);
-const tagsUrl = new URL(`-/package/${packagePath}/dist-tags`, registry);
+assert.equal(process.env.NPM_TOKEN, undefined, "NPM_TOKEN is not allowed");
+assert.equal(
+  process.env.NODE_AUTH_TOKEN,
+  undefined,
+  "NODE_AUTH_TOKEN is not allowed",
+);
+const registry = new URL(values.registry);
+assert.equal(
+  registry.origin,
+  "https://registry.npmjs.org",
+  "dist-tag drill is pinned to the public npm registry",
+);
+assert.equal(registry.pathname, "/");
+
 const states = [];
 const timeline = [];
-let registryToken;
+const accountRecoveryAt = new Date().toISOString();
 let mutationStarted = false;
-let probeInitial;
+let interruptedSignal;
+let recovering = false;
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => {
+    interruptedSignal ??= signal;
+  });
+}
 
 try {
-  const initial = await readTags();
-  states.push(recommendedTags(initial));
-  if (mode === "probe") {
-    probeInitial = recommendedTags(initial);
-    const allowedStates = [
-      {
-        beta: values["last-known-good-version"],
-        latest: values["last-known-good-version"],
-      },
-      {
-        beta: values["current-version"],
-        latest: values["last-known-good-version"],
-      },
-      {
-        beta: values["current-version"],
-        latest: values["current-version"],
-      },
-    ];
-    assert.ok(
-      allowedStates.some(
-        (state) => JSON.stringify(state) === JSON.stringify(probeInitial),
-      ),
-      "recommended tags are outside the recoverable release states",
-    );
-    registryToken = await exchangeOidcToken();
-    mutationStarted = true;
-    await setTag("latest", initial.latest);
-    const unchanged = await readTags();
-    assertTags(unchanged, probeInitial);
-    states.push(recommendedTags(unchanged));
-  } else if (mode === "promote") {
-    assert.equal(initial.beta, values["current-version"]);
-    assert.ok(
-      [values["last-known-good-version"], values["current-version"]].includes(
-        initial.latest,
-      ),
-      "latest is neither the Last Known Good nor current verified version",
-    );
-    if (initial.latest !== values["current-version"]) {
-      registryToken = await exchangeOidcToken();
-      mutationStarted = true;
-      await setTag("latest", values["current-version"]);
-      const promoted = await readTags();
-      assertTags(promoted, {
+  await recordState("published", {
+    beta: values["current-version"],
+    latest: values["last-known-good-version"],
+  });
+
+  mutationStarted = true;
+  await setTag("latest", values["current-version"]);
+  await recordState("promoted", {
+    beta: values["current-version"],
+    latest: values["current-version"],
+  });
+
+  await setTag("latest", values["last-known-good-version"]);
+  await setTag("beta", values["last-known-good-version"]);
+  await recordState("rolled-back", {
+    beta: values["last-known-good-version"],
+    latest: values["last-known-good-version"],
+  });
+
+  await setTag("beta", values["current-version"]);
+  await setTag("latest", values["current-version"]);
+  await recordState("restored", {
+    beta: values["current-version"],
+    latest: values["current-version"],
+  });
+} catch (error) {
+  recovering = true;
+  if (mutationStarted) {
+    try {
+      await restoreCurrent();
+      await recordState("restored-after-failure", {
         beta: values["current-version"],
         latest: values["current-version"],
       });
-      states.push(recommendedTags(promoted));
+    } catch (recoveryError) {
+      await writeEvidence("failed");
+      throw new AggregateError(
+        [error, recoveryError],
+        "dist-tag drill failed and automatic restore also failed",
+      );
     }
-  } else {
-    assertTags(initial, {
-      beta: values["current-version"],
-      latest: values["current-version"],
-    });
-    registryToken = await exchangeOidcToken();
-    mutationStarted = true;
-    await setTag("latest", values["last-known-good-version"]);
-    await setTag("beta", values["last-known-good-version"]);
-    const rolledBack = await readTags();
-    assertTags(rolledBack, {
-      beta: values["last-known-good-version"],
-      latest: values["last-known-good-version"],
-    });
-    states.push(recommendedTags(rolledBack));
-
-    await setTag("beta", values["current-version"]);
-    await setTag("latest", values["current-version"]);
-    const restored = await readTags();
-    assertTags(restored, {
-      beta: values["current-version"],
-      latest: values["current-version"],
-    });
-    states.push(recommendedTags(restored));
   }
-} catch (error) {
-  if (mutationStarted && registryToken) {
-    const recoveryTags =
-      mode === "probe"
-        ? probeInitial
-        : {
-            beta: values["current-version"],
-            latest: values["current-version"],
-          };
-    await restoreTags(recoveryTags).catch(() => {});
-  }
+  await writeEvidence("failed");
   throw error;
 }
 
-await writeFile(
-  values.evidence,
-  `${JSON.stringify(
-    {
-      schemaVersion: 1,
-      package: values.package,
-      mode,
-      currentVersion: values["current-version"],
-      lastKnownGoodVersion: values["last-known-good-version"],
-      auth: "oidc-trusted-publishing",
-      states,
-      timeline,
-    },
-    null,
-    2,
-  )}\n`,
-);
-console.log(
-  `${mode === "probe" ? "Probed" : mode === "promote" ? "Promoted" : "Rolled back and restored"} ${values.package} dist-tags.`,
-);
+await writeEvidence("completed");
+console.log(`Exercised and restored ${values.package} dist-tags.`);
 
-async function exchangeOidcToken() {
-  const idToken = await readIdToken();
-  const response = await fetch(
-    new URL(`-/npm/v1/oidc/token/exchange/package/${packagePath}`, registry),
-    {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        authorization: `Bearer ${idToken}`,
-      },
+async function writeEvidence(status) {
+  const evidence = {
+    schemaVersion: 1,
+    status,
+    package: values.package,
+    currentVersion: values["current-version"],
+    lastKnownGoodVersion: values["last-known-good-version"],
+    sourceCommit: values["source-commit"],
+    artifactSha256: values["artifact-sha256"],
+    registryReleaseRunId: values["registry-release-run-id"],
+    npmActor: values["npm-actor"],
+    auth: "interactive-npm-cli-2fa",
+    accountRecovery: {
+      confirmed: true,
+      at: accountRecoveryAt,
     },
-  );
-  assert.ok(response.ok, `npm OIDC exchange returned ${response.status}`);
-  const body = await response.json();
-  assert.ok(body.token, "npm OIDC exchange omitted its short-lived token");
-  return body.token;
+    states,
+    timeline,
+  };
+  await mkdir(dirname(values.evidence), { recursive: true });
+  await writeFile(values.evidence, `${JSON.stringify(evidence, null, 2)}\n`);
 }
 
-async function readIdToken() {
-  if (process.env.NPM_ID_TOKEN) return process.env.NPM_ID_TOKEN;
-  assert.ok(
-    process.env.ACTIONS_ID_TOKEN_REQUEST_URL &&
-      process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN,
-    "GitHub OIDC environment is unavailable",
-  );
-  const url = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
-  url.searchParams.set("audience", `npm:${registry.hostname}`);
-  const response = await fetch(url, {
-    headers: {
-      accept: "application/json",
-      authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
+function runNpm(args, stdio) {
+  throwIfInterrupted();
+  const result = spawnSync(values["npm-command"], args, {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      NPM_CONFIG_USERCONFIG: values["npm-userconfig"],
     },
+    stdio,
   });
+  interruptedSignal ??=
+    result.signal ??
+    (result.status === 130
+      ? "SIGINT"
+      : result.status === 143
+        ? "SIGTERM"
+        : undefined);
+  throwIfInterrupted();
   assert.equal(
-    response.status,
-    200,
-    `GitHub OIDC request returned ${response.status}`,
+    result.status,
+    0,
+    `npm ${args.slice(0, 2).join(" ")} failed${result.stderr ? `: ${result.stderr.trim()}` : ""}`,
   );
-  const body = await response.json();
-  assert.ok(body.value, "GitHub OIDC response omitted its ID token");
-  return body.value;
+  return result.stdout;
+}
+
+function throwIfInterrupted() {
+  if (interruptedSignal && !recovering) {
+    throw new Error(`dist-tag drill interrupted by ${interruptedSignal}`);
+  }
 }
 
 async function readTags() {
-  const response = await fetch(tagsUrl, { redirect: "error" });
-  assert.equal(
-    response.status,
-    200,
-    `npm dist-tags returned ${response.status}`,
+  const stdout = runNpm(
+    [
+      "view",
+      values.package,
+      "dist-tags",
+      "--json",
+      `--registry=${values.registry}`,
+    ],
+    ["ignore", "pipe", "pipe"],
   );
-  return response.json();
+  return JSON.parse(stdout);
 }
 
 async function setTag(tag, version) {
-  const response = await fetch(new URL(`${tagsUrl.href}/${tag}`), {
-    method: "PUT",
-    headers: {
-      authorization: `Bearer ${registryToken}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(version),
-    redirect: "error",
-  });
-  assert.ok(response.ok, `npm ${tag} update returned ${response.status}`);
+  runNpm(
+    [
+      "dist-tag",
+      "add",
+      `${values.package}@${version}`,
+      tag,
+      `--registry=${values.registry}`,
+    ],
+    "inherit",
+  );
   timeline.push({ tag, version, at: new Date().toISOString() });
 }
 
-async function restoreTags(tags) {
-  await setTag("beta", tags.beta);
-  await setTag("latest", tags.latest);
-  const restored = await readTags();
-  assertTags(restored, tags);
+async function recordState(phase, expected) {
+  const actual = recommendedTags(await readTags());
+  assert.deepEqual(actual, expected, `${phase} dist-tags do not match`);
+  states.push({ phase, ...actual, at: new Date().toISOString() });
+}
+
+async function restoreCurrent() {
+  await setTag("beta", values["current-version"]);
+  await setTag("latest", values["current-version"]);
+  const restored = recommendedTags(await readTags());
+  assert.deepEqual(restored, {
+    beta: values["current-version"],
+    latest: values["current-version"],
+  });
 }
 
 function recommendedTags(tags) {
   return { beta: tags.beta, latest: tags.latest };
-}
-
-function assertTags(actual, expected) {
-  assert.deepEqual(recommendedTags(actual), expected);
 }

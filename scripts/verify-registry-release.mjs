@@ -14,10 +14,12 @@ const { values } = parseArgs({
     "expected-commit": { type: "string" },
     "expected-sha256": { type: "string" },
     "expected-run-id": { type: "string" },
+    "expected-beta-version": { type: "string" },
+    "expected-latest-version": { type: "string" },
     repository: { type: "string" },
     registry: {
       type: "string",
-      default: process.env.npm_config_registry ?? "https://registry.npmjs.org",
+      default: "https://registry.npmjs.org/",
     },
     "github-api": {
       type: "string",
@@ -33,6 +35,8 @@ for (const name of [
   "expected-commit",
   "expected-sha256",
   "expected-run-id",
+  "expected-beta-version",
+  "expected-latest-version",
   "repository",
   "provenance-evidence",
 ]) {
@@ -153,12 +157,8 @@ assert.equal(
   `registry dist-tags returned HTTP ${distTagsResponse.status}`,
 );
 const distTags = await distTagsResponse.json();
-assert.equal(distTags.beta, candidate.version);
-assert.equal(
-  distTags.latest,
-  candidate.version,
-  "latest must resolve to the current recommended Candidate",
-);
+assert.equal(distTags.beta, values["expected-beta-version"]);
+assert.equal(distTags.latest, values["expected-latest-version"]);
 
 const provenance = verifyProvenance(
   JSON.parse(await readFile(resolve(root, values["provenance-evidence"]))),
