@@ -15,6 +15,10 @@ assert.match(
 const { consumerDirectory } = await prepareConsumer("test-mode-reaper");
 const reaper = join(consumerDirectory, "reaper.mjs");
 await cp(join(root, "test/integration/reaper.mjs"), reaper);
+await cp(
+  join(root, "test/integration/reaper-core.mjs"),
+  join(consumerDirectory, "reaper-core.mjs"),
+);
 run(process.execPath, [reaper], {
   cwd: consumerDirectory,
   env: {

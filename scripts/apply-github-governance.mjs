@@ -3,6 +3,11 @@ import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
+import {
+  assertReleaseIdentitySecret,
+  resolveRulesetBypassActors,
+  selectReleaseActionsIntegration,
+} from "./lib/github-governance.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const { values } = parseArgs({
@@ -29,15 +34,19 @@ if (values["dry-run"]) {
 const repositoryPath = `repos/${values.repository}`;
 const [owner, repository] = values.repository.split("/");
 const releaseIdentityTeam = ensureReleaseIdentityTeam();
+const releaseActionsIntegration = ensureReleaseActionsIntegration();
+ensureReleaseIdentitySecret();
 const existingRulesets = request("GET", `${repositoryPath}/rulesets`);
 const appliedRulesetSpecifications = [];
 for (const desired of governance.rulesets) {
   const specification = structuredClone(desired);
-  for (const actor of specification.bypass_actors) {
-    if (actor.actor_id === "$releaseIdentityTeam") {
-      actor.actor_id = releaseIdentityTeam.id;
-    }
-  }
+  specification.bypass_actors = resolveRulesetBypassActors(
+    specification.bypass_actors,
+    {
+      releaseIdentityTeamId: releaseIdentityTeam.id,
+      releaseActionsIntegrationId: releaseActionsIntegration.id,
+    },
+  );
   const existing = existingRulesets.find(({ name }) => name === desired.name);
   const endpoint = existing
     ? `${repositoryPath}/rulesets/${existing.id}`
@@ -77,6 +86,9 @@ request(
   `${repositoryPath}/actions/permissions/workflow`,
   governance.workflowPermissions,
 );
+if (governance.immutableReleases) {
+  request("PUT", `${repositoryPath}/immutable-releases`);
+}
 const existingVariables = request(
   "GET",
   `${repositoryPath}/actions/variables?per_page=100`,
@@ -143,6 +155,11 @@ const workflowPermissions = request(
 );
 assert.equal(workflowPermissions.default_workflow_permissions, "read");
 assert.equal(workflowPermissions.can_approve_pull_request_reviews, false);
+const immutableReleases = request(
+  "GET",
+  `${repositoryPath}/immutable-releases`,
+);
+assert.equal(immutableReleases.enabled, governance.immutableReleases);
 for (const [name, value] of Object.entries(governance.variables)) {
   const variable = request(
     "GET",
@@ -217,6 +234,21 @@ function ensureReleaseIdentityTeam() {
     "release identity repository permission",
   );
   return team;
+}
+
+function ensureReleaseActionsIntegration() {
+  const desired = governance.releaseIdentity.actionsIntegration;
+  const integration = request("GET", `apps/${desired.slug}`);
+  return selectReleaseActionsIntegration(integration, desired, owner);
+}
+
+function ensureReleaseIdentitySecret() {
+  const desired = governance.releaseIdentity.actionsIntegration;
+  const secrets = request(
+    "GET",
+    `${repositoryPath}/environments/${encodeURIComponent(desired.environment)}/secrets?per_page=100`,
+  );
+  assertReleaseIdentitySecret(secrets.secrets, desired);
 }
 
 function request(method, endpoint, body) {

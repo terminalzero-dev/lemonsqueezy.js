@@ -30,11 +30,11 @@ pnpm check
 ```
 
 `pnpm check` builds twice to verify reproducibility, packs one Canonical Package
-Artifact, and runs Type Contract and Installed-package Smoke tests against that
-exact tarball. It does not require Lemon Squeezy credentials or network access
-to the Lemon Squeezy API. Package Smoke includes the Node/Bun runtime entries,
-TypeScript 5.4/current declarations, closed exports, module identity, and
-esbuild, Vite/Rollup, webpack, and Bun bundler graphs.
+Artifact, and runs Type Contract, documentation, and Installed-package Smoke
+tests against that exact tarball. It does not require Lemon Squeezy credentials
+or network access to the Lemon Squeezy API. Package Smoke includes the Node/Bun
+runtime entries, TypeScript 5.4/current declarations, closed exports, module
+identity, and esbuild, Vite/Rollup, webpack, and Bun bundler graphs.
 
 `pnpm test:integration` is reserved for a protected Test Mode environment. It
 requires `LEMON_SQUEEZY_API_KEY`, `LEMON_SQUEEZY_TEST_STORE_ID`,
@@ -58,6 +58,15 @@ pnpm report:contract-drift sanitized-observation.json
 
 The command prints a candidate-only report for human review. It cannot edit the
 Contract Catalog, public types, or serializers and omits opaque data values.
+
+`pnpm test:docs` is the Installed-package Documentation Contract. After the
+Canonical Package Artifact exists, it installs that exact tarball into an
+isolated consumer, compiles documented TypeScript examples, and runs
+credential-free example behavior on Node.js and Bun. It also checks catalog
+coverage for the 21 namespaces, 61 Client methods, 59 Compatibility facade
+functions, and 17 known webhook events, plus local links, official-reference
+links, and documentation safety. It does not start a documentation server,
+watcher, or real Lemon Squeezy request.
 
 ## Changes and releases
 

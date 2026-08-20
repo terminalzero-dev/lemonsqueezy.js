@@ -24,10 +24,10 @@ const storeListResponse = {
   },
   meta: {
     page: {
-      current_page: 2,
+      currentPage: 2,
       from: 2,
-      last_page: 2,
-      per_page: 1,
+      lastPage: 2,
+      perPage: 1,
       to: 2,
       total: 2,
     },
@@ -55,10 +55,10 @@ const productListResponse = {
   },
   meta: {
     page: {
-      current_page: 1,
+      currentPage: 1,
       from: 1,
-      last_page: 1,
-      per_page: 10,
+      lastPage: 1,
+      perPage: 10,
       to: 1,
       total: 1,
     },

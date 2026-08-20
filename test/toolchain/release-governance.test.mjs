@@ -1,18 +1,27 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync, verify } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { once } from "node:events";
 import { promisify } from "node:util";
 import { test } from "node:test";
+import {
+  assertReleaseIdentitySecret,
+  assertReleaseInstallation,
+  resolveRulesetBypassActors,
+  selectReleaseActionsIntegration,
+} from "../../scripts/lib/github-governance.mjs";
 
 const execute = promisify(execFile);
 const readRootText = (path) =>
   readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
 const packageJson = JSON.parse(readRootText("package.json"));
-const createPublishPlan = () =>
+const bootstrapVersion = "5.0.0-beta.1";
+const createPublishPlan = (version = packageJson.version) =>
   `${JSON.stringify(
     {
       version: 1,
@@ -21,7 +30,7 @@ const createPublishPlan = () =>
           {
             kind: "publish",
             name: "@terminalzero/lemonsqueezy",
-            version: packageJson.version,
+            version,
             access: "public",
             tag: "beta",
             tarball: {
@@ -247,7 +256,6 @@ void test("pre-publish verification rejects changed candidate bytes", async () =
       2,
     )}\n`,
   );
-
   await assert.rejects(
     execute(process.execPath, [
       new URL("../../scripts/verify-release-candidate.mjs", import.meta.url)
@@ -261,6 +269,382 @@ void test("pre-publish verification rejects changed candidate bytes", async () =
       "--skip-registry-check",
     ]),
     /candidate artifact SHA-256 changed/,
+  );
+});
+
+void test("post-publish verification binds registry bytes, provenance, and recommended tags to the Candidate", async () => {
+  const artifactDirectory = await mkdtemp(
+    join(tmpdir(), "lemonsqueezy-registry-verification-"),
+  );
+  await mkdir(join(artifactDirectory, "packages"));
+  const tarball = Buffer.from("canonical artifact");
+  await writeFile(join(artifactDirectory, "packages/candidate.tgz"), tarball);
+  await writeFile(
+    join(artifactDirectory, "artifact.json"),
+    `${JSON.stringify(
+      {
+        file: "packages/candidate.tgz",
+        sha256: createHash("sha256").update(tarball).digest("hex"),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  const publishPlan = createPublishPlan(bootstrapVersion);
+  await writeFile(join(artifactDirectory, "publish-plan.json"), publishPlan);
+  const sha256 = createHash("sha256").update(tarball).digest("hex");
+  const integrity = `sha512-${createHash("sha512").update(tarball).digest("base64")}`;
+  await writeFile(
+    join(artifactDirectory, "candidate.json"),
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        package: "@terminalzero/lemonsqueezy",
+        version: bootstrapVersion,
+        sourceCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        artifact: {
+          file: "packages/candidate.tgz",
+          sha256,
+          sha512: createHash("sha512").update(tarball).digest("hex"),
+          integrity,
+        },
+        publishPlan: {
+          file: "publish-plan.json",
+          sha256: createHash("sha256").update(publishPlan).digest("hex"),
+        },
+        gates: {
+          credentialFree: "passed",
+          runtimeMatrix: "passed",
+          testMode: "passed",
+        },
+        workflow: {
+          repository: "terminalzero-dev/lemonsqueezy.js",
+          runId: "12345",
+          runAttempt: "2",
+          workflowRef:
+            "terminalzero-dev/lemonsqueezy.js/.github/workflows/release-candidate.yml@refs/heads/release/v5-beta",
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const provenanceStatement = {
+    _type: "https://in-toto.io/Statement/v1",
+    subject: [
+      {
+        name: `pkg:npm/%40terminalzero/lemonsqueezy@${bootstrapVersion}`,
+        digest: {
+          sha512: createHash("sha512").update(tarball).digest("hex"),
+        },
+      },
+    ],
+    predicateType: "https://slsa.dev/provenance/v1",
+    predicate: {
+      buildDefinition: {
+        externalParameters: {
+          workflow: {
+            ref: "refs/heads/release/v5-beta",
+            repository: "https://github.com/terminalzero-dev/lemonsqueezy.js",
+            path: ".github/workflows/registry-release.yml",
+          },
+        },
+        resolvedDependencies: [
+          {
+            uri: "git+https://github.com/terminalzero-dev/lemonsqueezy.js@refs/heads/release/v5-beta",
+            digest: {
+              gitCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            },
+          },
+        ],
+      },
+      runDetails: {
+        builder: {
+          id: "https://github.com/actions/runner/github-hosted",
+        },
+      },
+    },
+  };
+  const provenanceEvidence = join(artifactDirectory, "provenance-audit.json");
+  await writeFile(
+    provenanceEvidence,
+    `${JSON.stringify(
+      {
+        invalid: [],
+        missing: [],
+        verified: [
+          {
+            name: "@terminalzero/lemonsqueezy",
+            version: bootstrapVersion,
+            attestations: {
+              provenance: {
+                predicateType: "https://slsa.dev/provenance/v1",
+              },
+            },
+            attestationBundles: [
+              {
+                predicateType: "https://slsa.dev/provenance/v1",
+                bundle: {
+                  dsseEnvelope: {
+                    payload: Buffer.from(
+                      JSON.stringify(provenanceStatement),
+                    ).toString("base64"),
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const server = createServer((request, response) => {
+    if (request.url === "/tarball.tgz") {
+      response.end(tarball);
+      return;
+    }
+    if (request.url === "/-/package/%40terminalzero%2Flemonsqueezy/dist-tags") {
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({ beta: bootstrapVersion, latest: bootstrapVersion }),
+      );
+      return;
+    }
+    if (
+      request.url ===
+      "/repos/terminalzero-dev/lemonsqueezy.js/actions/runs/12345"
+    ) {
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({
+          id: 12345,
+          name: "Release Candidate",
+          path: ".github/workflows/release-candidate.yml",
+          event: "workflow_dispatch",
+          status: "completed",
+          conclusion: "success",
+          head_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          head_branch: "release/v5-beta",
+        }),
+      );
+      return;
+    }
+    response.setHeader("content-type", "application/json");
+    response.end(
+      JSON.stringify({
+        name: "@terminalzero/lemonsqueezy",
+        version: bootstrapVersion,
+        dist: {
+          integrity,
+          tarball: `http://127.0.0.1:${server.address().port}/tarball.tgz`,
+        },
+      }),
+    );
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+
+  try {
+    await execute(process.execPath, [
+      new URL("../../scripts/verify-registry-release.mjs", import.meta.url)
+        .pathname,
+      "--artifact-directory",
+      artifactDirectory,
+      "--expected-version",
+      bootstrapVersion,
+      "--expected-commit",
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "--expected-sha256",
+      sha256,
+      "--expected-run-id",
+      "12345",
+      "--repository",
+      "terminalzero-dev/lemonsqueezy.js",
+      "--registry",
+      `http://127.0.0.1:${server.address().port}`,
+      "--github-api",
+      `http://127.0.0.1:${server.address().port}`,
+      "--provenance-evidence",
+      provenanceEvidence,
+    ]);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+
+  const evidence = JSON.parse(
+    await readFile(join(artifactDirectory, "registry-evidence.json")),
+  );
+  assert.equal(evidence.registry.integrity, integrity);
+  assert.equal(evidence.registry.downloadedSha256, sha256);
+  assert.deepEqual(evidence.registry.distTags, {
+    beta: bootstrapVersion,
+    latest: bootstrapVersion,
+  });
+  assert.deepEqual(evidence.registry.provenance, {
+    verified: true,
+    subject: `pkg:npm/%40terminalzero/lemonsqueezy@${bootstrapVersion}`,
+    sha512: createHash("sha512").update(tarball).digest("hex"),
+    repository: "https://github.com/terminalzero-dev/lemonsqueezy.js",
+    workflow: ".github/workflows/registry-release.yml",
+    ref: "refs/heads/release/v5-beta",
+    commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    builder: "https://github.com/actions/runner/github-hosted",
+  });
+});
+
+void test("OIDC dist-tag promotion and rollback restore both recommended tags", async () => {
+  const evidenceDirectory = await mkdtemp(
+    join(tmpdir(), "lemonsqueezy-dist-tag-drill-"),
+  );
+  const currentVersion = "5.0.0-beta.2";
+  const lastKnownGoodVersion = "5.0.0-beta.1";
+  const tags = {
+    beta: lastKnownGoodVersion,
+    latest: lastKnownGoodVersion,
+  };
+  const requests = [];
+  const server = createServer((request, response) => {
+    void handleRequest(request, response).catch((error) => {
+      response.statusCode = 500;
+      response.end(JSON.stringify({ error: String(error) }));
+    });
+  });
+  const handleRequest = async (request, response) => {
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    requests.push({
+      method: request.method,
+      url: request.url,
+      authorization: request.headers.authorization,
+      body,
+    });
+    response.setHeader("content-type", "application/json");
+    if (
+      request.url ===
+      "/-/npm/v1/oidc/token/exchange/package/%40terminalzero%2Flemonsqueezy"
+    ) {
+      response.end(JSON.stringify({ token: "short-lived-registry-token" }));
+      return;
+    }
+    const match = request.url.match(
+      /^\/-\/package\/%40terminalzero%2Flemonsqueezy\/dist-tags(?:\/(beta|latest))?$/,
+    );
+    assert.ok(match, `unexpected registry request ${request.url}`);
+    if (request.method === "PUT") {
+      assert.equal(
+        request.headers.authorization,
+        "Bearer short-lived-registry-token",
+      );
+      tags[match[1]] = JSON.parse(body);
+      response.end(JSON.stringify({}));
+      return;
+    }
+    response.end(JSON.stringify(tags));
+  };
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const registry = `http://127.0.0.1:${server.address().port}`;
+
+  try {
+    await execute(
+      process.execPath,
+      [
+        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
+          .pathname,
+        "probe",
+        "--package",
+        "@terminalzero/lemonsqueezy",
+        "--current-version",
+        currentVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
+        "--registry",
+        registry,
+        "--evidence",
+        join(evidenceDirectory, "probe.json"),
+      ],
+      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
+    );
+    assert.deepEqual(tags, {
+      beta: lastKnownGoodVersion,
+      latest: lastKnownGoodVersion,
+    });
+
+    tags.beta = currentVersion;
+    await execute(
+      process.execPath,
+      [
+        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
+          .pathname,
+        "promote",
+        "--package",
+        "@terminalzero/lemonsqueezy",
+        "--current-version",
+        currentVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
+        "--registry",
+        registry,
+        "--evidence",
+        join(evidenceDirectory, "promotion.json"),
+      ],
+      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
+    );
+    assert.deepEqual(tags, {
+      beta: currentVersion,
+      latest: currentVersion,
+    });
+
+    await execute(
+      process.execPath,
+      [
+        new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url)
+          .pathname,
+        "rollback",
+        "--package",
+        "@terminalzero/lemonsqueezy",
+        "--current-version",
+        currentVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
+        "--registry",
+        registry,
+        "--evidence",
+        join(evidenceDirectory, "rollback.json"),
+      ],
+      { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
+    );
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+
+  assert.deepEqual(tags, {
+    beta: currentVersion,
+    latest: currentVersion,
+  });
+  const rollback = JSON.parse(
+    await readFile(join(evidenceDirectory, "rollback.json")),
+  );
+  assert.deepEqual(rollback.states, [
+    { beta: currentVersion, latest: currentVersion },
+    { beta: lastKnownGoodVersion, latest: lastKnownGoodVersion },
+    { beta: currentVersion, latest: currentVersion },
+  ]);
+  assert.equal(rollback.auth, "oidc-trusted-publishing");
+  assert.doesNotMatch(
+    JSON.stringify(rollback),
+    /test-oidc-token|registry-token/,
+  );
+  assert.ok(
+    requests.some(
+      ({ authorization }) => authorization === "Bearer test-oidc-token",
+    ),
   );
 });
 
@@ -304,6 +688,153 @@ void test("manual Release Candidates reuse one artifact without registry mutatio
   }
 });
 
+void test("protected OIDC release publishes, verifies, rolls back, and only then finalizes", () => {
+  const workflow = readRootText(".github/workflows/registry-release.yml");
+
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /candidate_run_id:/);
+  assert.match(workflow, /expected_version:/);
+  assert.match(workflow, /expected_commit:/);
+  assert.match(workflow, /expected_sha256:/);
+  assert.match(workflow, /last_known_good_version:/);
+  assert.match(workflow, /group: v5-release/);
+  assert.match(workflow, /cancel-in-progress: false/);
+  assert.match(workflow, /github\.actor == vars\.RELEASE_MAINTAINER/);
+  assert.match(workflow, /environment: npm-release/);
+  assert.match(
+    workflow,
+    /stage:[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
+  );
+  assert.match(
+    workflow,
+    /publish:[\s\S]*needs: stage[\s\S]*environment: npm-release[\s\S]*permissions:\n\s+contents: read\n\s+id-token: write/,
+  );
+  assert.doesNotMatch(
+    workflow.match(/publish:[\s\S]*?\n  promote:/)?.[0] ?? "",
+    /actions: read|contents: write/,
+  );
+  assert.match(
+    workflow,
+    /verify:[\s\S]*needs: promote[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
+  );
+  assert.match(
+    workflow,
+    /rollback:[\s\S]*needs: verify[\s\S]*environment: npm-release[\s\S]*id-token: write/,
+  );
+  assert.match(
+    workflow,
+    /tag:[\s\S]*needs: rollback[\s\S]*permissions:\n\s+contents: read/,
+  );
+  assert.match(
+    workflow,
+    /finalize:[\s\S]*needs: tag[\s\S]*permissions:\n\s+actions: read\n\s+contents: write/,
+  );
+  assert.match(workflow, /contents: write/);
+  assert.match(workflow, /run-id: \$\{\{ inputs\.candidate_run_id \}\}/);
+  assert.match(workflow, /github-token: \$\{\{ github\.token \}\}/);
+  assert.match(workflow, /verify-registry-release\.mjs/);
+  assert.match(workflow, /verify-release-candidate\.mjs/);
+  assert.match(
+    workflow,
+    /pnpm publish "\$tarball" --tag beta --access public --provenance --no-git-checks/,
+  );
+  assert.match(workflow, /npm audit signatures --json --include-attestations/);
+  assert.match(workflow, /exercise-dist-tags\.mjs promote/);
+  assert.match(workflow, /exercise-dist-tags\.mjs probe/);
+  assert.match(workflow, /exercise-dist-tags\.mjs rollback/);
+  assert.match(workflow, /PACKAGE_SMOKE_SPEC/);
+  assert.match(
+    workflow,
+    /PACKAGE_SMOKE_SPEC: "\$\{\{ inputs\.expected_version \}\}"/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /PACKAGE_SMOKE_SPEC: "@terminalzero\/lemonsqueezy@/,
+  );
+  assert.match(workflow, /PACKAGE_SMOKE_EXPECTED_VERSION/);
+  assert.match(workflow, /run: pnpm test:package/);
+  assert.match(workflow, /gh release create/);
+  assert.match(workflow, /Create or verify the protected release tag/);
+  assert.match(workflow, /git push origin/);
+  assert.match(
+    workflow,
+    /if existing_tag_ref=\$\(gh api[\s\S]*tag_ref=\$existing_tag_ref[\s\S]*fi/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /git\/ref\/tags\/\$tag" 2>\/dev\/null \|\| true/,
+  );
+  assert.match(workflow, /actions\/create-github-app-token@[0-9a-f]{40}/);
+  assert.match(workflow, /RELEASE_GITHUB_APP_PRIVATE_KEY/);
+  assert.match(workflow, /RELEASE_GITHUB_APP_CLIENT_ID/);
+  assert.match(workflow, /permission-contents: write/);
+  assert.match(workflow, /permission-metadata: read/);
+  assert.match(workflow, /owner: \$\{\{ github\.repository_owner \}\}/);
+  assert.match(workflow, /steps\.audit-token\.outputs\.token/);
+  assert.match(workflow, /steps\.audit-token\.outputs\.installation-id/);
+  assert.match(workflow, /steps\.audit-token\.outputs\.app-slug/);
+  assert.match(workflow, /verify-release-installation\.mjs/);
+  assert.match(workflow, /persist-credentials: true/);
+  assert.match(
+    workflow,
+    /Checkout with the repository-only release identity[\s\S]*ref: \$\{\{ inputs\.expected_commit \}\}/,
+  );
+  assert.equal(workflow.match(/RELEASE_GITHUB_APP_PRIVATE_KEY/g)?.length, 4);
+  assert.equal(
+    workflow.match(/actions\/create-github-app-token@[0-9a-f]{40}/g)?.length,
+    2,
+  );
+  assert.match(
+    workflow,
+    /tag:[\s\S]*persist-credentials: true[\s\S]*finalize:[\s\S]*persist-credentials: false/,
+  );
+  assert.match(workflow, /--verify-tag/);
+  assert.match(workflow, /--target "\$EXPECTED_COMMIT"/);
+  assert.match(workflow, /--draft/);
+  assert.match(workflow, /--prerelease/);
+  assert.match(workflow, /--latest=false/);
+  assert.match(workflow, /Create or resume the draft prerelease/);
+  assert.match(workflow, /gh release upload/);
+  assert.match(workflow, /missing=\(\)/);
+  assert.match(workflow, /already_published/);
+  assert.match(workflow, /Verify every retained evidence asset byte/);
+  assert.match(workflow, /sha256sum/);
+  assert.match(workflow, /--provenance-evidence/);
+  assert.doesNotMatch(
+    workflow,
+    /NPM_TOKEN|NODE_AUTH_TOKEN|_authToken|pull_request_target/,
+  );
+
+  for (const [, reference] of workflow.matchAll(/uses: ([^\s]+)/g)) {
+    assert.match(reference, /@[0-9a-f]{40}$/);
+  }
+
+  const bootstrap = readRootText("docs/release/bootstrap-beta-1.md");
+  assert.match(bootstrap, /registry-release\.yml/);
+  assert.deepEqual(
+    JSON.parse(readRootText("docs/release/beta-1-candidate.json")),
+    {
+      schemaVersion: 1,
+      package: "@terminalzero/lemonsqueezy",
+      version: "5.0.0-beta.1",
+      sourceCommit: "adb3c2b02d511ed997752a5085dca361e61bb030",
+      sha256:
+        "5ed08363370dddfb5b81d0f1b5aca4a30335237e680078f1cc23a6bb699f4662",
+      sha512:
+        "2029ca7ceba203e894d91368791d3f8914a3866a83821946d6378dc334b2700ef7eafc334eb2cb32e51569c3da86cf475cdf6d7c68e88cc90874c81b8e15d4b4",
+      integrity:
+        "sha512-ICnKfOuiA+iU2RNoeR0/iRSjhmqDghlG1jeNwzSycA736vwzTrLLMuUVacPahs9HXN9tfGjojMkIdMgbjhXUtA==",
+      candidateRunId: "31786097596",
+    },
+  );
+  const packageSmoke = readRootText("scripts/test-package.mjs");
+  assert.match(packageSmoke, /PACKAGE_SMOKE_EXPECTED_VERSION/);
+  assert.match(
+    readRootText("scripts/lib/canonical-artifact.mjs"),
+    /PACKAGE_SMOKE_SPEC/,
+  );
+});
+
 void test("repository governance protects release refs without a review quorum", () => {
   const governance = JSON.parse(
     readRootText(".github/governance/repository.json"),
@@ -335,12 +866,24 @@ void test("repository governance protects release refs without a review quorum",
   assert.deepEqual(tagCreation.rules, [{ type: "creation" }]);
   assert.deepEqual(tagCreation.bypass_actors, [
     {
-      actor_id: "$releaseIdentityTeam",
-      actor_type: "Team",
+      actor_id: "$releaseActionsIntegration",
+      actor_type: "Integration",
       bypass_mode: "always",
     },
   ]);
   assert.deepEqual(governance.releaseIdentity, {
+    actionsIntegration: {
+      id: 4593139,
+      slug: "lemonsqueezy-v5-release",
+      clientId: "Iv23liKrkrIVKfLtmUk6",
+      installationId: 153681769,
+      environment: "npm-release",
+      privateKeySecret: "RELEASE_GITHUB_APP_PRIVATE_KEY",
+      permissions: { contents: "write", metadata: "read" },
+      events: [],
+      repositorySelection: "selected",
+      repositories: ["terminalzero-dev/lemonsqueezy.js"],
+    },
     team: {
       name: "v5-release-managers",
       slug: "v5-release-managers",
@@ -369,6 +912,262 @@ void test("repository governance protects release refs without a review quorum",
     "read",
   );
   assert.equal(governance.variables.RELEASE_MAINTAINER, "keyding");
+  assert.equal(
+    governance.variables.RELEASE_GITHUB_APP_CLIENT_ID,
+    "Iv23liKrkrIVKfLtmUk6",
+  );
+  assert.equal(governance.immutableReleases, true);
+  assert.match(
+    readRootText("scripts/apply-github-governance.mjs"),
+    /immutable-releases/,
+  );
+});
+
+void test("release governance pins and resolves its GitHub App identity", () => {
+  const desired = {
+    id: 4593139,
+    slug: "lemonsqueezy-v5-release",
+    clientId: "Iv23liKrkrIVKfLtmUk6",
+    installationId: 153681769,
+    environment: "npm-release",
+    privateKeySecret: "RELEASE_GITHUB_APP_PRIVATE_KEY",
+    permissions: { contents: "write", metadata: "read" },
+    events: [],
+    repositorySelection: "selected",
+    repositories: ["terminalzero-dev/lemonsqueezy.js"],
+  };
+  const integration = {
+    id: desired.id,
+    slug: desired.slug,
+    client_id: desired.clientId,
+    owner: { login: "terminalzero-dev" },
+    permissions: desired.permissions,
+    events: desired.events,
+  };
+
+  assert.equal(
+    selectReleaseActionsIntegration(integration, desired, "terminalzero-dev"),
+    integration,
+  );
+  assert.throws(
+    () =>
+      selectReleaseActionsIntegration(
+        { ...integration, client_id: "wrong" },
+        desired,
+        "terminalzero-dev",
+      ),
+    /client id/,
+  );
+  assert.throws(
+    () =>
+      selectReleaseActionsIntegration(
+        { ...integration, owner: { login: "another-owner" } },
+        desired,
+        "terminalzero-dev",
+      ),
+    /owner/,
+  );
+  assert.throws(
+    () =>
+      selectReleaseActionsIntegration(
+        { ...integration, permissions: { contents: "write" } },
+        desired,
+        "terminalzero-dev",
+      ),
+    /permissions/,
+  );
+  assert.deepEqual(
+    resolveRulesetBypassActors(
+      [
+        {
+          actor_id: "$releaseActionsIntegration",
+          actor_type: "Integration",
+          bypass_mode: "always",
+        },
+      ],
+      { releaseIdentityTeamId: 7, releaseActionsIntegrationId: desired.id },
+    ),
+    [
+      {
+        actor_id: desired.id,
+        actor_type: "Integration",
+        bypass_mode: "always",
+      },
+    ],
+  );
+  assert.doesNotThrow(() =>
+    assertReleaseIdentitySecret(
+      [{ name: "RELEASE_GITHUB_APP_PRIVATE_KEY" }],
+      desired,
+    ),
+  );
+  assert.throws(
+    () => assertReleaseIdentitySecret([], desired),
+    /environment secret/,
+  );
+
+  const identity = {
+    installationId: desired.installationId,
+    appSlug: desired.slug,
+  };
+  const installation = {
+    id: desired.installationId,
+    app_id: desired.id,
+    app_slug: desired.slug,
+    account: { login: "terminalzero-dev" },
+    suspended_at: null,
+    repository_selection: desired.repositorySelection,
+    permissions: desired.permissions,
+    events: desired.events,
+  };
+  const repositories = {
+    total_count: 1,
+    repositories: [{ full_name: "terminalzero-dev/lemonsqueezy.js" }],
+  };
+  assert.doesNotThrow(() =>
+    assertReleaseInstallation(
+      installation,
+      identity,
+      repositories,
+      desired,
+      "terminalzero-dev",
+    ),
+  );
+  assert.throws(
+    () =>
+      assertReleaseInstallation(
+        installation,
+        identity,
+        {
+          total_count: 2,
+          repositories: [
+            ...repositories.repositories,
+            { full_name: "terminalzero-dev/another-repository" },
+          ],
+        },
+        desired,
+        "terminalzero-dev",
+      ),
+    /2 !== 1/,
+  );
+  assert.throws(
+    () =>
+      assertReleaseInstallation(
+        installation,
+        { ...identity, appSlug: "wrong-app" },
+        repositories,
+        desired,
+        "terminalzero-dev",
+      ),
+    /installation app slug/,
+  );
+  assert.throws(
+    () =>
+      assertReleaseInstallation(
+        { ...installation, repository_selection: "all" },
+        identity,
+        repositories,
+        desired,
+        "terminalzero-dev",
+      ),
+    /installation repository selection/,
+  );
+});
+
+void test("release installation verifier audits the owner-wide token scope", async () => {
+  const requests = [];
+  const server = createServer((request, response) => {
+    requests.push({
+      url: request.url,
+      authorization: request.headers.authorization,
+    });
+    response.setHeader("content-type", "application/json");
+    const body = request.url?.startsWith("/app/installations/")
+      ? {
+          id: 153681769,
+          app_id: 4593139,
+          app_slug: "lemonsqueezy-v5-release",
+          account: { login: "terminalzero-dev" },
+          suspended_at: null,
+          repository_selection: "selected",
+          permissions: { contents: "write", metadata: "read" },
+          events: [],
+        }
+      : {
+          total_count: 1,
+          repositories: [{ full_name: "terminalzero-dev/lemonsqueezy.js" }],
+        };
+    response.end(JSON.stringify(body));
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const { privateKey, publicKey } = generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+  });
+
+  try {
+    const { stdout } = await execute(
+      process.execPath,
+      [
+        new URL(
+          "../../scripts/verify-release-installation.mjs",
+          import.meta.url,
+        ).pathname,
+        "--repository",
+        "terminalzero-dev/lemonsqueezy.js",
+        "--installation-id",
+        "153681769",
+        "--app-slug",
+        "lemonsqueezy-v5-release",
+        "--github-api",
+        `http://127.0.0.1:${server.address().port}`,
+      ],
+      {
+        env: {
+          ...process.env,
+          GITHUB_TOKEN: "test-token",
+          RELEASE_GITHUB_APP_PRIVATE_KEY: privateKey.export({
+            format: "pem",
+            type: "pkcs8",
+          }),
+        },
+      },
+    );
+    assert.match(stdout, /Verified release App installation 153681769/);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].url, "/app/installations/153681769");
+  assert.match(requests[0].authorization, /^Bearer eyJ/);
+  const jwt = requests[0].authorization.slice("Bearer ".length);
+  const [encodedHeader, encodedPayload, encodedSignature] = jwt.split(".");
+  assert.deepEqual(JSON.parse(Buffer.from(encodedHeader, "base64url")), {
+    alg: "RS256",
+    typ: "JWT",
+  });
+  const payload = JSON.parse(Buffer.from(encodedPayload, "base64url"));
+  const now = Math.floor(Date.now() / 1000);
+  assert.equal(payload.iss, "Iv23liKrkrIVKfLtmUk6");
+  assert.ok(payload.iat <= now);
+  assert.ok(payload.iat >= now - 120);
+  assert.equal(payload.exp - payload.iat, 600);
+  assert.ok(payload.exp <= now + 600);
+  assert.equal(
+    verify(
+      "RSA-SHA256",
+      Buffer.from(`${encodedHeader}.${encodedPayload}`),
+      publicKey,
+      Buffer.from(encodedSignature, "base64url"),
+    ),
+    true,
+  );
+  assert.deepEqual(requests[1], {
+    url: "/installation/repositories?per_page=100",
+    authorization: "Bearer test-token",
+  });
 });
 
 void test("repository governance has an auditable dry-run before mutation", async () => {
@@ -398,7 +1197,8 @@ void test("beta.1 runbooks preserve the bootstrap and version-PR boundaries", ()
   assert.match(bootstrap, /exact.*\.tgz/is);
   assert.match(bootstrap, /SHA-256/);
   assert.match(bootstrap, /--tag beta/);
-  assert.match(bootstrap, /remove.*latest/is);
+  assert.match(bootstrap, /latest.*current recommended release/is);
+  assert.match(bootstrap, /latest.*beta.*same exact verified version/is);
   assert.match(bootstrap, /Trusted Publisher/);
   assert.match(bootstrap, /revoke/is);
   assert.doesNotMatch(bootstrap, /NPM_TOKEN|recovery code:|OTP:/i);
@@ -413,4 +1213,28 @@ void test("beta.1 runbooks preserve the bootstrap and version-PR boundaries", ()
   const packageSmoke = readRootText("scripts/test-package.mjs");
   assert.doesNotMatch(packageSmoke, /5\.0\.0-beta\.0/);
   assert.match(packageSmoke, /PACKAGE_SMOKE_RUNTIME/);
+});
+
+void test("beta.2 records recoverable release and Stable Readiness evidence", () => {
+  const operations = readRootText("docs/release/beta-2-operations.md");
+  const notes = readRootText("docs/release/beta-2-release-notes.md");
+
+  assert.match(operations, /publish succeeded.*finalization failed/is);
+  assert.match(operations, /deprecat/i);
+  assert.match(operations, /unpublish policy/i);
+  assert.match(operations, /first Stable.*without.*Last Known Good/is);
+  assert.match(operations, /resume_published/);
+  assert.match(operations, /never\s+republish/i);
+  assert.match(operations, /latest.*beta.*5\.0\.0-beta\.1/is);
+  assert.match(operations, /latest.*beta.*5\.0\.0-beta\.2/is);
+  assert.match(operations, /dist-tag-rollback-evidence\.json/);
+  assert.match(operations, /dist-tag-auth-probe-evidence\.json/);
+  assert.match(operations, /provenance-audit\.json/);
+  assert.match(operations, /account recovery/i);
+  assert.doesNotMatch(operations, /NPM_TOKEN|NODE_AUTH_TOKEN|recovery code:/i);
+
+  assert.match(notes, /Migration impact: (?:Additive|Behavior correction)/);
+  assert.match(notes, /5\.0\.0-beta\.1/);
+  assert.match(notes, /OIDC\s+Trusted\s+Publishing/);
+  assert.match(notes, /latest.*beta/is);
 });

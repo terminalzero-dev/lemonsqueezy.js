@@ -10,6 +10,8 @@ Terminal Zero fork 采用 Single-maintainer release authority：一名指定维�
 
 `5.0.0-beta.1` 是唯一 Bootstrap publish，也是唯一不要求 npm provenance 的公开版本。它仍必须来自 CI 生成并完成全部 gates 的 exact Canonical Package Artifact；完成首次发布后立即绑定 GitHub Actions trusted publisher、撤销 bootstrap credential，并禁用传统 token publishing。从下一次 prerelease 开始，发布只允许 GitHub-hosted runner 使用 OIDC 上传经过验证的 exact `.tgz`。
 
+npm `latest` 表示当前推荐版本。在首个 Stable 发布前，`latest` 与 `beta` 同时指向当前已验证的 Last Known Good beta；Stable 发布后，`latest` 只跟随当前推荐 Stable，后续 prerelease 使用各自的 prerelease tag。npm `latest` 与 GitHub Release 的 latest 状态彼此独立，Beta GitHub Release 仍保持 prerelease 且 `latest=false`。
+
 Beta 到 Stable 不是一次 dist-tag 操作。`5.0.0` 必须同时满足契约完成、公开运行与最终候选 soak、零阻断缺陷、完整支持矩阵、至少三个独立采用项目反馈，以及公开 Stable Readiness issue。下载量、stars、日期或维护者直觉都不能代替其中任何一类证据。
 
 ## 已确认的平台边界
@@ -152,7 +154,7 @@ Trusted Publisher 无法创建不存在的 package，因此首发使用一次性
 3. 在维护者本地隔离目录重新计算 digest，不 checkout、build 或 repack；
 4. 使用 pnpm 对 exact `.tgz` 做一次交互式 2FA public publish，并显式指定 `beta` tag；credential 不进入 GitHub 或 shell history；
 5. 立即读取 exact version metadata、tarball integrity 和全部 dist-tags；
-6. brand-new package 若自动产生 `latest`，在公告前移除它，保持 prerelease 只由 `beta` 解析；
+6. 验证 brand-new package 自动产生的 `latest` 与 `beta` 都精确指向同一个已验证 `5.0.0-beta.1` Candidate；
 7. 在 npm package settings 绑定 `terminalzero-dev/lemonsqueezy.js`、精确 release workflow 与 `npm-release` environment；
 8. 将 publishing access 切换为要求 2FA 且 disallow tokens，撤销本地 login/session/granular token 等 bootstrap credential；
 9. 记录无法生成 npm provenance 的一次性例外及 registry integrity evidence；
@@ -172,6 +174,7 @@ reviewed version commit
   -> pnpm OIDC trusted publishing
   -> npm beta dist-tag
   -> registry integrity + provenance verification
+  -> npm latest + beta point to the verified recommended beta
   -> protected Git tag
   -> immutable GitHub prerelease
 ```
@@ -183,8 +186,9 @@ reviewed version commit
 3. 发布成功后读取 exact registry metadata，比较 `dist.integrity` 与 candidate SHA-512，并重新下载 exact version 复核 bytes；
 4. 验证 npm provenance 指向正确 repository、workflow、commit、package version 和 tarball subject；
 5. 从隔离 consumer 对 registry exact version 运行最小 ESM/CJS install smoke 和 registry signature/provenance verification；
-6. 所有 registry 验证成功后才创建受保护的 `v<version>` tag；
-7. 使用 `--verify-tag` 语义建立 draft GitHub Release、上传 exact `.tgz`、digest manifest 与 evidence，再发布为 immutable Release。
+6. 在首个 Stable 发布前，将 `latest` 与 prerelease tag 一起绑定到已验证的当前推荐 beta，并回读两个 dist-tags；Stable 发布后，`latest` 只跟随当前推荐 Stable；
+7. 所有 registry 验证成功后才创建受保护的 `v<version>` tag；
+8. 使用 `--verify-tag` 语义建立 draft GitHub Release、上传 exact `.tgz`、digest manifest 与 evidence，再发布为 immutable Release。
 
 Beta GitHub Release 明确设置 prerelease 且 `latest=false`。Stable GitHub Release不是 prerelease，并在全部 Stable post-publish verification 通过后成为 latest Release。
 
@@ -192,11 +196,11 @@ Beta GitHub Release 明确设置 prerelease 且 `latest=false`。Stable GitHub R
 
 ## Version、dist-tag 与 GitHub Release
 
-| Version class          | npm publish tag     | npm `latest`        | npm `beta`                    | GitHub Release             |
-| ---------------------- | ------------------- | ------------------- | ----------------------------- | -------------------------- |
-| `5.0.0-beta.N`         | `beta`              | 不得指向 prerelease | 指向当前 Last Known Good beta | prerelease，`latest=false` |
-| `5.0.0`                | `latest`            | 指向已验证 Stable   | 在发布收口后也指向 `5.0.0`    | stable/latest              |
-| 下一个 prerelease line | 对应 prerelease tag | 保持当前 Stable     | 再移动到新 prerelease         | prerelease，`latest=false` |
+| Version class          | npm publish tag     | npm `latest`                    | npm `beta`                    | GitHub Release             |
+| ---------------------- | ------------------- | ------------------------------- | ----------------------------- | -------------------------- |
+| `5.0.0-beta.N`         | `beta`              | 首个 Stable 前指向当前推荐 beta | 指向当前 Last Known Good beta | prerelease，`latest=false` |
+| `5.0.0`                | `latest`            | 指向已验证 Stable               | 在发布收口后也指向 `5.0.0`    | stable/latest              |
+| 下一个 prerelease line | 对应 prerelease tag | 保持当前推荐 Stable             | 再移动到新 prerelease         | prerelease，`latest=false` |
 
 npm dist-tags 与 GitHub prerelease/latest 状态彼此独立，每次发布后分别读取和验证。Git tag、package version 和 immutable Release 不移动；只有 dist-tag 是常规可移动状态。
 
@@ -224,8 +228,7 @@ npm dist-tags 与 GitHub prerelease/latest 状态彼此独立，每次发布后�
 
 若首个 Stable `5.0.0` 出现问题且没有旧 Stable 可回退：
 
-- 暂时移除 `latest`，不把 `latest` 指向 prerelease；
-- `beta` 可以退回最终 Last Known Good beta；
+- 将 `latest` 与 `beta` 一起退回最终 Last Known Good beta，使默认安装仍解析到当前推荐版本；
 - deprecate `5.0.0` 并发布 `5.0.1` 修复；
 - 在 `5.0.1` 完成全部 Stable release gates 后恢复 `latest` 和 `beta`。
 
@@ -337,7 +340,7 @@ Stable Readiness issue 在最终 beta Candidate 开始 14 天 soak 前建立，�
 
 Stable 前必须至少完成：
 
-1. `beta.1` Bootstrap publish、自动 `latest` 现场检查与必要 normalization；
+1. `beta.1` Bootstrap publish，以及自动 `latest` 与 `beta` 同时指向已验证当前推荐版本的现场检查；
 2. `beta.2+` exact tarball OIDC/provenance live publish；
 3. publish success 后 registry integrity、downloaded bytes 与 provenance 验证；
 4. 在公开公告前短暂把 `beta` 从新 LKG 移回前一个已验证 beta、验证解析，再恢复到新 LKG 的 dist-tag rollback drill；
@@ -371,7 +374,7 @@ Stable 前必须至少完成：
 - GitHub/npm 共享账号、共享 OTP、长期 `NPM_TOKEN` 或 bootstrap token fallback；
 - 在 publish job rebuild、repack 或对 Changesets plan digest 不复核；
 - registry verification 前创建 tag 或 GitHub Release；
-- prerelease 指向 `latest`，或 Stable 发布后让 `beta` 长期停留在旧 beta；
+- `latest` 不指向当前推荐版本，或 Stable 发布后让 `beta` 长期停留在旧 beta；
 - 覆盖/复用 npm version，或以 unpublish 处理常规缺陷；
 - 把 dist-tag rollback 描述为召回 exact installs；
 - 用日期、beta 数量、downloads、stars 或维护者自己的项目替代 Stable evidence；
