@@ -528,6 +528,7 @@ void test("OIDC dist-tag promotion and rollback restore both recommended tags", 
       request.url ===
       "/-/npm/v1/oidc/token/exchange/package/%40terminalzero%2Flemonsqueezy"
     ) {
+      response.statusCode = 201;
       response.end(JSON.stringify({ token: "short-lived-registry-token" }));
       return;
     }

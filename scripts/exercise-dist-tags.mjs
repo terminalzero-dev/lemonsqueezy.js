@@ -162,11 +162,7 @@ async function exchangeOidcToken() {
       },
     },
   );
-  assert.equal(
-    response.status,
-    200,
-    `npm OIDC exchange returned ${response.status}`,
-  );
+  assert.ok(response.ok, `npm OIDC exchange returned ${response.status}`);
   const body = await response.json();
   assert.ok(body.token, "npm OIDC exchange omitted its short-lived token");
   return body.token;
