@@ -1093,6 +1093,93 @@ printf '%s\n' success
   assert.match(stderr, /Retrying read-only command \(2\/3\)/);
 });
 
+void test("protected release dispatch accepts Candidate ancestors and rejects unrelated commits", async () => {
+  const repository = await mkdtemp(
+    join(tmpdir(), "lemonsqueezy-release-dispatch-"),
+  );
+  const markerPath = join(repository, "release.txt");
+  const verifierPath = new URL(
+    "../../scripts/verify-release-dispatch.sh",
+    import.meta.url,
+  ).pathname;
+  const git = (...args) => execute("git", args, { cwd: repository });
+
+  await git("init", "--initial-branch=release/v5-beta");
+  await git("config", "user.name", "Release Test");
+  await git("config", "user.email", "release@example.com");
+  await writeFile(markerPath, "candidate\n");
+  await git("add", "release.txt");
+  await git("commit", "-m", "candidate");
+  const candidate = (await git("rev-parse", "HEAD")).stdout.trim();
+
+  await git("switch", "-c", "unrelated");
+  await writeFile(markerPath, "unrelated\n");
+  await git("commit", "-am", "unrelated");
+  const unrelated = (await git("rev-parse", "HEAD")).stdout.trim();
+
+  await git("switch", "release/v5-beta");
+  await writeFile(markerPath, "dispatch\n");
+  await git("commit", "-am", "dispatch tooling fix");
+  const dispatch = (await git("rev-parse", "HEAD")).stdout.trim();
+
+  await execute(
+    "bash",
+    [verifierPath, dispatch, dispatch, "false", "refs/heads/main"],
+    { cwd: repository },
+  );
+  await assert.rejects(
+    execute(
+      "bash",
+      [
+        verifierPath,
+        candidate,
+        dispatch,
+        "false",
+        "refs/heads/release/v5-beta",
+      ],
+      { cwd: repository },
+    ),
+    /Fresh publication must be dispatched from the exact Candidate commit/,
+  );
+  await execute(
+    "bash",
+    [verifierPath, candidate, dispatch, "true", "refs/heads/release/v5-beta"],
+    {
+      cwd: repository,
+    },
+  );
+  await assert.rejects(
+    execute(
+      "bash",
+      [verifierPath, candidate, dispatch, "true", "refs/heads/main"],
+      { cwd: repository },
+    ),
+    /Candidate recovery must use the protected release branch/,
+  );
+  await assert.rejects(
+    execute(
+      "bash",
+      [verifierPath, unrelated, dispatch, "true", "refs/heads/release/v5-beta"],
+      { cwd: repository },
+    ),
+    /Candidate must be an ancestor of the protected dispatch commit/,
+  );
+  await assert.rejects(
+    execute(
+      "bash",
+      [
+        verifierPath,
+        candidate,
+        unrelated,
+        "true",
+        "refs/heads/release/v5-beta",
+      ],
+      { cwd: repository },
+    ),
+    /HEAD must match the protected dispatch commit/,
+  );
+});
+
 void test("OIDC publish waits for verified interactive dist-tag evidence before finalization", () => {
   const workflow = readRootText(".github/workflows/registry-release.yml");
   const wizard = readRootText("scripts/release-dist-tags-wizard.sh");
@@ -1107,6 +1194,8 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(workflow, /group: v5-release/);
   assert.match(workflow, /cancel-in-progress: false/);
   assert.match(workflow, /github\.actor == vars\.RELEASE_MAINTAINER/);
+  assert.match(workflow, /verify-release-dispatch\.sh/);
+  assert.match(workflow, /fetch-depth: 0/);
   assert.match(workflow, /environment: npm-release/);
   assert.match(
     workflow,
