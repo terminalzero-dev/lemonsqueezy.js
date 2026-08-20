@@ -148,6 +148,10 @@ _Avoid_: Previous version, highest version, cached artifact
 The accepted governance model in which one designated maintainer may approve and execute a release through a protected workload identity without a long-lived personal npm publishing secret. Loss or compromise of that maintainer account remains an explicit operational risk handled through account recovery rather than a mandatory second approver.
 _Avoid_: Two-person release rule, shared npm token, unattended publication
 
+**Interactive dist-tag authority**:
+The short-lived maintainer npm web session, protected by Passkey or TOTP, used only to move public dist-tags after an OIDC publication has passed registry verification. The session records secret-free state transitions in a public issue, then logs out; no npm token, OTP, Passkey, or recovery material enters GitHub Actions or repository storage.
+_Avoid_: OIDC dist-tag mutation, NPM_TOKEN fallback, unattended tag movement
+
 **Stable readiness evidence**:
 The combined contract-completion, operational-soak, and independent-adoption evidence required before moving the Terminal Zero package from beta to stable. Calendar age, downloads, and stars are contextual signals rather than substitutes for any evidence class.
 _Avoid_: Time-based promotion, popularity threshold, maintainer intuition alone
