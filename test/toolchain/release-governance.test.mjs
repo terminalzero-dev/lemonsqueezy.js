@@ -1223,7 +1223,7 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   );
   assert.match(
     workflow,
-    /finalize:[\s\S]*needs: tag[\s\S]*permissions:\n\s+actions: read\n\s+contents: write/,
+    /finalize:[\s\S]*needs: tag[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
   );
   assert.match(workflow, /contents: write/);
   assert.match(workflow, /run-id: \$\{\{ inputs\.candidate_run_id \}\}/);
@@ -1319,10 +1319,21 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
     workflow,
     /Checkout with the repository-only release identity[\s\S]*ref: \$\{\{ inputs\.expected_commit \}\}/,
   );
-  assert.equal(workflow.match(/RELEASE_GITHUB_APP_PRIVATE_KEY/g)?.length, 4);
+  const finalizeWorkflow = workflow.slice(workflow.indexOf("\n  finalize:"));
+  assert.match(
+    finalizeWorkflow,
+    /Mint the repository-only Release identity[\s\S]*permission-contents: write/,
+  );
+  assert.doesNotMatch(finalizeWorkflow, /permission-workflows:/);
+  assert.doesNotMatch(finalizeWorkflow, /GH_TOKEN: \$\{\{ github\.token \}\}/);
+  assert.match(
+    finalizeWorkflow,
+    /GH_TOKEN: \$\{\{ steps\.release-token\.outputs\.token \}\}/,
+  );
+  assert.equal(workflow.match(/RELEASE_GITHUB_APP_PRIVATE_KEY/g)?.length, 5);
   assert.equal(
     workflow.match(/actions\/create-github-app-token@[0-9a-f]{40}/g)?.length,
-    2,
+    3,
   );
   assert.match(
     workflow,
