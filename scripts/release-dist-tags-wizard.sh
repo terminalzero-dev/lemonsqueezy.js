@@ -191,7 +191,7 @@ finish() {
 # ──────────────────────────────────────────────────────────────────────────
 
 TOTAL_STAGES=6
-TOTAL_MINUTES=10
+TOTAL_MINUTES=15
 
 REPOSITORY="terminalzero-dev/lemonsqueezy.js"
 PACKAGE_NAME="@terminalzero/lemonsqueezy"
@@ -215,6 +215,11 @@ trap cleanup EXIT
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 source "$ROOT/scripts/lib/retry-command.sh"
+EVIDENCE_DIRECTORY="$ROOT/.artifacts/manual-dist-tag"
+EVIDENCE_PATH="$EVIDENCE_DIRECTORY/dist-tag-interactive-evidence.json"
+RESUME_EVIDENCE_PATH=""
+TAG_READ_ATTEMPTS=30
+TAG_READ_DELAY_SECONDS=3
 
 download_run_artifact() {
   local run_id=$1
@@ -224,6 +229,30 @@ download_run_artifact() {
   rm -rf "$destination"
   gh run download "$run_id" -R "$REPOSITORY" \
     --name "$artifact_name" --dir "$destination"
+}
+
+wait_for_public_tags() {
+  local expected_beta=$1
+  local expected_latest=$2
+  local attempt
+
+  for ((attempt = 1; attempt <= TAG_READ_ATTEMPTS; attempt += 1)); do
+    if ! TAGS=$(retry_command 3 npm view \
+      "$PACKAGE_NAME" dist-tags --json --prefer-online --registry="$REGISTRY_URL"); then
+      return 1
+    fi
+    LIVE_BETA=$(jq -r .beta <<<"$TAGS")
+    LIVE_LATEST=$(jq -r .latest <<<"$TAGS")
+    if [[ "$LIVE_BETA" == "$expected_beta" && \
+      "$LIVE_LATEST" == "$expected_latest" ]]; then
+      return 0
+    fi
+    if ((attempt < TAG_READ_ATTEMPTS)); then
+      note "Waiting for public npm dist-tags to converge ($attempt/$TAG_READ_ATTEMPTS; beta=$LIVE_BETA, latest=$LIVE_LATEST)..."
+      sleep "$TAG_READ_DELAY_SECONDS"
+    fi
+  done
+  return 1
 }
 
 banner "beta.2 interactive dist-tag drill"
@@ -299,10 +328,50 @@ REGISTRY_EVIDENCE="$REGISTRY_EVIDENCE_DIR/registry-evidence.json"
 [[ "$(jq -r .registry.provenance.verified "$REGISTRY_EVIDENCE")" == "true" ]]
 [[ "$(jq -r .registry.distTags.beta "$REGISTRY_EVIDENCE")" == "$CURRENT_VERSION" ]]
 [[ "$(jq -r .registry.distTags.latest "$REGISTRY_EVIDENCE")" == "$LAST_KNOWN_GOOD_VERSION" ]]
-TAGS=$(retry_command 3 npm view \
-  "$PACKAGE_NAME" dist-tags --json --registry="$REGISTRY_URL")
-[[ "$(jq -r .beta <<<"$TAGS")" == "$CURRENT_VERSION" ]]
-[[ "$(jq -r .latest <<<"$TAGS")" == "$LAST_KNOWN_GOOD_VERSION" ]]
+HAS_RESUMABLE_EVIDENCE=false
+if [[ -f "$EVIDENCE_PATH" && \
+  "$(jq -r '.status // empty' "$EVIDENCE_PATH")" == "failed" ]]; then
+  jq -e \
+    --arg package "$PACKAGE_NAME" \
+    --arg current "$CURRENT_VERSION" \
+    --arg lkg "$LAST_KNOWN_GOOD_VERSION" \
+    --arg commit "$SOURCE_COMMIT" \
+    --arg sha256 "$ARTIFACT_SHA256" \
+    --arg runId "$REGISTRY_RELEASE_RUN_ID" \
+    '.schemaVersion == 1 and
+      .status == "failed" and
+      .package == $package and
+      .currentVersion == $current and
+      .lastKnownGoodVersion == $lkg and
+      .sourceCommit == $commit and
+      .artifactSha256 == $sha256 and
+      .registryReleaseRunId == $runId and
+      .states[0] == {
+        phase: "published", beta: $current, latest: $lkg,
+        at: .states[0].at
+      } and
+      .timeline[0] == {
+        tag: "latest", version: $current, at: .timeline[0].at
+  }' "$EVIDENCE_PATH" >/dev/null || {
+    warn "Existing failed evidence cannot resume this Candidate."
+    exit 1
+  }
+  HAS_RESUMABLE_EVIDENCE=true
+fi
+if [[ "$HAS_RESUMABLE_EVIDENCE" == "true" ]]; then
+  wait_for_public_tags "$CURRENT_VERSION" "$CURRENT_VERSION" || {
+    warn "Public dist-tags did not converge to the safely resumable state."
+    exit 1
+  }
+  RESUME_EVIDENCE_PATH="$EVIDENCE_PATH"
+  note "The failed promotion is recorded; the drill will resume at rollback."
+else
+  wait_for_public_tags "$CURRENT_VERSION" "$LAST_KNOWN_GOOD_VERSION" || {
+    warn "Public dist-tags did not converge to the verified published state."
+    exit 1
+  }
+  note "The drill will start from the verified published state."
+fi
 say "Verified $PACKAGE_NAME@$CURRENT_VERSION."
 note "Candidate: $SOURCE_COMMIT · SHA-256 $ARTIFACT_SHA256"
 
@@ -323,13 +392,18 @@ confirm "Are account recovery materials available right now?" || {
   exit 1
 }
 
-stage "Promote, rollback, and restore dist-tags" 3
-say "The drill will move latest to beta.2, move latest and beta back to beta.1, then restore both to beta.2."
-warn "This changes public npm resolution five times in a short controlled window."
+stage "Promote, rollback, and restore dist-tags" 8
+DRILL_RESUME_ARGS=()
+if [[ -n "$RESUME_EVIDENCE_PATH" ]]; then
+  say "The recorded promotion is complete. The drill will roll latest and beta back to beta.1, then restore both to beta.2."
+  warn "This resume changes public npm resolution four times in a controlled window."
+  DRILL_RESUME_ARGS=(--resume-evidence "$RESUME_EVIDENCE_PATH")
+else
+  say "The drill will move latest to beta.2, move latest and beta back to beta.1, then restore both to beta.2."
+  warn "This changes public npm resolution five times in a controlled window."
+fi
 confirm "Run the public dist-tag drill now?" || exit 1
-EVIDENCE_DIRECTORY="$ROOT/.artifacts/manual-dist-tag"
 mkdir -p "$EVIDENCE_DIRECTORY"
-EVIDENCE_PATH="$EVIDENCE_DIRECTORY/dist-tag-interactive-evidence.json"
 node scripts/exercise-dist-tags.mjs \
   --package "$PACKAGE_NAME" \
   --current-version "$CURRENT_VERSION" \
@@ -341,28 +415,52 @@ node scripts/exercise-dist-tags.mjs \
   --account-recovery-confirmed \
   --registry "$REGISTRY_URL" \
   --npm-userconfig "$NPM_CONFIG_USERCONFIG" \
+  "${DRILL_RESUME_ARGS[@]}" \
   --evidence "$EVIDENCE_PATH"
 
 stage "End the npm session" 1
 npm logout --registry="$REGISTRY_URL"
 LOGGED_IN=false
 say "The interactive npm session is closed."
-TAGS=$(retry_command 3 npm view \
-  "$PACKAGE_NAME" dist-tags --json --registry="$REGISTRY_URL")
-[[ "$(jq -r .beta <<<"$TAGS")" == "$CURRENT_VERSION" ]]
-[[ "$(jq -r .latest <<<"$TAGS")" == "$CURRENT_VERSION" ]]
+wait_for_public_tags "$CURRENT_VERSION" "$CURRENT_VERSION" || {
+  warn "Public dist-tags did not converge after the npm session closed."
+  exit 1
+}
 
 stage "Publish evidence and resume finalization" 1
-say "The evidence is secret-free JSON. Review it before posting to Issue #35."
-jq . "$EVIDENCE_PATH"
-confirm "Post this evidence to Issue #35?" || exit 1
 BODY_PATH="$WIZARD_TEMP/issue-comment.md"
 {
   printf '%s\n\n' "Interactive npm 2FA dist-tag drill completed."
   printf '\x60\x60\x60json\n'
   cat "$EVIDENCE_PATH"
   printf '\x60\x60\x60\n'
+  shopt -s nullglob
+  FAILED_EVIDENCE_PATHS=(
+    "$EVIDENCE_DIRECTORY"/dist-tag-interactive-failed-"$REGISTRY_RELEASE_RUN_ID"-*.json
+  )
+  shopt -u nullglob
+  for failed_evidence_path in "${FAILED_EVIDENCE_PATHS[@]}"; do
+    node scripts/validate-failed-dist-tag-evidence.mjs \
+      --evidence "$failed_evidence_path" \
+      --package "$PACKAGE_NAME" \
+      --current-version "$CURRENT_VERSION" \
+      --last-known-good-version "$LAST_KNOWN_GOOD_VERSION" \
+      --source-commit "$SOURCE_COMMIT" \
+      --artifact-sha256 "$ARTIFACT_SHA256" \
+      --registry-release-run-id "$REGISTRY_RELEASE_RUN_ID" \
+      --npm-actor "$NPM_ACCOUNT" >/dev/null || {
+      warn "Refusing to publish invalid failed evidence: $failed_evidence_path"
+      exit 1
+    }
+    printf '\n%s\n\n' "Prior failed attempt retained for recovery audit: $(basename "$failed_evidence_path")"
+    printf '\x60\x60\x60json\n'
+    cat "$failed_evidence_path"
+    printf '\x60\x60\x60\n'
+  done
 } > "$BODY_PATH"
+say "The complete Issue comment below is secret-free evidence. Review it before posting."
+cat "$BODY_PATH"
+confirm "Post this complete evidence chain to Issue #35?" || exit 1
 COMMENT=$(jq -Rs '{body: .}' < "$BODY_PATH" | \
   gh api "repos/$REPOSITORY/issues/35/comments" --method POST --input -)
 COMMENT_ID=$(jq -r .id <<<"$COMMENT")

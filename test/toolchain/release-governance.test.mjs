@@ -516,6 +516,9 @@ void test("interactive npm 2FA dist-tag drill is complete and independently veri
   const npmPath = join(evidenceDirectory, "fake-npm.mjs");
   const npmUserconfig = join(evidenceDirectory, "npmrc");
   const evidencePath = join(evidenceDirectory, "evidence.json");
+  const failedEvidencePath = join(evidenceDirectory, "failed.json");
+  const staleStatePath = join(evidenceDirectory, "stale-tags.json");
+  const staleRemainingPath = join(evidenceDirectory, "stale-remaining");
   await writeFile(npmUserconfig, "");
   await writeFile(
     statePath,
@@ -529,6 +532,14 @@ const args = process.argv.slice(2);
 appendFileSync(process.env.FAKE_NPM_LOG, JSON.stringify(args) + "\\n");
 const tags = JSON.parse(readFileSync(process.env.FAKE_NPM_STATE, "utf8"));
 if (args[0] === "view") {
+  if (process.env.FAKE_NPM_STALE_STATE && existsSync(process.env.FAKE_NPM_STALE_REMAINING)) {
+    const remaining = Number(readFileSync(process.env.FAKE_NPM_STALE_REMAINING, "utf8"));
+    if (remaining > 0) {
+      writeFileSync(process.env.FAKE_NPM_STALE_REMAINING, String(remaining - 1));
+      process.stdout.write(readFileSync(process.env.FAKE_NPM_STALE_STATE, "utf8"));
+      process.exit(0);
+    }
+  }
   process.stdout.write(JSON.stringify(tags));
   process.exit(0);
 }
@@ -544,6 +555,10 @@ if (args[0] === "dist-tag" && args[1] === "add") {
   }
   const spec = args[2];
   const version = spec.slice(spec.lastIndexOf("@") + 1);
+  if (process.env.FAKE_NPM_STALE_STATE) {
+    writeFileSync(process.env.FAKE_NPM_STALE_STATE, JSON.stringify(tags));
+    writeFileSync(process.env.FAKE_NPM_STALE_REMAINING, "1");
+  }
   tags[args[3]] = version;
   writeFileSync(process.env.FAKE_NPM_STATE, JSON.stringify(tags));
   process.exit(0);
@@ -576,6 +591,10 @@ process.exit(2);
       npmPath,
       "--npm-userconfig",
       npmUserconfig,
+      "--tag-read-attempts",
+      "3",
+      "--tag-read-delay-ms",
+      "0",
       "--evidence",
       evidencePath,
     ],
@@ -584,6 +603,8 @@ process.exit(2);
         ...process.env,
         FAKE_NPM_LOG: logPath,
         FAKE_NPM_STATE: statePath,
+        FAKE_NPM_STALE_STATE: staleStatePath,
+        FAKE_NPM_STALE_REMAINING: staleRemainingPath,
       },
     },
   );
@@ -647,7 +668,7 @@ process.exit(2);
         "--npm-userconfig",
         npmUserconfig,
         "--evidence",
-        join(evidenceDirectory, "failed.json"),
+        failedEvidencePath,
       ],
       {
         env: {
@@ -664,11 +685,165 @@ process.exit(2);
     beta: currentVersion,
     latest: currentVersion,
   });
-  const failedEvidence = JSON.parse(
-    await readFile(join(evidenceDirectory, "failed.json")),
-  );
+  const failedEvidence = JSON.parse(await readFile(failedEvidencePath));
   assert.equal(failedEvidence.status, "failed");
   assert.equal(failedEvidence.states.at(-1).phase, "restored-after-failure");
+
+  const resumeArgs = [
+    new URL("../../scripts/exercise-dist-tags.mjs", import.meta.url).pathname,
+    "--package",
+    "@terminalzero/lemonsqueezy",
+    "--current-version",
+    currentVersion,
+    "--last-known-good-version",
+    lastKnownGoodVersion,
+    "--source-commit",
+    sourceCommit,
+    "--artifact-sha256",
+    artifactSha256,
+    "--registry-release-run-id",
+    registryReleaseRunId,
+    "--npm-actor",
+    npmActor,
+    "--account-recovery-confirmed",
+    "--npm-command",
+    npmPath,
+    "--npm-userconfig",
+    npmUserconfig,
+    "--resume-evidence",
+    failedEvidencePath,
+    "--evidence",
+    failedEvidencePath,
+  ];
+  const archivePathFor = (source) =>
+    join(
+      evidenceDirectory,
+      `dist-tag-interactive-failed-${registryReleaseRunId}-${createHash("sha256").update(source).digest("hex")}.json`,
+    );
+
+  const firstFailedSource = await readFile(failedEvidencePath, "utf8");
+  await assert.rejects(
+    execute(process.execPath, resumeArgs, {
+      env: {
+        ...process.env,
+        FAKE_NPM_FAIL_MARKER: join(evidenceDirectory, "resume-failed-once"),
+        FAKE_NPM_FAIL_SPEC: `@terminalzero/lemonsqueezy@${lastKnownGoodVersion}`,
+        FAKE_NPM_LOG: logPath,
+        FAKE_NPM_STATE: statePath,
+      },
+    }),
+  );
+  assert.equal(
+    await readFile(archivePathFor(firstFailedSource), "utf8"),
+    firstFailedSource,
+  );
+
+  const secondFailedSource = await readFile(failedEvidencePath, "utf8");
+  await assert.rejects(
+    execute(process.execPath, resumeArgs, {
+      env: {
+        ...process.env,
+        FAKE_NPM_FAIL_MARKER: join(evidenceDirectory, "resume-failed-twice"),
+        FAKE_NPM_FAIL_SPEC: `@terminalzero/lemonsqueezy@${lastKnownGoodVersion}`,
+        FAKE_NPM_LOG: logPath,
+        FAKE_NPM_STATE: statePath,
+      },
+    }),
+  );
+  assert.equal(
+    await readFile(archivePathFor(firstFailedSource), "utf8"),
+    firstFailedSource,
+  );
+  assert.equal(
+    await readFile(archivePathFor(secondFailedSource), "utf8"),
+    secondFailedSource,
+  );
+
+  const thirdFailedSource = await readFile(failedEvidencePath, "utf8");
+  await execute(process.execPath, resumeArgs, {
+    env: {
+      ...process.env,
+      FAKE_NPM_LOG: logPath,
+      FAKE_NPM_STATE: statePath,
+    },
+  });
+  assert.equal(
+    await readFile(archivePathFor(thirdFailedSource), "utf8"),
+    thirdFailedSource,
+  );
+  const resumedEvidence = JSON.parse(await readFile(failedEvidencePath));
+  assert.equal(resumedEvidence.status, "completed");
+  assert.deepEqual(
+    resumedEvidence.states.map(({ phase, beta, latest }) => ({
+      phase,
+      beta,
+      latest,
+    })),
+    [
+      {
+        phase: "published",
+        beta: currentVersion,
+        latest: lastKnownGoodVersion,
+      },
+      { phase: "promoted", beta: currentVersion, latest: currentVersion },
+      {
+        phase: "rolled-back",
+        beta: lastKnownGoodVersion,
+        latest: lastKnownGoodVersion,
+      },
+      { phase: "restored", beta: currentVersion, latest: currentVersion },
+    ],
+  );
+
+  for (const [option, value, message] of [
+    ["--tag-read-attempts", "121", /must be at most 120/],
+    ["--tag-read-delay-ms", "10001", /must be at most 10000/],
+  ]) {
+    await assert.rejects(
+      execute(process.execPath, [...resumeArgs, option, value]),
+      message,
+    );
+  }
+  assert.deepEqual(
+    resumedEvidence.timeline.map(({ tag, version }) => ({ tag, version })),
+    [
+      { tag: "latest", version: currentVersion },
+      { tag: "latest", version: lastKnownGoodVersion },
+      { tag: "beta", version: lastKnownGoodVersion },
+      { tag: "beta", version: currentVersion },
+      { tag: "latest", version: currentVersion },
+    ],
+  );
+
+  const firstArchivePath = archivePathFor(firstFailedSource);
+  const validateArchiveArgs = [
+    new URL(
+      "../../scripts/validate-failed-dist-tag-evidence.mjs",
+      import.meta.url,
+    ).pathname,
+    "--evidence",
+    firstArchivePath,
+    "--package",
+    "@terminalzero/lemonsqueezy",
+    "--current-version",
+    currentVersion,
+    "--last-known-good-version",
+    lastKnownGoodVersion,
+    "--source-commit",
+    sourceCommit,
+    "--artifact-sha256",
+    artifactSha256,
+    "--registry-release-run-id",
+    registryReleaseRunId,
+    "--npm-actor",
+    npmActor,
+  ];
+  await execute(process.execPath, validateArchiveArgs);
+  await writeFile(firstArchivePath, `${firstFailedSource}\n`);
+  await assert.rejects(
+    execute(process.execPath, validateArchiveArgs),
+    /filename must match its SHA-256/,
+  );
 
   await writeFile(
     statePath,
@@ -989,6 +1164,25 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(wizard, /npm login --auth-type=web --registry="\$REGISTRY_URL"/);
   assert.match(wizard, /https:\/\/registry\.npmjs\.org\//);
   assert.match(wizard, /\.artifacts\/manual-dist-tag/);
+  assert.match(
+    wizard,
+    /dist-tag-interactive-failed-"\$REGISTRY_RELEASE_RUN_ID"-\*\.json/,
+  );
+  assert.match(wizard, /DRILL_RESUME_ARGS=\(--resume-evidence/);
+  assert.match(wizard, /Prior failed attempt retained for recovery audit/);
+  assert.match(wizard, /validate-failed-dist-tag-evidence\.mjs/);
+  assert.match(
+    wizard,
+    /cat "\$BODY_PATH"[\s\S]*confirm "Post this complete evidence chain to Issue #35\?"/,
+  );
+  assert.match(
+    wizard,
+    /wait_for_public_tags "\$CURRENT_VERSION" "\$LAST_KNOWN_GOOD_VERSION"/,
+  );
+  assert.match(
+    wizard,
+    /wait_for_public_tags "\$CURRENT_VERSION" "\$CURRENT_VERSION"/,
+  );
   assert.match(wizard, /source "\$ROOT\/scripts\/lib\/retry-command\.sh"/);
   assert.match(
     wizard,
