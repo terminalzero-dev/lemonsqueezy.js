@@ -17,8 +17,10 @@ Release Candidate run.
 - No package registry version named `@terminalzero/lemonsqueezy@5.0.0-beta.1`
   exists.
 - The organization-owned `lemonsqueezy-v5-release` GitHub App is installed only
-  on this repository with Contents write, Metadata read, and no event
-  subscriptions. Its private key exists only as
+  on this repository with Contents write, Metadata read, Workflows write, and
+  no event subscriptions. Workflows write is required because an exact release
+  tag can make the Candidate's workflow files reachable through a new ref. Its
+  private key exists only as
   `RELEASE_GITHUB_APP_PRIVATE_KEY` in the protected `npm-release` environment,
   and the tag creation ruleset grants only its pinned Integration ID the
   workflow bypass. The protected job reads the live installation and fails
