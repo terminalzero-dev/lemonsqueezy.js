@@ -40,6 +40,15 @@ const result = spawnSync(
 );
 assert.equal(result.status, 0, "changeset pack failed");
 
+const publishPlanPath = join(outputDirectory, "publish-plan.json");
+const publishPlan = JSON.parse(await readFile(publishPlanPath));
+const operations = publishPlan.plan.flat();
+assert.equal(operations.length, 1, "pack must produce one publish operation");
+const [operation] = operations;
+assert.equal(operation.kind, "publish");
+operation.tag = operation.version.includes("-beta.") ? "beta" : "latest";
+await writeFile(publishPlanPath, `${JSON.stringify(publishPlan, null, 2)}\n`);
+
 const tarballs = (await readdir(packagesDirectory)).filter((file) =>
   file.endsWith(".tgz"),
 );
