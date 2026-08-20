@@ -53,18 +53,34 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the protected Candidate commit
+      - name: Checkout the protected dispatch history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify protected dispatch identity
+        run: >-
+          bash scripts/verify-release-dispatch.sh
+          "$EXPECTED_COMMIT"
+          "$DISPATCH_COMMIT"
+          "$RESUME_PUBLISHED"
+          "$DISPATCH_REF"
+        env:
+          DISPATCH_COMMIT: ${{ github.sha }}
+          DISPATCH_REF: ${{ github.ref }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          RESUME_PUBLISHED: ${{ inputs.resume_published }}
+
+      - name: Checkout the exact protected Candidate commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ inputs.expected_commit }}
 
-      - name: Verify protected dispatch identity
-        run: |
-          test "$EXPECTED_COMMIT" = "$DISPATCH_COMMIT"
-          test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+      - name: Verify the exact Candidate checkout
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
         env:
-          DISPATCH_COMMIT: ${{ github.sha }}
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
 
       - name: Verify the requested release phase
