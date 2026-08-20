@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "package": "@terminalzero/lemonsqueezy",
+  "version": "5.0.0-beta.1",
+  "sourceCommit": "adb3c2b02d511ed997752a5085dca361e61bb030",
+  "sha256": "5ed08363370dddfb5b81d0f1b5aca4a30335237e680078f1cc23a6bb699f4662",
+  "sha512": "2029ca7ceba203e894d91368791d3f8914a3866a83821946d6378dc334b2700ef7eafc334eb2cb32e51569c3da86cf475cdf6d7c68e88cc90874c81b8e15d4b4",
+  "integrity": "sha512-ICnKfOuiA+iU2RNoeR0/iRSjhmqDghlG1jeNwzSycA736vwzTrLLMuUVacPahs9HXN9tfGjojMkIdMgbjhXUtA==",
+  "candidateRunId": "31786097596"
+}

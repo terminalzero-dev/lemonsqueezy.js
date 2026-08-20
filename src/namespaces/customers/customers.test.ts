@@ -40,10 +40,10 @@ const customerListResponse = {
   },
   meta: {
     page: {
-      current_page: 0,
+      currentPage: 0,
       from: 0,
-      last_page: 0,
-      per_page: 10,
+      lastPage: 0,
+      perPage: 10,
       to: 0,
       total: 1,
     },

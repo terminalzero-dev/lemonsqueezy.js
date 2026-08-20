@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const readRootText = (path) =>
@@ -156,7 +156,53 @@ void test("CI installs and records the minimum supported Bun runtime", () => {
   assert.match(toolVersions, /run\("bun", \["--version"\]\)/);
 });
 
+void test("artifact uploads use the Node.js 24 action runtime", () => {
+  const workflows = readdirSync(
+    new URL("../../.github/workflows", import.meta.url),
+  ).filter((name) => name.endsWith(".yml"));
+  const uploadArtifact =
+    /actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7\.0\.1/g;
+
+  let uploadCount = 0;
+  for (const workflow of workflows) {
+    const source = readRootText(`.github/workflows/${workflow}`);
+    uploadCount += source.match(uploadArtifact)?.length ?? 0;
+    assert.doesNotMatch(source, /actions\/upload-artifact@(?!043fb46d)/);
+  }
+
+  assert.equal(uploadCount, 9);
+  assert.equal(
+    workflows.reduce(
+      (count, workflow) =>
+        count +
+        (readRootText(`.github/workflows/${workflow}`).match(
+          /include-hidden-files: true/g,
+        )?.length ?? 0),
+      0,
+    ),
+    uploadCount,
+  );
+});
+
+void test("artifact downloads use the Node.js 24 action runtime", () => {
+  const workflows = readdirSync(
+    new URL("../../.github/workflows", import.meta.url),
+  ).filter((name) => name.endsWith(".yml"));
+  const downloadArtifact =
+    /actions\/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8\.0\.1/g;
+
+  let downloadCount = 0;
+  for (const workflow of workflows) {
+    const source = readRootText(`.github/workflows/${workflow}`);
+    downloadCount += source.match(downloadArtifact)?.length ?? 0;
+    assert.doesNotMatch(source, /actions\/download-artifact@(?!3e5f45b2)/);
+  }
+
+  assert.equal(downloadCount, 11);
+});
+
 void test("Test Mode integration is an exact-tarball, fail-closed protected canary", () => {
+  assert.match(packageJson.scripts["test:repository"], /reaper\.test\.mjs/);
   assert.equal(
     packageJson.scripts["test:integration"],
     "node scripts/test-integration.mjs",
@@ -200,10 +246,18 @@ void test("Test Mode integration is an exact-tarball, fail-closed protected cana
     new URL("../integration/reaper.mjs", import.meta.url),
     "utf8",
   );
-  assert.match(reaper, /24 \* 60 \* 60 \* 1_000/);
-  assert.match(reaper, /sdk-ci-/);
-  assert.match(reaper, /MAX_PAGES = 10/);
+  const reaperCore = readFileSync(
+    new URL("../integration/reaper-core.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(reaperCore, /24 \* 60 \* 60 \* 1_000/);
+  assert.match(reaperCore, /sdk-ci-/);
+  assert.match(reaperCore, /MAX_PAGES = 10/);
   assert.doesNotMatch(reaper, /customers|orders|subscriptions|license-keys/);
+  assert.doesNotMatch(
+    reaperCore,
+    /customers|orders|subscriptions|license-keys/,
+  );
 });
 
 void test("exact-tarball type fixtures stay outside source-workspace analysis", () => {
@@ -225,7 +279,7 @@ void test("the credential-free gate exercises exact-tarball bundler graphs", () 
   );
   assert.match(
     packageJson.scripts.check,
-    /pack:artifact.*test:artifact.*test:types.*test:package.*test:bundlers/,
+    /pack:artifact.*test:artifact.*test:types.*test:docs.*test:package.*test:bundlers/,
   );
   assert.equal(
     existsSync(new URL("../../scripts/test-bundlers.mjs", import.meta.url)),
@@ -235,6 +289,87 @@ void test("the credential-free gate exercises exact-tarball bundler graphs", () 
     existsSync(new URL("../package/bundlers/client.mjs", import.meta.url)),
     true,
   );
+});
+
+void test("the documentation contract is a finite installed-package gate", () => {
+  assert.equal(packageJson.scripts["test:docs"], "node scripts/test-docs.mjs");
+  assert.match(
+    packageJson.scripts["candidate:check"],
+    /pack:artifact.*test:artifact.*test:types.*test:docs.*test:bundlers/,
+  );
+  assert.match(
+    packageJson.scripts["test:repository"],
+    /docs-contract\.test\.mjs/,
+  );
+  assert.equal(
+    existsSync(new URL("../../scripts/test-docs.mjs", import.meta.url)),
+    true,
+  );
+  assert.equal(
+    existsSync(new URL("../../docs/usage/getting-started.md", import.meta.url)),
+    true,
+  );
+  assert.equal(
+    existsSync(new URL("../../docs/usage/client.md", import.meta.url)),
+    true,
+  );
+  assert.equal(
+    existsSync(new URL("../../docs/usage/client-api.md", import.meta.url)),
+    true,
+  );
+  assert.equal(
+    existsSync(
+      new URL("../../docs/usage/compatibility-api.md", import.meta.url),
+    ),
+    true,
+  );
+  assert.equal(
+    existsSync(
+      new URL("../../docs/usage/catalog-checkout.md", import.meta.url),
+    ),
+    true,
+  );
+  assert.equal(
+    existsSync(
+      new URL("../../docs/usage/orders-subscriptions.md", import.meta.url),
+    ),
+    true,
+  );
+  assert.equal(
+    existsSync(
+      new URL("../../docs/usage/discounts-licensing.md", import.meta.url),
+    ),
+    true,
+  );
+  assert.equal(
+    existsSync(new URL("../../docs/usage/webhooks.md", import.meta.url)),
+    true,
+  );
+
+  const testDocs = readRootText("scripts/test-docs.mjs");
+  const contributing = readRootText("CONTRIBUTING.md");
+  assert.match(testDocs, /prepareConsumer\("docs"\)/);
+  assert.match(testDocs, /loadCanonicalDocumentationCatalog/);
+  assert.match(testDocs, /assertCatalogCoverage/);
+  assert.doesNotMatch(
+    testDocs,
+    /vitepress|docusaurus|typedoc|createServer|\bwatch\b/,
+  );
+  assert.match(contributing, /test:docs/);
+
+  const allDependencies = {
+    ...packageJson.dependencies,
+    ...packageJson.devDependencies,
+  };
+  for (const dependency of [
+    "@docusaurus/core",
+    "docusaurus",
+    "typedoc",
+    "vitepress",
+    "nextra",
+  ]) {
+    assert.equal(allDependencies[dependency], undefined, dependency);
+  }
 });
 
 void test("package installation is independent from the consumer runtime", () => {

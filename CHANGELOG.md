@@ -1,5 +1,12 @@
 # @terminalzero/lemonsqueezy
 
+## 5.0.0-beta.2
+
+### Patch Changes
+
+- [#92](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/92) [`68b982f`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/68b982f028cab94c14e3fb447817e10e24b541a9) Thanks [@keyding](https://github.com/keyding)! - Publish beta.2 with corrected pagination metadata, complete v5 documentation,
+  and the normal exact-artifact OIDC release path.
+
 ## 5.0.0-beta.1
 
 ### Minor Changes
@@ -79,6 +86,8 @@ Migration guide:
   Subscription Item declarations, falsy validation, Promise rejection, and
   `onError` isolation. Review every applicable row in the tagged Migration
   Behavior Audit before rollout.
+- Correct list response page metadata types to the API's documented camelCase
+  fields (`currentPage`, `lastPage`, and `perPage`).
 - Ship exact-tarball ESM/CJS, TypeScript, runtime, and migration-example
   verification.
 

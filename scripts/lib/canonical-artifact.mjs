@@ -59,7 +59,8 @@ export async function prepareConsumer(name) {
         private: true,
         type: "module",
         dependencies: {
-          "@terminalzero/lemonsqueezy": `file:${artifact.tarball}`,
+          "@terminalzero/lemonsqueezy":
+            process.env.PACKAGE_SMOKE_SPEC ?? `file:${artifact.tarball}`,
         },
       },
       null,

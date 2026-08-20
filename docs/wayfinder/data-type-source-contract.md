@@ -398,7 +398,7 @@ Contract Catalog 和 Canonical types 至少包含此前漂移审计确认的变�
 并修正 v4 类型快照中的结构问题：
 
 - response timestamps 全部使用 snake_case ISO string，不使用 `Date` 或 camelCase；
-- response page meta 保持 wire snake_case；
+- response page meta 保持 API documented camelCase；
 - Subscription status known values 不包含错误的 `pause`，不重复 `cancelled`；
 - relationships 区分 to-one/to-many/null，不再依赖一个全局 `Record`；
 - list links 保留实际出现的 `first`、`last`、`next?`、`prev?`；

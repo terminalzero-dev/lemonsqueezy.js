@@ -9,10 +9,10 @@ const orderItemListResponse = {
   },
   meta: {
     page: {
-      current_page: 1,
+      currentPage: 1,
       from: 1,
-      last_page: 1,
-      per_page: 20,
+      lastPage: 1,
+      perPage: 20,
       to: 1,
       total: 1,
     },
