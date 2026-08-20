@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
+import { packArtifact } from "../../scripts/pack-artifact.mjs";
 
 const readRootText = (path) =>
   readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
@@ -44,6 +48,59 @@ void test("pnpm enforces the repository dependency policies", () => {
     readFileSync(new URL("../../pnpm-workspace.yaml", import.meta.url), "utf8"),
     "allowBuilds:\n  esbuild: true\nminimumReleaseAge: 1440\n",
   );
+});
+
+void test("canonical artifact packing is independent of registry publication state", async () => {
+  const fixture = await mkdtemp(join(tmpdir(), "canonical-pack-"));
+  try {
+    await mkdir(join(fixture, ".changeset"));
+    await Promise.all([
+      writeFile(
+        join(fixture, "package.json"),
+        `${JSON.stringify({
+          name: "@example/published-package",
+          version: "1.0.0-beta.2",
+          packageManager: "pnpm@11.21.0",
+          publishConfig: { access: "public" },
+          files: ["index.js"],
+        })}\n`,
+      ),
+      writeFile(join(fixture, "index.js"), "export {};\n"),
+      writeFile(
+        join(fixture, ".changeset/config.json"),
+        `${JSON.stringify({
+          changelog: false,
+          commit: false,
+          fixed: [],
+          linked: [],
+          access: "public",
+          baseBranch: "main",
+          updateInternalDependencies: "patch",
+          ignore: [],
+        })}\n`,
+      ),
+    ]);
+
+    await packArtifact(fixture, {
+      ...process.env,
+      npm_config_registry: "http://127.0.0.1:9",
+    });
+    const publishPlan = JSON.parse(
+      await readFile(
+        join(fixture, ".artifacts/package/publish-plan.json"),
+        "utf8",
+      ),
+    );
+    const [operation] = publishPlan.plan.flat();
+
+    assert.equal(operation.kind, "publish");
+    assert.equal(operation.name, "@example/published-package");
+    assert.equal(operation.version, "1.0.0-beta.2");
+    assert.equal(operation.access, "public");
+    assert.equal(operation.tag, "beta");
+  } finally {
+    await rm(fixture, { recursive: true, force: true });
+  }
 });
 
 void test("legacy toolchain dependencies and lifecycle hooks are absent", () => {
