@@ -214,6 +214,17 @@ trap cleanup EXIT
 
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
+source "$ROOT/scripts/lib/retry-command.sh"
+
+download_run_artifact() {
+  local run_id=$1
+  local artifact_name=$2
+  local destination=$3
+
+  rm -rf "$destination"
+  gh run download "$run_id" -R "$REPOSITORY" \
+    --name "$artifact_name" --dir "$destination"
+}
 
 banner "beta.2 interactive dist-tag drill"
 
@@ -225,7 +236,7 @@ for command in gh npm node jq git; do
     exit 1
   }
 done
-gh auth status >/dev/null
+retry_command 3 gh auth status >/dev/null
 if [[ -n "${NPM_TOKEN:-}" || -n "${NODE_AUTH_TOKEN:-}" ]]; then
   warn "Unset NPM_TOKEN and NODE_AUTH_TOKEN before running this wizard."
   exit 1
@@ -244,36 +255,42 @@ fi
   warn "Registry Release run ID must be numeric"
   exit 1
 }
-RUN=$(gh api "repos/$REPOSITORY/actions/runs/$CANDIDATE_RUN_ID")
+RUN=$(retry_command 3 gh api \
+  "repos/$REPOSITORY/actions/runs/$CANDIDATE_RUN_ID")
 [[ "$(jq -r .name <<<"$RUN")" == "Release Candidate" ]]
 [[ "$(jq -r .conclusion <<<"$RUN")" == "success" ]]
 RUN_COMMIT=$(jq -r .head_sha <<<"$RUN")
 EXPECTED_ARTIFACT_NAME="release-candidate-5.0.0-beta.2-$RUN_COMMIT"
-ARTIFACT_NAME=$(gh api "repos/$REPOSITORY/actions/runs/$CANDIDATE_RUN_ID/artifacts" \
+ARTIFACT_NAME=$(retry_command 3 gh api \
+  "repos/$REPOSITORY/actions/runs/$CANDIDATE_RUN_ID/artifacts" \
   --jq ".artifacts[] | select(.name == \"$EXPECTED_ARTIFACT_NAME\") | .name")
 [[ "$ARTIFACT_NAME" == "$EXPECTED_ARTIFACT_NAME" ]]
 CANDIDATE_DIR="$WIZARD_TEMP/candidate"
-gh run download "$CANDIDATE_RUN_ID" -R "$REPOSITORY" \
-  --name "$ARTIFACT_NAME" --dir "$CANDIDATE_DIR"
+retry_command 3 download_run_artifact \
+  "$CANDIDATE_RUN_ID" "$ARTIFACT_NAME" "$CANDIDATE_DIR"
 CURRENT_VERSION=$(jq -r .version "$CANDIDATE_DIR/candidate.json")
 SOURCE_COMMIT=$(jq -r .sourceCommit "$CANDIDATE_DIR/candidate.json")
 ARTIFACT_SHA256=$(jq -r .artifact.sha256 "$CANDIDATE_DIR/candidate.json")
 [[ "$(jq -r .head_sha <<<"$RUN")" == "$SOURCE_COMMIT" ]]
 [[ "$CURRENT_VERSION" == "5.0.0-beta.2" ]]
-git fetch origin release/v5-beta
-[[ "$(git rev-parse origin/release/v5-beta)" == "$SOURCE_COMMIT" ]]
-REGISTRY_RUN=$(gh api "repos/$REPOSITORY/actions/runs/$REGISTRY_RELEASE_RUN_ID")
+retry_command 3 git fetch origin release/v5-beta
+git merge-base --is-ancestor "$SOURCE_COMMIT" origin/release/v5-beta || {
+  warn "Candidate commit is not part of the current release branch"
+  exit 1
+}
+REGISTRY_RUN=$(retry_command 3 gh api \
+  "repos/$REPOSITORY/actions/runs/$REGISTRY_RELEASE_RUN_ID")
 [[ "$(jq -r .name <<<"$REGISTRY_RUN")" == "Registry Release" ]]
 [[ "$(jq -r .conclusion <<<"$REGISTRY_RUN")" == "success" ]]
 [[ "$(jq -r .head_sha <<<"$REGISTRY_RUN")" == "$SOURCE_COMMIT" ]]
 VERIFIED_ARTIFACT_NAME="registry-release-verified-$CURRENT_VERSION-$ARTIFACT_SHA256"
-VERIFIED_ARTIFACT=$(gh api \
+VERIFIED_ARTIFACT=$(retry_command 3 gh api \
   "repos/$REPOSITORY/actions/runs/$REGISTRY_RELEASE_RUN_ID/artifacts" \
   --jq ".artifacts[] | select(.name == \"$VERIFIED_ARTIFACT_NAME\") | .name")
 [[ "$VERIFIED_ARTIFACT" == "$VERIFIED_ARTIFACT_NAME" ]]
 REGISTRY_EVIDENCE_DIR="$WIZARD_TEMP/registry-evidence"
-gh run download "$REGISTRY_RELEASE_RUN_ID" -R "$REPOSITORY" \
-  --name "$VERIFIED_ARTIFACT_NAME" --dir "$REGISTRY_EVIDENCE_DIR"
+retry_command 3 download_run_artifact \
+  "$REGISTRY_RELEASE_RUN_ID" "$VERIFIED_ARTIFACT_NAME" "$REGISTRY_EVIDENCE_DIR"
 REGISTRY_EVIDENCE="$REGISTRY_EVIDENCE_DIR/registry-evidence.json"
 [[ "$(jq -r .version "$REGISTRY_EVIDENCE")" == "$CURRENT_VERSION" ]]
 [[ "$(jq -r .sourceCommit "$REGISTRY_EVIDENCE")" == "$SOURCE_COMMIT" ]]
@@ -282,7 +299,8 @@ REGISTRY_EVIDENCE="$REGISTRY_EVIDENCE_DIR/registry-evidence.json"
 [[ "$(jq -r .registry.provenance.verified "$REGISTRY_EVIDENCE")" == "true" ]]
 [[ "$(jq -r .registry.distTags.beta "$REGISTRY_EVIDENCE")" == "$CURRENT_VERSION" ]]
 [[ "$(jq -r .registry.distTags.latest "$REGISTRY_EVIDENCE")" == "$LAST_KNOWN_GOOD_VERSION" ]]
-TAGS=$(npm view "$PACKAGE_NAME" dist-tags --json --registry="$REGISTRY_URL")
+TAGS=$(retry_command 3 npm view \
+  "$PACKAGE_NAME" dist-tags --json --registry="$REGISTRY_URL")
 [[ "$(jq -r .beta <<<"$TAGS")" == "$CURRENT_VERSION" ]]
 [[ "$(jq -r .latest <<<"$TAGS")" == "$LAST_KNOWN_GOOD_VERSION" ]]
 say "Verified $PACKAGE_NAME@$CURRENT_VERSION."
@@ -294,7 +312,7 @@ warn "Do not paste a password, token, OTP, Passkey, or recovery code into this w
 npm logout --registry="$REGISTRY_URL" >/dev/null 2>&1 || true
 npm login --auth-type=web --registry="$REGISTRY_URL"
 LOGGED_IN=true
-NPM_ACCOUNT=$(npm whoami --registry="$REGISTRY_URL")
+NPM_ACCOUNT=$(retry_command 3 npm whoami --registry="$REGISTRY_URL")
 say "Signed in as npm account: $NPM_ACCOUNT"
 
 stage "Confirm account recovery availability" 1
@@ -329,7 +347,8 @@ stage "End the npm session" 1
 npm logout --registry="$REGISTRY_URL"
 LOGGED_IN=false
 say "The interactive npm session is closed."
-TAGS=$(npm view "$PACKAGE_NAME" dist-tags --json --registry="$REGISTRY_URL")
+TAGS=$(retry_command 3 npm view \
+  "$PACKAGE_NAME" dist-tags --json --registry="$REGISTRY_URL")
 [[ "$(jq -r .beta <<<"$TAGS")" == "$CURRENT_VERSION" ]]
 [[ "$(jq -r .latest <<<"$TAGS")" == "$CURRENT_VERSION" ]]
 
