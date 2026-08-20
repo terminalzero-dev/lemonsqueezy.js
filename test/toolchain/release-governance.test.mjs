@@ -876,6 +876,48 @@ void test("manual Release Candidates reuse one artifact without registry mutatio
   }
 });
 
+void test("release wizard retries a transient read before continuing", async () => {
+  const fixtureDirectory = await mkdtemp(join(tmpdir(), "release-retry-"));
+  const commandPath = join(fixtureDirectory, "transient-read.sh");
+  const markerPath = join(fixtureDirectory, "attempted");
+
+  await writeFile(
+    commandPath,
+    `#!/usr/bin/env bash
+set -euo pipefail
+if [[ ! -f "$RETRY_MARKER" ]]; then
+  touch "$RETRY_MARKER"
+  printf '%s' partial
+  printf '%s\n' 'Get "https://api.github.com/example": EOF' >&2
+  exit 1
+fi
+printf '%s\n' success
+`,
+  );
+  await chmod(commandPath, 0o755);
+
+  const { stdout, stderr } = await execute(
+    "bash",
+    [
+      "-c",
+      'source "$1"; retry_command 3 "$2"',
+      "release-retry-test",
+      new URL("../../scripts/lib/retry-command.sh", import.meta.url).pathname,
+      commandPath,
+    ],
+    {
+      env: {
+        ...process.env,
+        RETRY_DELAY_SECONDS: "0",
+        RETRY_MARKER: markerPath,
+      },
+    },
+  );
+
+  assert.equal(stdout, "success\n");
+  assert.match(stderr, /Retrying read-only command \(2\/3\)/);
+});
+
 void test("OIDC publish waits for verified interactive dist-tag evidence before finalization", () => {
   const workflow = readRootText(".github/workflows/registry-release.yml");
   const wizard = readRootText("scripts/release-dist-tags-wizard.sh");
@@ -947,6 +989,15 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(wizard, /npm login --auth-type=web --registry="\$REGISTRY_URL"/);
   assert.match(wizard, /https:\/\/registry\.npmjs\.org\//);
   assert.match(wizard, /\.artifacts\/manual-dist-tag/);
+  assert.match(wizard, /source "\$ROOT\/scripts\/lib\/retry-command\.sh"/);
+  assert.match(
+    wizard,
+    /ARTIFACT_NAME=\$\(retry_command 3 gh api[\s\S]*actions\/runs\/\$CANDIDATE_RUN_ID\/artifacts/,
+  );
+  assert.match(
+    wizard,
+    /git merge-base --is-ancestor "\$SOURCE_COMMIT" origin\/release\/v5-beta/,
+  );
   assert.match(workflow, /PACKAGE_SMOKE_SPEC/);
   assert.match(
     workflow,
