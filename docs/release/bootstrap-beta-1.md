@@ -53,9 +53,10 @@ public --tag beta`. Do not check out source, build, pack, patch, or compress.
    ESM/CJS installation checks before the protected `tag` job can use the
    repository-only GitHub App installation token to create `v5.0.0-beta.1` at
    the exact Candidate commit. The action revokes the short-lived token when the
-   job ends. The separate `finalize` job reads the protected tag back and creates
-   an immutable prerelease with the tarball and evidence as assets without
-   receiving the App private key or installation token.
+   job ends. The separate `finalize` job reads the protected tag back and mints
+   a new repository-only, Contents-write App token to create an immutable
+   prerelease with the tarball and evidence as assets. Each job-local token is
+   revoked when its job ends.
 
 ## Closeout recovery
 
