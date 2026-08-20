@@ -44,7 +44,10 @@ and dispatches the same workflow with `resume_published=true` and the Issue
 comment ID.
 
 The resumed workflow never republishes. It revalidates exact registry bytes,
-provenance, the evidence comment author and contents, and live final tags. Only
+provenance, the evidence comment author and contents, and live final tags. A
+recovery may run from a newer protected `release/v5-beta` head after release
+tooling repairs, but the workflow requires the exact Candidate commit to be its
+ancestor and checks out that Candidate before any artifact verification. Only
 then does it create the protected tag and immutable non-latest prerelease.
 
 ## Failure recovery
