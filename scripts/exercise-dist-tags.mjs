@@ -3,6 +3,13 @@ import { spawnSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { parseArgs } from "node:util";
+import {
+  preserveFailedDistTagEvidence,
+  readFailedDistTagEvidence,
+} from "./lib/dist-tag-evidence.mjs";
+
+const MAX_TAG_READ_ATTEMPTS = 120;
+const MAX_TAG_READ_DELAY_MS = 10_000;
 
 const { values } = parseArgs({
   options: {
@@ -21,6 +28,9 @@ const { values } = parseArgs({
     evidence: { type: "string" },
     "npm-command": { type: "string", default: "npm" },
     "npm-userconfig": { type: "string" },
+    "resume-evidence": { type: "string" },
+    "tag-read-attempts": { type: "string", default: "30" },
+    "tag-read-delay-ms": { type: "string", default: "3000" },
   },
   strict: true,
 });
@@ -43,6 +53,20 @@ assert.match(values["source-commit"], /^[0-9a-f]{40}$/);
 assert.match(values["artifact-sha256"], /^[0-9a-f]{64}$/);
 assert.match(values["registry-release-run-id"], /^[1-9][0-9]*$/);
 assert.match(values["npm-actor"], /^[A-Za-z0-9_-]+$/);
+assert.match(values["tag-read-attempts"], /^[1-9][0-9]*$/);
+assert.match(values["tag-read-delay-ms"], /^(?:0|[1-9][0-9]*)$/);
+const tagReadAttempts = Number(values["tag-read-attempts"]);
+const tagReadDelayMs = Number(values["tag-read-delay-ms"]);
+assert.ok(
+  Number.isSafeInteger(tagReadAttempts) &&
+    tagReadAttempts <= MAX_TAG_READ_ATTEMPTS,
+  `--tag-read-attempts must be at most ${MAX_TAG_READ_ATTEMPTS}`,
+);
+assert.ok(
+  Number.isSafeInteger(tagReadDelayMs) &&
+    tagReadDelayMs <= MAX_TAG_READ_DELAY_MS,
+  `--tag-read-delay-ms must be at most ${MAX_TAG_READ_DELAY_MS}`,
+);
 assert.equal(
   values["account-recovery-confirmed"],
   true,
@@ -64,6 +88,24 @@ assert.equal(registry.pathname, "/");
 
 const states = [];
 const timeline = [];
+const resumeEvidence = values["resume-evidence"]
+  ? await readFailedDistTagEvidence(values["resume-evidence"], {
+      package: values.package,
+      currentVersion: values["current-version"],
+      lastKnownGoodVersion: values["last-known-good-version"],
+      sourceCommit: values["source-commit"],
+      artifactSha256: values["artifact-sha256"],
+      registryReleaseRunId: values["registry-release-run-id"],
+      npmActor: values["npm-actor"],
+    })
+  : undefined;
+if (resumeEvidence) {
+  await preserveFailedDistTagEvidence(
+    resumeEvidence.source,
+    values.evidence,
+    values["registry-release-run-id"],
+  );
+}
 const accountRecoveryAt = new Date().toISOString();
 let mutationStarted = false;
 let interruptedSignal;
@@ -75,17 +117,27 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 try {
-  await recordState("published", {
-    beta: values["current-version"],
-    latest: values["last-known-good-version"],
-  });
+  if (resumeEvidence) {
+    states.push(resumeEvidence.evidence.states[0]);
+    timeline.push(resumeEvidence.evidence.timeline[0]);
+    await recordState("promoted", {
+      beta: values["current-version"],
+      latest: values["current-version"],
+    });
+    mutationStarted = true;
+  } else {
+    await recordState("published", {
+      beta: values["current-version"],
+      latest: values["last-known-good-version"],
+    });
 
-  mutationStarted = true;
-  await setTag("latest", values["current-version"]);
-  await recordState("promoted", {
-    beta: values["current-version"],
-    latest: values["current-version"],
-  });
+    mutationStarted = true;
+    await setTag("latest", values["current-version"]);
+    await recordState("promoted", {
+      beta: values["current-version"],
+      latest: values["current-version"],
+    });
+  }
 
   await setTag("latest", values["last-known-good-version"]);
   await setTag("beta", values["last-known-good-version"]);
@@ -186,6 +238,7 @@ async function readTags() {
       values.package,
       "dist-tags",
       "--json",
+      "--prefer-online",
       `--registry=${values.registry}`,
     ],
     ["ignore", "pipe", "pipe"],
@@ -208,19 +261,38 @@ async function setTag(tag, version) {
 }
 
 async function recordState(phase, expected) {
-  const actual = recommendedTags(await readTags());
-  assert.deepEqual(actual, expected, `${phase} dist-tags do not match`);
+  const actual = await waitForTags(expected, `${phase} dist-tags do not match`);
   states.push({ phase, ...actual, at: new Date().toISOString() });
 }
 
 async function restoreCurrent() {
   await setTag("beta", values["current-version"]);
   await setTag("latest", values["current-version"]);
-  const restored = recommendedTags(await readTags());
-  assert.deepEqual(restored, {
-    beta: values["current-version"],
-    latest: values["current-version"],
-  });
+  await waitForTags(
+    {
+      beta: values["current-version"],
+      latest: values["current-version"],
+    },
+    "restored dist-tags do not match",
+  );
+}
+
+async function waitForTags(expected, message) {
+  let actual;
+  for (let attempt = 1; attempt <= tagReadAttempts; attempt += 1) {
+    actual = recommendedTags(await readTags());
+    if (actual.beta === expected.beta && actual.latest === expected.latest) {
+      return actual;
+    }
+    if (attempt < tagReadAttempts) {
+      console.warn(
+        `Waiting for public npm dist-tags to converge (${attempt}/${tagReadAttempts})...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, tagReadDelayMs));
+      throwIfInterrupted();
+    }
+  }
+  assert.deepEqual(actual, expected, message);
 }
 
 function recommendedTags(tags) {
