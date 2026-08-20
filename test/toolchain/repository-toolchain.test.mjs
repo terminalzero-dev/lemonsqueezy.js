@@ -170,7 +170,7 @@ void test("artifact uploads use the Node.js 24 action runtime", () => {
     assert.doesNotMatch(source, /actions\/upload-artifact@(?!043fb46d)/);
   }
 
-  assert.equal(uploadCount, 5);
+  assert.equal(uploadCount, 8);
   assert.equal(
     workflows.reduce(
       (count, workflow) =>
@@ -198,7 +198,7 @@ void test("artifact downloads use the Node.js 24 action runtime", () => {
     assert.doesNotMatch(source, /actions\/download-artifact@(?!3e5f45b2)/);
   }
 
-  assert.equal(downloadCount, 7);
+  assert.equal(downloadCount, 10);
 });
 
 void test("Test Mode integration is an exact-tarball, fail-closed protected canary", () => {

@@ -23,10 +23,7 @@ const { values } = parseArgs({
       type: "string",
       default: process.env.GITHUB_API_URL ?? "https://api.github.com",
     },
-    "release-identity": {
-      type: "string",
-      default: "docs/release/beta-1-candidate.json",
-    },
+    "provenance-evidence": { type: "string" },
   },
   strict: true,
 });
@@ -37,6 +34,7 @@ for (const name of [
   "expected-sha256",
   "expected-run-id",
   "repository",
+  "provenance-evidence",
 ]) {
   assert.ok(values[name]?.trim(), `Missing --${name}`);
 }
@@ -50,21 +48,10 @@ assert.match(
 );
 
 const artifactDirectory = resolve(root, values["artifact-directory"]);
-const releaseIdentity = JSON.parse(
-  await readFile(resolve(root, values["release-identity"])),
-);
 const candidate = JSON.parse(
   await readFile(resolve(artifactDirectory, "candidate.json")),
 );
 assert.equal(candidate.schemaVersion, 1);
-assert.equal(releaseIdentity.schemaVersion, 1);
-assert.equal(candidate.package, releaseIdentity.package);
-assert.equal(candidate.version, releaseIdentity.version);
-assert.equal(candidate.sourceCommit, releaseIdentity.sourceCommit);
-assert.equal(candidate.artifact.sha256, releaseIdentity.sha256);
-assert.equal(candidate.artifact.sha512, releaseIdentity.sha512);
-assert.equal(candidate.artifact.integrity, releaseIdentity.integrity);
-assert.equal(candidate.workflow.runId, releaseIdentity.candidateRunId);
 assert.equal(candidate.version, values["expected-version"]);
 assert.equal(candidate.sourceCommit, values["expected-commit"]);
 assert.equal(candidate.artifact.sha256, values["expected-sha256"]);
@@ -173,6 +160,12 @@ assert.equal(
   "latest must resolve to the current recommended Candidate",
 );
 
+const provenance = verifyProvenance(
+  JSON.parse(await readFile(resolve(root, values["provenance-evidence"]))),
+  candidate,
+  values.repository,
+);
+
 const evidence = {
   schemaVersion: 1,
   package: candidate.package,
@@ -187,7 +180,7 @@ const evidence = {
     downloadedSha256,
     downloadedIntegrity,
     distTags,
-    provenance: "bootstrap-exception",
+    provenance,
   },
 };
 await writeFile(
@@ -199,3 +192,61 @@ console.log(
   `Verified registry release: ${candidate.package}@${candidate.version}`,
 );
 console.log(`SHA-256: ${downloadedSha256}`);
+
+function verifyProvenance(audit, candidate, repository) {
+  assert.deepEqual(audit.invalid ?? [], [], "npm found invalid attestations");
+  const verified = audit.verified?.find(
+    ({ name, version }) =>
+      name === candidate.package && version === candidate.version,
+  );
+  assert.ok(verified, "npm did not verify the Candidate attestation");
+  assert.equal(
+    verified.attestations?.provenance?.predicateType,
+    "https://slsa.dev/provenance/v1",
+  );
+  const provenanceBundle = verified.attestationBundles?.find(
+    ({ predicateType }) => predicateType === "https://slsa.dev/provenance/v1",
+  );
+  assert.ok(provenanceBundle, "npm omitted the verified provenance bundle");
+  const statement = JSON.parse(
+    Buffer.from(
+      provenanceBundle.bundle?.dsseEnvelope?.payload ?? "",
+      "base64",
+    ).toString("utf8"),
+  );
+  assert.equal(statement.predicateType, "https://slsa.dev/provenance/v1");
+  assert.equal(statement.subject?.length, 1);
+  const subject = statement.subject[0];
+  const purlName = candidate.package.startsWith("@")
+    ? `%40${candidate.package.slice(1)}`
+    : encodeURIComponent(candidate.package);
+  const expectedSubject = `pkg:npm/${purlName}@${candidate.version}`;
+  assert.equal(subject.name, expectedSubject);
+  assert.equal(subject.digest?.sha512, candidate.artifact.sha512);
+
+  const workflow =
+    statement.predicate?.buildDefinition?.externalParameters?.workflow;
+  const repositoryUrl = `https://github.com/${repository}`;
+  assert.equal(workflow?.repository, repositoryUrl);
+  assert.equal(workflow?.path, "/.github/workflows/registry-release.yml");
+  assert.match(workflow?.ref ?? "", /^refs\/heads\/(?:main|release\/v5-beta)$/);
+  const source =
+    statement.predicate?.buildDefinition?.resolvedDependencies?.find(
+      ({ digest }) => digest?.gitCommit === candidate.sourceCommit,
+    );
+  assert.ok(source, "provenance omitted the Candidate source commit");
+  assert.equal(source.uri, `git+${repositoryUrl}@${workflow.ref}`);
+  const builder = statement.predicate?.runDetails?.builder?.id;
+  assert.equal(builder, "https://github.com/actions/runner/github-hosted");
+
+  return {
+    verified: true,
+    subject: subject.name,
+    sha512: subject.digest.sha512,
+    repository: workflow.repository,
+    workflow: workflow.path,
+    ref: workflow.ref,
+    commit: candidate.sourceCommit,
+    builder,
+  };
+}
