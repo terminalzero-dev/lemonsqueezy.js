@@ -347,7 +347,7 @@ void test("post-publish verification binds registry bytes, provenance, and recom
           workflow: {
             ref: "refs/heads/release/v5-beta",
             repository: "https://github.com/terminalzero-dev/lemonsqueezy.js",
-            path: "/.github/workflows/registry-release.yml",
+            path: ".github/workflows/registry-release.yml",
           },
         },
         resolvedDependencies: [
@@ -490,7 +490,7 @@ void test("post-publish verification binds registry bytes, provenance, and recom
     subject: `pkg:npm/%40terminalzero/lemonsqueezy@${bootstrapVersion}`,
     sha512: createHash("sha512").update(tarball).digest("hex"),
     repository: "https://github.com/terminalzero-dev/lemonsqueezy.js",
-    workflow: "/.github/workflows/registry-release.yml",
+    workflow: ".github/workflows/registry-release.yml",
     ref: "refs/heads/release/v5-beta",
     commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     builder: "https://github.com/actions/runner/github-hosted",
@@ -502,8 +502,11 @@ void test("OIDC dist-tag promotion and rollback restore both recommended tags", 
     join(tmpdir(), "lemonsqueezy-dist-tag-drill-"),
   );
   const currentVersion = "5.0.0-beta.2";
-  const previousVersion = "5.0.0-beta.1";
-  const tags = { beta: previousVersion, latest: previousVersion };
+  const lastKnownGoodVersion = "5.0.0-beta.1";
+  const tags = {
+    beta: lastKnownGoodVersion,
+    latest: lastKnownGoodVersion,
+  };
   const requests = [];
   const server = createServer((request, response) => {
     void handleRequest(request, response).catch((error) => {
@@ -558,8 +561,8 @@ void test("OIDC dist-tag promotion and rollback restore both recommended tags", 
         "@terminalzero/lemonsqueezy",
         "--current-version",
         currentVersion,
-        "--previous-version",
-        previousVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
         "--registry",
         registry,
         "--evidence",
@@ -568,8 +571,8 @@ void test("OIDC dist-tag promotion and rollback restore both recommended tags", 
       { env: { ...process.env, NPM_ID_TOKEN: "test-oidc-token" } },
     );
     assert.deepEqual(tags, {
-      beta: previousVersion,
-      latest: previousVersion,
+      beta: lastKnownGoodVersion,
+      latest: lastKnownGoodVersion,
     });
 
     tags.beta = currentVersion;
@@ -583,8 +586,8 @@ void test("OIDC dist-tag promotion and rollback restore both recommended tags", 
         "@terminalzero/lemonsqueezy",
         "--current-version",
         currentVersion,
-        "--previous-version",
-        previousVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
         "--registry",
         registry,
         "--evidence",
@@ -607,8 +610,8 @@ void test("OIDC dist-tag promotion and rollback restore both recommended tags", 
         "@terminalzero/lemonsqueezy",
         "--current-version",
         currentVersion,
-        "--previous-version",
-        previousVersion,
+        "--last-known-good-version",
+        lastKnownGoodVersion,
         "--registry",
         registry,
         "--evidence",
@@ -630,7 +633,7 @@ void test("OIDC dist-tag promotion and rollback restore both recommended tags", 
   );
   assert.deepEqual(rollback.states, [
     { beta: currentVersion, latest: currentVersion },
-    { beta: previousVersion, latest: previousVersion },
+    { beta: lastKnownGoodVersion, latest: lastKnownGoodVersion },
     { beta: currentVersion, latest: currentVersion },
   ]);
   assert.equal(rollback.auth, "oidc-trusted-publishing");
@@ -693,14 +696,22 @@ void test("protected OIDC release publishes, verifies, rolls back, and only then
   assert.match(workflow, /expected_version:/);
   assert.match(workflow, /expected_commit:/);
   assert.match(workflow, /expected_sha256:/);
-  assert.match(workflow, /previous_version:/);
+  assert.match(workflow, /last_known_good_version:/);
   assert.match(workflow, /group: v5-release/);
   assert.match(workflow, /cancel-in-progress: false/);
   assert.match(workflow, /github\.actor == vars\.RELEASE_MAINTAINER/);
   assert.match(workflow, /environment: npm-release/);
   assert.match(
     workflow,
-    /publish:[\s\S]*environment: npm-release[\s\S]*permissions:\n\s+actions: read\n\s+contents: read\n\s+id-token: write/,
+    /stage:[\s\S]*permissions:\n\s+actions: read\n\s+contents: read/,
+  );
+  assert.match(
+    workflow,
+    /publish:[\s\S]*needs: stage[\s\S]*environment: npm-release[\s\S]*permissions:\n\s+contents: read\n\s+id-token: write/,
+  );
+  assert.doesNotMatch(
+    workflow.match(/publish:[\s\S]*?\n  promote:/)?.[0] ?? "",
+    /actions: read|contents: write/,
   );
   assert.match(
     workflow,

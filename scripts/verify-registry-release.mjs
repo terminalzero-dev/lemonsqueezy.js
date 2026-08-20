@@ -228,7 +228,7 @@ function verifyProvenance(audit, candidate, repository) {
     statement.predicate?.buildDefinition?.externalParameters?.workflow;
   const repositoryUrl = `https://github.com/${repository}`;
   assert.equal(workflow?.repository, repositoryUrl);
-  assert.equal(workflow?.path, "/.github/workflows/registry-release.yml");
+  assert.equal(workflow?.path, ".github/workflows/registry-release.yml");
   assert.match(workflow?.ref ?? "", /^refs\/heads\/(?:main|release\/v5-beta)$/);
   const source =
     statement.predicate?.buildDefinition?.resolvedDependencies?.find(

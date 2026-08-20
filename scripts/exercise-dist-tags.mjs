@@ -7,7 +7,7 @@ const { positionals, values } = parseArgs({
   options: {
     package: { type: "string" },
     "current-version": { type: "string" },
-    "previous-version": { type: "string" },
+    "last-known-good-version": { type: "string" },
     registry: {
       type: "string",
       default: process.env.npm_config_registry ?? "https://registry.npmjs.org",
@@ -22,12 +22,15 @@ assert.match(mode ?? "", /^(?:probe|promote|rollback)$/);
 for (const name of [
   "package",
   "current-version",
-  "previous-version",
+  "last-known-good-version",
   "evidence",
 ]) {
   assert.ok(values[name]?.trim(), `Missing --${name}`);
 }
-assert.notEqual(values["current-version"], values["previous-version"]);
+assert.notEqual(
+  values["current-version"],
+  values["last-known-good-version"],
+);
 
 const registry = new URL(
   values.registry.endsWith("/") ? values.registry : `${values.registry}/`,
@@ -47,12 +50,12 @@ try {
     probeInitial = recommendedTags(initial);
     const allowedStates = [
       {
-        beta: values["previous-version"],
-        latest: values["previous-version"],
+        beta: values["last-known-good-version"],
+        latest: values["last-known-good-version"],
       },
       {
         beta: values["current-version"],
-        latest: values["previous-version"],
+        latest: values["last-known-good-version"],
       },
       {
         beta: values["current-version"],
@@ -74,10 +77,10 @@ try {
   } else if (mode === "promote") {
     assert.equal(initial.beta, values["current-version"]);
     assert.ok(
-      [values["previous-version"], values["current-version"]].includes(
+      [values["last-known-good-version"], values["current-version"]].includes(
         initial.latest,
       ),
-      "latest is neither the previous nor current verified version",
+      "latest is neither the Last Known Good nor current verified version",
     );
     if (initial.latest !== values["current-version"]) {
       registryToken = await exchangeOidcToken();
@@ -97,12 +100,12 @@ try {
     });
     registryToken = await exchangeOidcToken();
     mutationStarted = true;
-    await setTag("latest", values["previous-version"]);
-    await setTag("beta", values["previous-version"]);
+    await setTag("latest", values["last-known-good-version"]);
+    await setTag("beta", values["last-known-good-version"]);
     const rolledBack = await readTags();
     assertTags(rolledBack, {
-      beta: values["previous-version"],
-      latest: values["previous-version"],
+      beta: values["last-known-good-version"],
+      latest: values["last-known-good-version"],
     });
     states.push(recommendedTags(rolledBack));
 
@@ -137,7 +140,7 @@ await writeFile(
       package: values.package,
       mode,
       currentVersion: values["current-version"],
-      previousVersion: values["previous-version"],
+      lastKnownGoodVersion: values["last-known-good-version"],
       auth: "oidc-trusted-publishing",
       states,
       timeline,

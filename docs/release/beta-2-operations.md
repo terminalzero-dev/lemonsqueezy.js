@@ -14,13 +14,13 @@ one unit.
   a publish-succeeded/finalization-failed run.
 - npm Trusted Publishing matches this repository,
   `.github/workflows/registry-release.yml`, and the protected `npm-release`
-  environment. The publish and dist-tag jobs use only short-lived OIDC
+  environment. The publish and dist-tag steps use only short-lived OIDC
   identities on GitHub-hosted runners.
-- `5.0.0-beta.1` is the previous verified Last Known Good version and both
+- `5.0.0-beta.1` is the Last Known Good version and both
   `latest` and `beta` initially resolve to it.
 
 Dispatch `registry-release.yml` from the exact version commit with the
-Candidate run ID, version, commit, SHA-256, and previous version. Leave
+Candidate run ID, version, commit, SHA-256, and Last Known Good version. Leave
 `resume_published=false` for the first attempt.
 
 The workflow performs these mutations in order:
