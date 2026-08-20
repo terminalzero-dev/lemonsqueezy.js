@@ -88,12 +88,12 @@ npm scope 的真实 ownership 无法由本仓库或 GitHub 邀请推断。在它
 
 职责分离为：
 
-| Workflow role     | Trigger                                  | 凭据/权限                                                                                                                 | 结果                                         |
-| ----------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| Pull-request CI   | PR / trusted branch push                 | 无外部凭据；read-only                                                                                                     | required deterministic checks                |
-| Nightly Test Mode | trusted default-branch schedule / manual | 专用 Test Mode environment                                                                                                | drift canary，不发布                         |
-| Release Candidate | maintainer manual，受保护 branch         | Test Mode environment；无 npm credential                                                                                  | exact `.tgz`、digest、全部 gates 与 evidence |
-| Registry release  | maintainer manual，受保护 branch         | `contents: read`、读取 candidate artifact、`id-token: write`；tag/finalize jobs 才使用单仓库 App 的 job-local write token | publish、registry verify、tag、Release       |
+| Workflow role     | Trigger                                  | 凭据/权限                                                                                                                                    | 结果                                         |
+| ----------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Pull-request CI   | PR / trusted branch push                 | 无外部凭据；read-only                                                                                                                        | required deterministic checks                |
+| Nightly Test Mode | trusted default-branch schedule / manual | 专用 Test Mode environment                                                                                                                   | drift canary，不发布                         |
+| Release Candidate | maintainer manual，受保护 branch         | Test Mode environment；无 npm credential                                                                                                     | exact `.tgz`、digest、全部 gates 与 evidence |
+| Registry release  | maintainer manual，受保护 branch         | `contents: read`、读取 candidate artifact、`id-token: write`；tag/finalize jobs 才使用单仓库 App 的 job-local Contents/Workflows write token | publish、registry verify、tag、Release       |
 
 不使用 `pull_request_target` 执行可变 PR code，不让 release workflow 响应普通 push 自动发布，也不依赖 `GITHUB_TOKEN` 创建 tag 后隐式触发另一个 workflow。
 
