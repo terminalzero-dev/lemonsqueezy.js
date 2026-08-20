@@ -367,6 +367,7 @@ jobs:
           client-id: ${{ vars.RELEASE_GITHUB_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_GITHUB_APP_PRIVATE_KEY }}
           permission-contents: write
+          permission-workflows: write
 
       - name: Checkout with the repository-only release identity
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

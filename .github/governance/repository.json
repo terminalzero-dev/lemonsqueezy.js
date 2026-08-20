@@ -7,7 +7,11 @@
       "installationId": 153681769,
       "environment": "npm-release",
       "privateKeySecret": "RELEASE_GITHUB_APP_PRIVATE_KEY",
-      "permissions": { "contents": "write", "metadata": "read" },
+      "permissions": {
+        "contents": "write",
+        "metadata": "read",
+        "workflows": "write"
+      },
       "events": [],
       "repositorySelection": "selected",
       "repositories": ["terminalzero-dev/lemonsqueezy.js"]
