@@ -27,10 +27,7 @@ for (const name of [
 ]) {
   assert.ok(values[name]?.trim(), `Missing --${name}`);
 }
-assert.notEqual(
-  values["current-version"],
-  values["last-known-good-version"],
-);
+assert.notEqual(values["current-version"], values["last-known-good-version"]);
 
 const registry = new URL(
   values.registry.endsWith("/") ? values.registry : `${values.registry}/`,
