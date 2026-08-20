@@ -17,6 +17,17 @@ void test("pack produces one canonical tarball and one publish plan", () => {
   assert.equal(files.includes("artifact.json"), true);
 });
 
+void test("the publish plan uses the explicit beta dist-tag", () => {
+  const publishPlan = JSON.parse(
+    readFileSync(join(artifactDirectory, "publish-plan.json"), "utf8"),
+  );
+  const operations = publishPlan.plan.flat();
+
+  assert.equal(operations.length, 1);
+  assert.match(operations[0].version, /-beta\./);
+  assert.equal(operations[0].tag, "beta");
+});
+
 void test("the recorded canonical artifact digest matches the exact tarball", () => {
   const identity = JSON.parse(
     readFileSync(join(artifactDirectory, "artifact.json"), "utf8"),
