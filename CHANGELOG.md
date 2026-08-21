@@ -1,5 +1,13 @@
 # @terminalzero/lemonsqueezy
 
+## 5.0.0-beta.3
+
+### Patch Changes
+
+- [#123](https://github.com/terminalzero-dev/lemonsqueezy.js/pull/123) [`170c152`](https://github.com/terminalzero-dev/lemonsqueezy.js/commit/170c152ae22f6c50691119d937aba2ca12db57f4) Thanks [@keyding](https://github.com/keyding)! - Publish beta.3 with corrected exact-version installation guidance and a
+  Candidate-bound recurring-beta release path. Runtime behavior and public API
+  remain unchanged.
+
 ## 5.0.0-beta.2
 
 ### Patch Changes
