@@ -286,4 +286,25 @@ describe("webhooks namespace", () => {
     });
     expect(attempts).toBe(0);
   });
+
+  it("honors RequestOptions cancellation after one transport attempt", async () => {
+    let attempts = 0;
+    const controller = new AbortController();
+    const client = createClientWithAdapter(
+      { apiKey: "webhooks-key" },
+      async () => {
+        attempts += 1;
+        controller.abort("caller-cancelled");
+        return await new Promise<Response>(() => {});
+      },
+    );
+
+    await expect(
+      client.webhooks.list({}, { signal: controller.signal, timeoutMs: 1_000 }),
+    ).rejects.toMatchObject({
+      code: "aborted",
+      cause: "caller-cancelled",
+    });
+    expect(attempts).toBe(1);
+  });
 });

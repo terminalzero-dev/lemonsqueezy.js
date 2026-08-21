@@ -173,10 +173,23 @@ void test("migration documentation and release feedback assets are publish-ready
   );
   const auditEnd = migrationLines.indexOf("", auditStart);
   const auditTable = migrationLines.slice(auditStart, auditEnd);
-  assert.equal(auditTable.length, 16);
+  assert.equal(auditTable.length, 19);
   for (const row of auditTable) {
     assert.equal(row.replaceAll("\\|", "").split("|").length - 1, 5, row);
   }
+  assert.match(
+    migration,
+    /Webhook identifier segments.*\.\/src\/namespaces\/webhooks\/contract\.ts.*\.\/src\/namespaces\/webhooks\/webhooks\.test\.ts/,
+  );
+  assert.match(
+    migration,
+    /Webhook subscription inputs.*\.\/src\/namespaces\/webhooks\/types\.ts.*\.\/src\/namespaces\/webhooks\/webhooks\.test\.ts/,
+  );
+  assert.match(
+    migration,
+    /Webhook secrets in errors.*\.\/src\/internal\/v5\/redaction\.ts.*\.\/src\/namespaces\/webhooks\/webhooks\.test\.ts/,
+  );
+  assert.doesNotMatch(migration, /lemonsqueezy\.js\/blob\/main/);
   assert.match(
     migration,
     /package\s+rollback cannot undo successful\s+remote/i,
