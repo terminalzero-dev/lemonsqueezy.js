@@ -508,6 +508,7 @@ void test("interactive npm 2FA dist-tag drill is complete and independently veri
   const currentVersion = "5.0.0-beta.2";
   const lastKnownGoodVersion = "5.0.0-beta.1";
   const sourceCommit = "a".repeat(40);
+  const registryRunCommit = "c".repeat(40);
   const artifactSha256 = "b".repeat(64);
   const registryReleaseRunId = "98765";
   const npmActor = "npm-maintainer";
@@ -937,8 +938,21 @@ process.exit(2);
           path: ".github/workflows/registry-release.yml",
           event: "workflow_dispatch",
           conclusion: "success",
-          head_sha: sourceCommit,
+          head_sha: registryRunCommit,
           head_branch: "release/v5-beta",
+        }),
+      );
+      return;
+    }
+    if (
+      request.url ===
+      `/repos/terminalzero-dev/lemonsqueezy.js/compare/${sourceCommit}...${registryRunCommit}`
+    ) {
+      response.end(
+        JSON.stringify({
+          status: "ahead",
+          base_commit: { sha: sourceCommit },
+          merge_base_commit: { sha: sourceCommit },
         }),
       );
       return;
@@ -1180,9 +1194,12 @@ void test("protected release dispatch accepts Candidate ancestors and rejects un
   );
 });
 
-void test("OIDC publish waits for verified interactive dist-tag evidence before finalization", () => {
+void test("recurring beta OIDC release remains Candidate-bound and recoverable", () => {
   const workflow = readRootText(".github/workflows/registry-release.yml");
   const wizard = readRootText("scripts/release-dist-tags-wizard.sh");
+  const recurringOperations = readRootText(
+    "docs/release/recurring-beta-operations.md",
+  );
 
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /candidate_run_id:/);
@@ -1190,6 +1207,7 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(workflow, /expected_commit:/);
   assert.match(workflow, /expected_sha256:/);
   assert.match(workflow, /last_known_good_version:/);
+  assert.match(workflow, /dist_tag_evidence_issue_number:/);
   assert.match(workflow, /dist_tag_evidence_comment_id:/);
   assert.match(workflow, /group: v5-release/);
   assert.match(workflow, /cancel-in-progress: false/);
@@ -1236,6 +1254,11 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   );
   assert.match(workflow, /npm audit signatures --json --include-attestations/);
   assert.match(workflow, /verify-dist-tag-evidence\.mjs/);
+  assert.match(workflow, /--issue "\$DIST_TAG_EVIDENCE_ISSUE_NUMBER"/);
+  assert.match(
+    workflow,
+    /DIST_TAG_EVIDENCE_ISSUE_NUMBER: \$\{\{ inputs\.dist_tag_evidence_issue_number \}\}/,
+  );
   assert.match(workflow, /--expected-beta-version "\$EXPECTED_VERSION"/);
   assert.match(
     workflow,
@@ -1247,6 +1270,14 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
     /exercise-dist-tags\.mjs|oidc\/token\/exchange/,
   );
   assert.match(workflow, /inputs\.resume_published == true/);
+  assert.match(
+    workflow,
+    /inputs\.resume_published == true &&\s+inputs\.dist_tag_evidence_comment_id != ''/,
+  );
+  assert.match(
+    workflow,
+    /inputs\.resume_published &&\s*inputs\.dist_tag_evidence_comment_id != '' &&\s*inputs\.expected_version \|\| inputs\.last_known_good_version/,
+  );
   assert.match(wizard, /REGISTRY_RELEASE_RUN_ID/);
   assert.match(wizard, /registry-release-verified-/);
   assert.match(wizard, /NPM_CONFIG_USERCONFIG="\$WIZARD_TEMP\/npmrc"/);
@@ -1262,8 +1293,18 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(wizard, /validate-failed-dist-tag-evidence\.mjs/);
   assert.match(
     wizard,
-    /cat "\$BODY_PATH"[\s\S]*confirm "Post this complete evidence chain to Issue #35\?"/,
+    /cat "\$BODY_PATH"[\s\S]*confirm "Post this complete evidence chain to Issue #\$RELEASE_ISSUE_NUMBER\?"/,
   );
+  assert.match(wizard, /issues\/\$RELEASE_ISSUE_NUMBER\/comments/);
+  assert.match(
+    wizard,
+    /dist_tag_evidence_issue_number="\$RELEASE_ISSUE_NUMBER"/,
+  );
+  assert.match(
+    wizard,
+    /EXPECTED_ARTIFACT_NAME="release-candidate-\$CURRENT_VERSION-\$RUN_COMMIT"/,
+  );
+  assert.doesNotMatch(wizard, /5\.0\.0-beta\.[12]|Issue #35/);
   assert.match(
     wizard,
     /wait_for_public_tags "\$CURRENT_VERSION" "\$LAST_KNOWN_GOOD_VERSION"/,
@@ -1275,11 +1316,15 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(wizard, /source "\$ROOT\/scripts\/lib\/retry-command\.sh"/);
   assert.match(
     wizard,
-    /ARTIFACT_NAME=\$\(retry_command 3 gh api[\s\S]*actions\/runs\/\$CANDIDATE_RUN_ID\/artifacts/,
+    /ARTIFACTS=\$\(retry_command 3 gh api[\s\S]*actions\/runs\/\$CANDIDATE_RUN_ID\/artifacts/,
   );
   assert.match(
     wizard,
     /git merge-base --is-ancestor "\$SOURCE_COMMIT" origin\/release\/v5-beta/,
+  );
+  assert.match(
+    wizard,
+    /git merge-base --is-ancestor "\$SOURCE_COMMIT" "\$REGISTRY_RUN_COMMIT"/,
   );
   assert.match(workflow, /PACKAGE_SMOKE_SPEC/);
   assert.match(
@@ -1293,6 +1338,20 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(workflow, /PACKAGE_SMOKE_EXPECTED_VERSION/);
   assert.match(workflow, /run: pnpm test:package/);
   assert.match(workflow, /gh release create/);
+  assert.equal(
+    workflow.includes(
+      'release_notes="docs/release/${release_suffix//./-}-release-notes.md"',
+    ),
+    true,
+  );
+  assert.doesNotMatch(workflow, /beta-2-release-notes\.md/);
+  assert.match(workflow, /expected_notes=\$\(cat "\$release_notes"\)/);
+  assert.match(
+    workflow,
+    /test "\$\(printf '%s' "\$release" \| jq -r \.body\)" = "\$expected_notes"/,
+  );
+  assert.match(recurringOperations, /Stable Readiness/);
+  assert.match(recurringOperations, /reset.*unchanged.*soak/is);
   assert.match(workflow, /Create or verify the protected release tag/);
   assert.match(workflow, /git push origin/);
   assert.match(

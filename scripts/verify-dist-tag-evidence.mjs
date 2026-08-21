@@ -128,8 +128,26 @@ assert.equal(releaseRun.name, "Registry Release");
 assert.equal(releaseRun.path, ".github/workflows/registry-release.yml");
 assert.equal(releaseRun.event, "workflow_dispatch");
 assert.equal(releaseRun.conclusion, "success");
-assert.equal(releaseRun.head_sha, values["source-commit"]);
+assert.match(releaseRun.head_sha ?? "", /^[0-9a-f]{40}$/);
 assert.match(releaseRun.head_branch, /^(?:main|release\/v5-beta)$/);
+
+const compareUrl = new URL(
+  `repos/${values.repository}/compare/${values["source-commit"]}...${releaseRun.head_sha}`,
+  githubApi,
+);
+const compareResponse = await fetch(compareUrl, {
+  headers,
+  redirect: "error",
+});
+assert.equal(
+  compareResponse.status,
+  200,
+  `Candidate ancestry comparison returned HTTP ${compareResponse.status}`,
+);
+const comparison = await compareResponse.json();
+assert.match(comparison.status ?? "", /^(?:ahead|identical)$/);
+assert.equal(comparison.base_commit?.sha, values["source-commit"]);
+assert.equal(comparison.merge_base_commit?.sha, values["source-commit"]);
 
 const artifactsUrl = new URL(
   `repos/${values.repository}/actions/runs/${evidence.registryReleaseRunId}/artifacts`,
