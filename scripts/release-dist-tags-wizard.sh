@@ -330,7 +330,11 @@ REGISTRY_RUN=$(retry_command 3 gh api \
   "repos/$REPOSITORY/actions/runs/$REGISTRY_RELEASE_RUN_ID")
 [[ "$(jq -r .name <<<"$REGISTRY_RUN")" == "Registry Release" ]]
 [[ "$(jq -r .conclusion <<<"$REGISTRY_RUN")" == "success" ]]
-[[ "$(jq -r .head_sha <<<"$REGISTRY_RUN")" == "$SOURCE_COMMIT" ]]
+REGISTRY_RUN_COMMIT=$(jq -r .head_sha <<<"$REGISTRY_RUN")
+git merge-base --is-ancestor "$SOURCE_COMMIT" "$REGISTRY_RUN_COMMIT" || {
+  warn "Registry Release dispatch commit does not contain the Candidate commit"
+  exit 1
+}
 VERIFIED_ARTIFACT_NAME="registry-release-verified-$CURRENT_VERSION-$ARTIFACT_SHA256"
 VERIFIED_ARTIFACT=$(retry_command 3 gh api \
   "repos/$REPOSITORY/actions/runs/$REGISTRY_RELEASE_RUN_ID/artifacts" \

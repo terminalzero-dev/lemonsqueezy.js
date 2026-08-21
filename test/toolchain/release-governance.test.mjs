@@ -1180,9 +1180,12 @@ void test("protected release dispatch accepts Candidate ancestors and rejects un
   );
 });
 
-void test("OIDC publish waits for verified interactive dist-tag evidence before finalization", () => {
+void test("recurring beta OIDC release remains Candidate-bound and recoverable", () => {
   const workflow = readRootText(".github/workflows/registry-release.yml");
   const wizard = readRootText("scripts/release-dist-tags-wizard.sh");
+  const recurringOperations = readRootText(
+    "docs/release/recurring-beta-operations.md",
+  );
 
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /candidate_run_id:/);
@@ -1253,6 +1256,14 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
     /exercise-dist-tags\.mjs|oidc\/token\/exchange/,
   );
   assert.match(workflow, /inputs\.resume_published == true/);
+  assert.match(
+    workflow,
+    /inputs\.resume_published == true &&\s+inputs\.dist_tag_evidence_comment_id != ''/,
+  );
+  assert.match(
+    workflow,
+    /inputs\.resume_published &&\s*inputs\.dist_tag_evidence_comment_id != '' &&\s*inputs\.expected_version \|\| inputs\.last_known_good_version/,
+  );
   assert.match(wizard, /REGISTRY_RELEASE_RUN_ID/);
   assert.match(wizard, /registry-release-verified-/);
   assert.match(wizard, /NPM_CONFIG_USERCONFIG="\$WIZARD_TEMP\/npmrc"/);
@@ -1297,6 +1308,10 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
     wizard,
     /git merge-base --is-ancestor "\$SOURCE_COMMIT" origin\/release\/v5-beta/,
   );
+  assert.match(
+    wizard,
+    /git merge-base --is-ancestor "\$SOURCE_COMMIT" "\$REGISTRY_RUN_COMMIT"/,
+  );
   assert.match(workflow, /PACKAGE_SMOKE_SPEC/);
   assert.match(
     workflow,
@@ -1316,6 +1331,13 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
     true,
   );
   assert.doesNotMatch(workflow, /beta-2-release-notes\.md/);
+  assert.match(workflow, /expected_notes=\$\(cat "\$release_notes"\)/);
+  assert.match(
+    workflow,
+    /test "\$\(printf '%s' "\$release" \| jq -r \.body\)" = "\$expected_notes"/,
+  );
+  assert.match(recurringOperations, /Stable Readiness/);
+  assert.match(recurringOperations, /reset.*unchanged.*soak/is);
   assert.match(workflow, /Create or verify the protected release tag/);
   assert.match(workflow, /git push origin/);
   assert.match(

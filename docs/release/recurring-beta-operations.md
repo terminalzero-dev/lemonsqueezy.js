@@ -54,8 +54,27 @@ non-latest prerelease. It never republishes.
 ## Recovery
 
 If publication has not succeeded, fix the release path and create a new
-Candidate whenever source or artifact bytes change. If publication succeeded
-but finalization failed, preserve the exact Candidate and use only the
-evidence-backed `resume_published=true` path. Never rebuild or republish the
-same version. Restore public tags to the Last Known Good version and stop if
-registry identity or bytes do not match.
+Candidate whenever source or artifact bytes change.
+
+If OIDC publication succeeded but the first Registry Release run failed before
+preserving verified registry evidence, dispatch the workflow again from the
+protected release branch with the same Candidate identity and evidence Issue,
+`resume_published=true`, and an empty evidence comment ID. This recovery run
+must skip publication, verify the expected split tag state (`beta` on the new
+version and `latest` on the Last Known Good version), and preserve the verified
+registry artifact. Continue with the interactive wizard only after that run
+succeeds.
+
+If publication succeeded and verified evidence exists but finalization failed,
+preserve the exact Candidate and use only the evidence-backed
+`resume_published=true` path. Never rebuild or republish the same version.
+Restore public tags to the Last Known Good version and stop if registry identity
+or bytes do not match.
+
+## Stable Readiness follow-up
+
+After the immutable prerelease and restored public tags are verified, update
+the Stable Readiness Issue with the new beta version, Candidate run and commit,
+registry verification run, npm publication time, and GitHub Release. Because a
+new final beta was published, reset the unchanged beta soak window from that
+publication time and record the new earliest stable-release time.

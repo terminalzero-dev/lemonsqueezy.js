@@ -90,10 +90,10 @@ jobs:
       - name: Verify the requested release phase
         run: |
           [[ "$DIST_TAG_EVIDENCE_ISSUE_NUMBER" =~ ^[1-9][0-9]*$ ]]
-          if test "$RESUME_PUBLISHED" = "true"; then
-            test -n "$DIST_TAG_EVIDENCE_COMMENT_ID"
-          else
+          if test "$RESUME_PUBLISHED" = "false"; then
             test -z "$DIST_TAG_EVIDENCE_COMMENT_ID"
+          elif test -n "$DIST_TAG_EVIDENCE_COMMENT_ID"; then
+            [[ "$DIST_TAG_EVIDENCE_COMMENT_ID" =~ ^[1-9][0-9]*$ ]]
           fi
         env:
           DIST_TAG_EVIDENCE_ISSUE_NUMBER: ${{ inputs.dist_tag_evidence_issue_number }}
@@ -258,7 +258,7 @@ jobs:
           EXPECTED_VERSION: ${{ inputs.expected_version }}
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
           EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
-          EXPECTED_LATEST_VERSION: ${{ inputs.resume_published && inputs.expected_version || inputs.last_known_good_version }}
+          EXPECTED_LATEST_VERSION: ${{ inputs.resume_published && inputs.dist_tag_evidence_comment_id != '' && inputs.expected_version || inputs.last_known_good_version }}
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Preserve verified registry evidence
@@ -275,6 +275,7 @@ jobs:
     needs: verify
     if: >-
       inputs.resume_published == true &&
+      inputs.dist_tag_evidence_comment_id != '' &&
       github.actor == vars.RELEASE_MAINTAINER &&
       (github.ref == 'refs/heads/main' ||
       github.ref == 'refs/heads/release/v5-beta')
@@ -453,6 +454,7 @@ jobs:
           test "$release_suffix" != "$EXPECTED_VERSION"
           release_notes="docs/release/${release_suffix//./-}-release-notes.md"
           test -f "$release_notes"
+          expected_notes=$(cat "$release_notes")
           encoded_release=$(gh api \
             "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
             --paginate \
@@ -478,6 +480,8 @@ jobs:
           fi
 
           release=$(printf '%s' "$encoded_release" | base64 --decode)
+          test "$(printf '%s' "$release" | jq -r .name)" = "$tag"
+          test "$(printf '%s' "$release" | jq -r .body)" = "$expected_notes"
           if test "$(printf '%s' "$release" | jq -r .draft)" = "true"; then
             test "$(printf '%s' "$release" | jq -r .target_commitish)" = "$EXPECTED_COMMIT"
             assets=$(printf '%s' "$release" | jq -r '.assets[].name')
