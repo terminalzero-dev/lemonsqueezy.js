@@ -195,7 +195,7 @@ TOTAL_MINUTES=15
 
 REPOSITORY="terminalzero-dev/lemonsqueezy.js"
 PACKAGE_NAME="@terminalzero/lemonsqueezy"
-LAST_KNOWN_GOOD_VERSION="5.0.0-beta.1"
+RELEASE_ISSUE_NUMBER="${RELEASE_ISSUE_NUMBER:-}"
 REGISTRY_URL="https://registry.npmjs.org/"
 WIZARD_TEMP=$(mktemp -d)
 LOGGED_IN=false
@@ -214,6 +214,7 @@ trap cleanup EXIT
 
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
+# shellcheck source=scripts/lib/retry-command.sh
 source "$ROOT/scripts/lib/retry-command.sh"
 EVIDENCE_DIRECTORY="$ROOT/.artifacts/manual-dist-tag"
 EVIDENCE_PATH="$EVIDENCE_DIRECTORY/dist-tag-interactive-evidence.json"
@@ -255,7 +256,7 @@ wait_for_public_tags() {
   return 1
 }
 
-banner "beta.2 interactive dist-tag drill"
+banner "v5 beta interactive dist-tag drill"
 
 stage "Verify the published Candidate" 2
 say "This reads public npm and GitHub state. It does not mutate the registry."
@@ -276,6 +277,9 @@ fi
 if [[ -z "${REGISTRY_RELEASE_RUN_ID:-}" ]]; then
   ask REGISTRY_RELEASE_RUN_ID "Successful phase-one Registry Release run ID:"
 fi
+if [[ -z "$RELEASE_ISSUE_NUMBER" ]]; then
+  ask RELEASE_ISSUE_NUMBER "Release evidence Issue number:"
+fi
 [[ "$CANDIDATE_RUN_ID" =~ ^[1-9][0-9]*$ ]] || {
   warn "Candidate run ID must be numeric"
   exit 1
@@ -284,24 +288,39 @@ fi
   warn "Registry Release run ID must be numeric"
   exit 1
 }
+[[ "$RELEASE_ISSUE_NUMBER" =~ ^[1-9][0-9]*$ ]] || {
+  warn "Release evidence Issue number must be numeric"
+  exit 1
+}
+RELEASE_ISSUE=$(retry_command 3 gh api \
+  "repos/$REPOSITORY/issues/$RELEASE_ISSUE_NUMBER")
+[[ "$(jq -r .state <<<"$RELEASE_ISSUE")" == "open" ]]
+[[ "$(jq -r '.pull_request // empty' <<<"$RELEASE_ISSUE")" == "" ]]
+[[ "$(jq -r .parent_issue_url <<<"$RELEASE_ISSUE")" == \
+  "https://api.github.com/repos/$REPOSITORY/issues/39" ]]
 RUN=$(retry_command 3 gh api \
   "repos/$REPOSITORY/actions/runs/$CANDIDATE_RUN_ID")
 [[ "$(jq -r .name <<<"$RUN")" == "Release Candidate" ]]
 [[ "$(jq -r .conclusion <<<"$RUN")" == "success" ]]
 RUN_COMMIT=$(jq -r .head_sha <<<"$RUN")
-EXPECTED_ARTIFACT_NAME="release-candidate-5.0.0-beta.2-$RUN_COMMIT"
-ARTIFACT_NAME=$(retry_command 3 gh api \
-  "repos/$REPOSITORY/actions/runs/$CANDIDATE_RUN_ID/artifacts" \
-  --jq ".artifacts[] | select(.name == \"$EXPECTED_ARTIFACT_NAME\") | .name")
-[[ "$ARTIFACT_NAME" == "$EXPECTED_ARTIFACT_NAME" ]]
+ARTIFACTS=$(retry_command 3 gh api \
+  "repos/$REPOSITORY/actions/runs/$CANDIDATE_RUN_ID/artifacts")
+MATCHING_ARTIFACTS=$(jq -c \
+  --arg commit "$RUN_COMMIT" \
+  '[.artifacts[] | select(.name | test("^release-candidate-5\\.0\\.0-beta\\.[1-9][0-9]*-" + $commit + "$")) | .name]' \
+  <<<"$ARTIFACTS")
+[[ "$(jq -r length <<<"$MATCHING_ARTIFACTS")" -eq 1 ]]
+ARTIFACT_NAME=$(jq -r '.[0]' <<<"$MATCHING_ARTIFACTS")
 CANDIDATE_DIR="$WIZARD_TEMP/candidate"
 retry_command 3 download_run_artifact \
   "$CANDIDATE_RUN_ID" "$ARTIFACT_NAME" "$CANDIDATE_DIR"
 CURRENT_VERSION=$(jq -r .version "$CANDIDATE_DIR/candidate.json")
 SOURCE_COMMIT=$(jq -r .sourceCommit "$CANDIDATE_DIR/candidate.json")
 ARTIFACT_SHA256=$(jq -r .artifact.sha256 "$CANDIDATE_DIR/candidate.json")
+EXPECTED_ARTIFACT_NAME="release-candidate-$CURRENT_VERSION-$RUN_COMMIT"
+[[ "$ARTIFACT_NAME" == "$EXPECTED_ARTIFACT_NAME" ]]
 [[ "$(jq -r .head_sha <<<"$RUN")" == "$SOURCE_COMMIT" ]]
-[[ "$CURRENT_VERSION" == "5.0.0-beta.2" ]]
+[[ "$CURRENT_VERSION" =~ ^5\.0\.0-beta\.[1-9][0-9]*$ ]]
 retry_command 3 git fetch origin release/v5-beta
 git merge-base --is-ancestor "$SOURCE_COMMIT" origin/release/v5-beta || {
   warn "Candidate commit is not part of the current release branch"
@@ -321,6 +340,9 @@ REGISTRY_EVIDENCE_DIR="$WIZARD_TEMP/registry-evidence"
 retry_command 3 download_run_artifact \
   "$REGISTRY_RELEASE_RUN_ID" "$VERIFIED_ARTIFACT_NAME" "$REGISTRY_EVIDENCE_DIR"
 REGISTRY_EVIDENCE="$REGISTRY_EVIDENCE_DIR/registry-evidence.json"
+LAST_KNOWN_GOOD_VERSION=$(jq -r .registry.distTags.latest "$REGISTRY_EVIDENCE")
+[[ "$LAST_KNOWN_GOOD_VERSION" =~ ^5\.0\.0-beta\.[1-9][0-9]*$ ]]
+[[ "$LAST_KNOWN_GOOD_VERSION" != "$CURRENT_VERSION" ]]
 [[ "$(jq -r .version "$REGISTRY_EVIDENCE")" == "$CURRENT_VERSION" ]]
 [[ "$(jq -r .sourceCommit "$REGISTRY_EVIDENCE")" == "$SOURCE_COMMIT" ]]
 [[ "$(jq -r .candidate.runId "$REGISTRY_EVIDENCE")" == "$CANDIDATE_RUN_ID" ]]
@@ -395,11 +417,11 @@ confirm "Are account recovery materials available right now?" || {
 stage "Promote, rollback, and restore dist-tags" 8
 DRILL_RESUME_ARGS=()
 if [[ -n "$RESUME_EVIDENCE_PATH" ]]; then
-  say "The recorded promotion is complete. The drill will roll latest and beta back to beta.1, then restore both to beta.2."
+  say "The recorded promotion is complete. The drill will roll latest and beta back to $LAST_KNOWN_GOOD_VERSION, then restore both to $CURRENT_VERSION."
   warn "This resume changes public npm resolution four times in a controlled window."
   DRILL_RESUME_ARGS=(--resume-evidence "$RESUME_EVIDENCE_PATH")
 else
-  say "The drill will move latest to beta.2, move latest and beta back to beta.1, then restore both to beta.2."
+  say "The drill will move latest to $CURRENT_VERSION, move latest and beta back to $LAST_KNOWN_GOOD_VERSION, then restore both to $CURRENT_VERSION."
   warn "This changes public npm resolution five times in a controlled window."
 fi
 confirm "Run the public dist-tag drill now?" || exit 1
@@ -460,9 +482,9 @@ BODY_PATH="$WIZARD_TEMP/issue-comment.md"
 } > "$BODY_PATH"
 say "The complete Issue comment below is secret-free evidence. Review it before posting."
 cat "$BODY_PATH"
-confirm "Post this complete evidence chain to Issue #35?" || exit 1
+confirm "Post this complete evidence chain to Issue #$RELEASE_ISSUE_NUMBER?" || exit 1
 COMMENT=$(jq -Rs '{body: .}' < "$BODY_PATH" | \
-  gh api "repos/$REPOSITORY/issues/35/comments" --method POST --input -)
+  gh api "repos/$REPOSITORY/issues/$RELEASE_ISSUE_NUMBER/comments" --method POST --input -)
 COMMENT_ID=$(jq -r .id <<<"$COMMENT")
 COMMENT_URL=$(jq -r .html_url <<<"$COMMENT")
 say "Evidence comment: $COMMENT_URL"
@@ -477,6 +499,7 @@ gh workflow run registry-release.yml -R "$REPOSITORY" \
   -f expected_commit="$SOURCE_COMMIT" \
   -f expected_sha256="$ARTIFACT_SHA256" \
   -f last_known_good_version="$LAST_KNOWN_GOOD_VERSION" \
+  -f dist_tag_evidence_issue_number="$RELEASE_ISSUE_NUMBER" \
   -f resume_published=true \
   -f dist_tag_evidence_comment_id="$COMMENT_ID"
 say "Finalization dispatched. It will revalidate the comment, live tags, package bytes, and provenance."

@@ -23,13 +23,17 @@ on:
         description: Verified Last Known Good version for the rollback drill
         required: true
         type: string
+      dist_tag_evidence_issue_number:
+        description: Issue number that owns the interactive dist-tag drill evidence
+        required: true
+        type: string
       resume_published:
         description: Resume only when the exact Candidate bytes are already in npm
         required: true
         default: false
         type: boolean
       dist_tag_evidence_comment_id:
-        description: Issue #35 comment ID containing the interactive dist-tag drill evidence
+        description: Comment ID containing the interactive dist-tag drill evidence
         required: false
         default: ""
         type: string
@@ -85,12 +89,14 @@ jobs:
 
       - name: Verify the requested release phase
         run: |
+          [[ "$DIST_TAG_EVIDENCE_ISSUE_NUMBER" =~ ^[1-9][0-9]*$ ]]
           if test "$RESUME_PUBLISHED" = "true"; then
             test -n "$DIST_TAG_EVIDENCE_COMMENT_ID"
           else
             test -z "$DIST_TAG_EVIDENCE_COMMENT_ID"
           fi
         env:
+          DIST_TAG_EVIDENCE_ISSUE_NUMBER: ${{ inputs.dist_tag_evidence_issue_number }}
           DIST_TAG_EVIDENCE_COMMENT_ID: ${{ inputs.dist_tag_evidence_comment_id }}
           RESUME_PUBLISHED: ${{ inputs.resume_published }}
 
@@ -294,7 +300,7 @@ jobs:
         run: >-
           node scripts/verify-dist-tag-evidence.mjs
           --comment-id "$DIST_TAG_EVIDENCE_COMMENT_ID"
-          --issue 35
+          --issue "$DIST_TAG_EVIDENCE_ISSUE_NUMBER"
           --expected-author "$RELEASE_MAINTAINER"
           --package "@terminalzero/lemonsqueezy"
           --current-version "$EXPECTED_VERSION"
@@ -304,6 +310,7 @@ jobs:
           --repository "$GITHUB_REPOSITORY"
           --output .artifacts/package/dist-tag-interactive-evidence.json
         env:
+          DIST_TAG_EVIDENCE_ISSUE_NUMBER: ${{ inputs.dist_tag_evidence_issue_number }}
           DIST_TAG_EVIDENCE_COMMENT_ID: ${{ inputs.dist_tag_evidence_comment_id }}
           EXPECTED_VERSION: ${{ inputs.expected_version }}
           LAST_KNOWN_GOOD_VERSION: ${{ inputs.last_known_good_version }}
@@ -421,6 +428,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ inputs.expected_commit }}
 
       - name: Mint the repository-only Release identity
         id: release-token
@@ -441,6 +449,10 @@ jobs:
         id: release
         run: |
           tag="v${EXPECTED_VERSION}"
+          release_suffix=${EXPECTED_VERSION#5.0.0-}
+          test "$release_suffix" != "$EXPECTED_VERSION"
+          release_notes="docs/release/${release_suffix//./-}-release-notes.md"
+          test -f "$release_notes"
           encoded_release=$(gh api \
             "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
             --paginate \
@@ -460,7 +472,7 @@ jobs:
               --prerelease \
               --latest=false \
               --title "$tag" \
-              --notes-file docs/release/beta-2-release-notes.md
+              --notes-file "$release_notes"
             echo "already_published=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi

@@ -1190,6 +1190,7 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(workflow, /expected_commit:/);
   assert.match(workflow, /expected_sha256:/);
   assert.match(workflow, /last_known_good_version:/);
+  assert.match(workflow, /dist_tag_evidence_issue_number:/);
   assert.match(workflow, /dist_tag_evidence_comment_id:/);
   assert.match(workflow, /group: v5-release/);
   assert.match(workflow, /cancel-in-progress: false/);
@@ -1236,6 +1237,11 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   );
   assert.match(workflow, /npm audit signatures --json --include-attestations/);
   assert.match(workflow, /verify-dist-tag-evidence\.mjs/);
+  assert.match(workflow, /--issue "\$DIST_TAG_EVIDENCE_ISSUE_NUMBER"/);
+  assert.match(
+    workflow,
+    /DIST_TAG_EVIDENCE_ISSUE_NUMBER: \$\{\{ inputs\.dist_tag_evidence_issue_number \}\}/,
+  );
   assert.match(workflow, /--expected-beta-version "\$EXPECTED_VERSION"/);
   assert.match(
     workflow,
@@ -1262,8 +1268,18 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(wizard, /validate-failed-dist-tag-evidence\.mjs/);
   assert.match(
     wizard,
-    /cat "\$BODY_PATH"[\s\S]*confirm "Post this complete evidence chain to Issue #35\?"/,
+    /cat "\$BODY_PATH"[\s\S]*confirm "Post this complete evidence chain to Issue #\$RELEASE_ISSUE_NUMBER\?"/,
   );
+  assert.match(wizard, /issues\/\$RELEASE_ISSUE_NUMBER\/comments/);
+  assert.match(
+    wizard,
+    /dist_tag_evidence_issue_number="\$RELEASE_ISSUE_NUMBER"/,
+  );
+  assert.match(
+    wizard,
+    /EXPECTED_ARTIFACT_NAME="release-candidate-\$CURRENT_VERSION-\$RUN_COMMIT"/,
+  );
+  assert.doesNotMatch(wizard, /5\.0\.0-beta\.[12]|Issue #35/);
   assert.match(
     wizard,
     /wait_for_public_tags "\$CURRENT_VERSION" "\$LAST_KNOWN_GOOD_VERSION"/,
@@ -1275,7 +1291,7 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(wizard, /source "\$ROOT\/scripts\/lib\/retry-command\.sh"/);
   assert.match(
     wizard,
-    /ARTIFACT_NAME=\$\(retry_command 3 gh api[\s\S]*actions\/runs\/\$CANDIDATE_RUN_ID\/artifacts/,
+    /ARTIFACTS=\$\(retry_command 3 gh api[\s\S]*actions\/runs\/\$CANDIDATE_RUN_ID\/artifacts/,
   );
   assert.match(
     wizard,
@@ -1293,6 +1309,13 @@ void test("OIDC publish waits for verified interactive dist-tag evidence before 
   assert.match(workflow, /PACKAGE_SMOKE_EXPECTED_VERSION/);
   assert.match(workflow, /run: pnpm test:package/);
   assert.match(workflow, /gh release create/);
+  assert.equal(
+    workflow.includes(
+      'release_notes="docs/release/${release_suffix//./-}-release-notes.md"',
+    ),
+    true,
+  );
+  assert.doesNotMatch(workflow, /beta-2-release-notes\.md/);
   assert.match(workflow, /Create or verify the protected release tag/);
   assert.match(workflow, /git push origin/);
   assert.match(
