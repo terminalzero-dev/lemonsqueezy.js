@@ -40,20 +40,20 @@ Before editing, record all of the following in the migration change:
 
 ### 2. Install an exact beta
 
-Use the exact release under evaluation. The commands below use the first v5
-beta target; do not replace it with `beta`, `latest`, a caret, or a tilde in a
-deployable manifest.
+Use the exact release under evaluation. The commands below use the current
+verified v5 beta; do not replace it with `beta`, `latest`, a caret, or a tilde
+in a deployable manifest.
 
 ```sh
-npm install --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.1
+npm install --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.2
 ```
 
 ```sh
-pnpm add --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.1
+pnpm add --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.2
 ```
 
 ```sh
-bun add --exact @terminalzero/lemonsqueezy@5.0.0-beta.1
+bun add --exact @terminalzero/lemonsqueezy@5.0.0-beta.2
 ```
 
 ### 3. Change supported imports

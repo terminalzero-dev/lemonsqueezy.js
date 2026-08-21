@@ -26,18 +26,18 @@ Lemon Squeezy API. It ships native ESM and CJS for Node.js 22 and 24 and Bun
 
 ## Installation
 
-Install and deploy an exact version. The examples use the first v5 beta target.
+Install and deploy the current verified v5 beta as an exact version.
 
 ```sh
-pnpm add --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.1
+pnpm add --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.2
 ```
 
 ```sh
-npm install --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.1
+npm install --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.2
 ```
 
 ```sh
-bun add --exact @terminalzero/lemonsqueezy@5.0.0-beta.1
+bun add --exact @terminalzero/lemonsqueezy@5.0.0-beta.2
 ```
 
 Existing v4 applications should follow the
