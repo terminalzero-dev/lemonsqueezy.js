@@ -508,6 +508,7 @@ void test("interactive npm 2FA dist-tag drill is complete and independently veri
   const currentVersion = "5.0.0-beta.2";
   const lastKnownGoodVersion = "5.0.0-beta.1";
   const sourceCommit = "a".repeat(40);
+  const registryRunCommit = "c".repeat(40);
   const artifactSha256 = "b".repeat(64);
   const registryReleaseRunId = "98765";
   const npmActor = "npm-maintainer";
@@ -937,8 +938,21 @@ process.exit(2);
           path: ".github/workflows/registry-release.yml",
           event: "workflow_dispatch",
           conclusion: "success",
-          head_sha: sourceCommit,
+          head_sha: registryRunCommit,
           head_branch: "release/v5-beta",
+        }),
+      );
+      return;
+    }
+    if (
+      request.url ===
+      `/repos/terminalzero-dev/lemonsqueezy.js/compare/${sourceCommit}...${registryRunCommit}`
+    ) {
+      response.end(
+        JSON.stringify({
+          status: "ahead",
+          base_commit: { sha: sourceCommit },
+          merge_base_commit: { sha: sourceCommit },
         }),
       );
       return;
