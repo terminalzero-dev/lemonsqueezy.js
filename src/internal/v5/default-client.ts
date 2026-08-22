@@ -11,19 +11,19 @@ import {
 } from "./types";
 
 export interface DefaultClientOptions extends ClientOptions {
-  readonly onError?: (error: Error) => void;
+  readonly onError?: (error: LemonSqueezyError) => void;
 }
 
 export type CompatibilityResponse<Result> =
   | {
-      readonly statusCode: number;
-      readonly data: Result | null;
-      readonly error: null;
+      statusCode: number;
+      data: Result;
+      error: null;
     }
   | {
-      readonly statusCode: number | null;
-      readonly data: null;
-      readonly error: LemonSqueezyError;
+      statusCode: number | null;
+      data: null;
+      error: LemonSqueezyError;
     };
 
 let defaultOptions: DefaultClientOptions = {};
@@ -61,7 +61,7 @@ export async function invokeDefaultCompatibility<
     const result = await runtime.invoke<Args, RuntimeResult>(operation, args);
     return {
       statusCode: result.statusCode,
-      data: (result.body ?? null) as CompatibilityResult | null,
+      data: (result.body ?? null) as CompatibilityResult,
       error: null,
     };
   } catch (error) {
