@@ -129,6 +129,29 @@ describe("License API Compatibility projections", () => {
     expect(observer).toHaveBeenCalledWith(result.error);
   });
 
+  it("sanitizes the Compatibility envelope before notifying the Error observer", async () => {
+    const licenseKey = "secret-business-license-key";
+    const observer = vi.fn();
+    setDefaultAdapter(async () => {
+      throw new Error(`Network rejected ${licenseKey}.`);
+    });
+    lemonSqueezySetup({ onError: observer });
+
+    const result = await validateLicense(licenseKey);
+
+    expect(result).toMatchObject({
+      statusCode: null,
+      data: null,
+      error: {
+        code: "network",
+        cause: { message: "Network rejected [REDACTED]." },
+      },
+    });
+    expect(observer).toHaveBeenCalledOnce();
+    expect(observer).toHaveBeenCalledWith(result.error);
+    expect(String(result.error?.cause)).not.toContain(licenseKey);
+  });
+
   it("rejects positional validation before transport or observer notification", async () => {
     const adapter = vi.fn(async () => Response.json({ valid: true }));
     const observer = vi.fn();

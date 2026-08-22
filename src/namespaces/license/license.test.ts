@@ -141,6 +141,122 @@ describe("license namespace", () => {
     expect(requests[0]?.headers.has("authorization")).toBe(false);
   });
 
+  it.each([
+    {
+      name: "HTTP JSON",
+      expectedCode: "http",
+      respond: (licenseKey: string, instanceId: string) =>
+        Response.json(
+          {
+            error: `Could not validate ${licenseKey} for ${instanceId}.`,
+            license_key: { key: licenseKey },
+            instance_id: instanceId,
+          },
+          { status: 422 },
+        ),
+    },
+    {
+      name: "HTTP text",
+      expectedCode: "http",
+      respond: (licenseKey: string, instanceId: string) =>
+        new Response(`Could not validate ${licenseKey} for ${instanceId}.`, {
+          status: 502,
+        }),
+    },
+    {
+      name: "invalid-response text",
+      expectedCode: "invalid_response",
+      respond: (licenseKey: string, instanceId: string) =>
+        new Response(`Could not validate ${licenseKey} for ${instanceId}.`),
+    },
+  ])("sanitizes $name failure diagnostics", async (testCase) => {
+    const licenseKey = "secret-business-license-key";
+    const instanceId = "secret-instance-id";
+    const client = createClientWithAdapter({}, async () =>
+      testCase.respond(licenseKey, instanceId),
+    );
+
+    const error = await client.license
+      .validate({ licenseKey, instanceId })
+      .catch((cause: unknown) => cause);
+    const diagnostics = serializeFailure(error);
+
+    expect(error).toMatchObject({ code: testCase.expectedCode });
+    expect(diagnostics).toContain("[REDACTED]");
+    expect(diagnostics).not.toContain(licenseKey);
+    expect(diagnostics).not.toContain(instanceId);
+  });
+
+  it("sanitizes network failure causes", async () => {
+    const licenseKey = "secret-business-license-key";
+    const networkClient = createClientWithAdapter({}, async () => {
+      throw new Error(`Network rejected ${licenseKey}.`);
+    });
+
+    const networkError = await networkClient.license
+      .validate({ licenseKey })
+      .catch((cause: unknown) => cause);
+
+    expect(networkError).toMatchObject({
+      code: "network",
+      cause: { message: "Network rejected [REDACTED]." },
+    });
+    expect(serializeFailure(networkError)).not.toContain(licenseKey);
+  });
+
+  it("sanitizes caller-abort causes after one transport attempt", async () => {
+    const licenseKey = "secret-business-license-key";
+    let attempts = 0;
+    const controller = new AbortController();
+    const abortClient = createClientWithAdapter({}, async () => {
+      attempts += 1;
+      controller.abort(`Caller cancelled ${licenseKey}.`);
+      return await new Promise<Response>(() => {});
+    });
+
+    const abortError = await abortClient.license
+      .validate({ licenseKey }, { signal: controller.signal, timeoutMs: 1_000 })
+      .catch((cause: unknown) => cause);
+
+    expect(abortError).toMatchObject({
+      code: "aborted",
+      cause: "Caller cancelled [REDACTED].",
+    });
+    expect(serializeFailure(abortError)).not.toContain(licenseKey);
+    expect(attempts).toBe(1);
+  });
+
+  it("times out after one transport attempt", async () => {
+    let attempts = 0;
+    const client = createClientWithAdapter({ timeoutMs: 10 }, async () => {
+      attempts += 1;
+      return await new Promise<Response>(() => {});
+    });
+
+    await expect(
+      client.license.validate({ licenseKey: "business-license-key" }),
+    ).rejects.toMatchObject({ code: "timeout" });
+    expect(attempts).toBe(1);
+  });
+
+  it("preserves successful business bodies without applying failure redaction", async () => {
+    const licenseKey = "secret-business-license-key";
+    const instanceId = "secret-instance-id";
+    const response = {
+      valid: false,
+      error: `No active instance ${instanceId} exists for ${licenseKey}.`,
+      license_key: { key: licenseKey },
+      instance: { id: instanceId },
+    } as const;
+    const client = createClientWithAdapter({}, async () =>
+      Response.json(response),
+    );
+
+    await expect(
+      client.license.validate({ licenseKey, instanceId }),
+    ).resolves.toEqual(response);
+  });
+
   it("rejects invalid inputs and RequestOptions before transport", async () => {
     let attempts = 0;
     const client = createClientWithAdapter({}, async () => {
@@ -168,3 +284,15 @@ describe("license namespace", () => {
     expect(attempts).toBe(0);
   });
 });
+
+function serializeFailure(value: unknown): string {
+  return JSON.stringify(value, (_property, child: unknown) =>
+    child instanceof Error
+      ? Object.assign({}, child, {
+          name: child.name,
+          message: child.message,
+          cause: child.cause,
+        })
+      : child,
+  );
+}

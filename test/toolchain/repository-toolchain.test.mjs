@@ -173,7 +173,7 @@ void test("migration documentation and release feedback assets are publish-ready
   );
   const auditEnd = migrationLines.indexOf("", auditStart);
   const auditTable = migrationLines.slice(auditStart, auditEnd);
-  assert.equal(auditTable.length, 19);
+  assert.equal(auditTable.length, 22);
   for (const row of auditTable) {
     assert.equal(row.replaceAll("\\|", "").split("|").length - 1, 5, row);
   }
@@ -188,6 +188,18 @@ void test("migration documentation and release feedback assets are publish-ready
   assert.match(
     migration,
     /Webhook secrets in errors.*\.\/src\/internal\/v5\/redaction\.ts.*\.\/src\/namespaces\/webhooks\/webhooks\.test\.ts/,
+  );
+  assert.match(
+    migration,
+    /License API request protocol.*\.\/src\/namespaces\/license\/contract\.ts.*\.\/src\/namespaces\/license\/license\.test\.ts/,
+  );
+  assert.match(
+    migration,
+    /License request controls.*\.\/src\/internal\/v5\/http\.ts.*\.\/src\/namespaces\/license\/license\.test\.ts/,
+  );
+  assert.match(
+    migration,
+    /License failure secrecy.*\.\/src\/internal\/v5\/redaction\.ts.*\.\/src\/namespaces\/license\/license\.test\.ts.*\.\/test\/v5\/compat-license-api\.test\.ts/,
   );
   assert.doesNotMatch(migration, /lemonsqueezy\.js\/blob\/main/);
   assert.match(
