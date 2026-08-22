@@ -4,7 +4,6 @@ import {
   compileReadQuery,
   compileResourceId,
 } from "../../internal/v5/request";
-import { generateDiscount } from "../../internal/utils";
 import type { OperationContract } from "../../internal/v5/types";
 import type { Id } from "../../types/jsonapi";
 import type {
@@ -14,6 +13,10 @@ import type {
   GetDiscountParams,
   ListDiscountsParams,
 } from "./types";
+
+function generateDiscount(): string {
+  return btoa(Date.now().toString()).slice(-10, -2).toUpperCase();
+}
 
 const evidence = {
   object: "https://docs.lemonsqueezy.com/api/discounts/the-discount-object",

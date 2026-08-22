@@ -655,11 +655,15 @@ void test("compatibility and webhook catalogs parse identity maps", () => {
   assert.deepEqual(
     parseCompatibilityOperationCatalog(
       [
-        "export const compatibilityOperationCatalog = {",
-        '  getStore: "stores.get",',
-        '  listStores: "stores.list",',
-        "} as const;",
+        "const compatibilityMappings = [",
+        '  compatibility("getStore", getStoreOperation, evidence),',
+        '  compatibility("listStores", listStoresOperation, evidence),',
+        "] as const;",
       ].join("\n"),
+      {
+        getStoreOperation: "stores.get",
+        listStoresOperation: "stores.list",
+      },
     ),
     { getStore: "stores.get", listStores: "stores.list" },
   );

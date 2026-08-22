@@ -14,7 +14,6 @@ import type {
   WebhookListResponse,
   WebhookResponse,
 } from "../namespaces/webhooks/types";
-import type { FetchResponse } from "../internal/fetch/types";
 import type {
   GetWebhookParams,
   ListWebhooks,
@@ -37,7 +36,7 @@ export function createWebhook(storeId: number | string, webhook: NewWebhook) {
     readonly [CreateWebhookInput],
     WebhookResponse,
     Webhook
-  >(createWebhookOperation, [input]) as Promise<FetchResponse<Webhook>>;
+  >(createWebhookOperation, [input]);
 }
 
 /**
@@ -56,9 +55,7 @@ export function getWebhook(
     readonly [number | string, CanonicalGetWebhookParams],
     WebhookResponse,
     Webhook
-  >(getWebhookOperation, [webhookId, params]) as Promise<
-    FetchResponse<Webhook>
-  >;
+  >(getWebhookOperation, [webhookId, params]);
 }
 
 /**
@@ -77,9 +74,7 @@ export function updateWebhook(
     readonly [number | string, UpdateWebhookInput],
     WebhookResponse,
     Webhook
-  >(updateWebhookOperation, [webhookId, input]) as Promise<
-    FetchResponse<Webhook>
-  >;
+  >(updateWebhookOperation, [webhookId, input]);
 }
 
 /**
@@ -92,7 +87,7 @@ export function deleteWebhook(webhookId: number | string) {
   return invokeDefaultCompatibility<readonly [number | string], void, null>(
     deleteWebhookOperation,
     [webhookId],
-  ) as Promise<FetchResponse<null>>;
+  );
 }
 
 /**
@@ -112,5 +107,5 @@ export function listWebhooks(params: ListWebhooksParams = {}) {
     readonly [CanonicalListWebhooksParams],
     WebhookListResponse,
     ListWebhooks
-  >(listWebhooksOperation, [params]) as Promise<FetchResponse<ListWebhooks>>;
+  >(listWebhooksOperation, [params]);
 }

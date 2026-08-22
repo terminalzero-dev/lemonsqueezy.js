@@ -90,8 +90,10 @@ function resolveEvidenceItem(item, constants) {
 export function parseNamespaceOperations(source) {
   const constants = parseStringConstants(source);
   const operations = [];
-  const blocks = source.split(/export const \w+Operation = \{/);
-  for (const block of blocks.slice(1)) {
+  const blocks = source.split(/export const (\w+Operation) = \{/);
+  for (let index = 1; index < blocks.length; index += 2) {
+    const symbol = blocks[index];
+    const block = blocks[index + 1];
     const key = block.match(/key:\s*"([^"]+)"/)?.[1];
     const evidenceSection = block.match(/evidence:\s*\[([\s\S]*?)\]/)?.[1];
     if (!key || evidenceSection === undefined) continue;
@@ -103,6 +105,7 @@ export function parseNamespaceOperations(source) {
 
     const [namespace, method] = key.split(".");
     operations.push({
+      symbol,
       key,
       namespace,
       method,
@@ -114,19 +117,23 @@ export function parseNamespaceOperations(source) {
   return operations;
 }
 
-export function parseCompatibilityOperationCatalog(source) {
-  const match = source.match(
-    /export const compatibilityOperationCatalog = \{([\s\S]*?)\n\} as const;/,
-  );
-  if (!match) {
-    throw new Error("compatibilityOperationCatalog was not found");
+export function parseCompatibilityOperationCatalog(
+  source,
+  operationKeysBySymbol,
+) {
+  const entries = {};
+  for (const mapping of source.matchAll(
+    /compatibility\(\s*"([A-Za-z]+)",\s*(\w+Operation),/g,
+  )) {
+    const operationKey = operationKeysBySymbol[mapping[2]];
+    if (!operationKey) {
+      throw new Error(`Operation Contract was not found: ${mapping[2]}`);
+    }
+    entries[mapping[1]] = operationKey;
   }
 
-  const entries = {};
-  for (const line of match[1].matchAll(
-    /^\s*([A-Za-z]+):\s*"([^"]+)",?\s*$/gm,
-  )) {
-    entries[line[1]] = line[2];
+  if (Object.keys(entries).length === 0) {
+    throw new Error("Compatibility mappings were not found");
   }
   return entries;
 }
@@ -172,7 +179,8 @@ export async function loadCanonicalDocumentationCatalog(root) {
   ].sort((left, right) => left.localeCompare(right));
 
   const compatibility = parseCompatibilityOperationCatalog(
-    await readFile(join(root, "src/internal/v5/contract-catalog.ts"), "utf8"),
+    await readFile(join(root, "test/v5/contract-catalog.ts"), "utf8"),
+    Object.fromEntries(operations.map(({ symbol, key }) => [symbol, key])),
   );
   const webhookEvents = parseKnownWebhookEventCatalog(
     await readFile(
