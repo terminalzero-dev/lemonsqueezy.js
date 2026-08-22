@@ -1,4 +1,4 @@
-import { isLemonSqueezyError, LemonSqueezyError } from "../../client/error";
+import { LemonSqueezyError } from "../../client/error";
 import type { JSONAPIError } from "../../types/jsonapi";
 import type {
   AbortSignal as PublicAbortSignal,
@@ -16,28 +16,10 @@ export async function sendRequest(
   config: RuntimeConfig,
   transport: TransportAdapter,
   options?: RequestOptions,
-  sanitizeErrorDetail?: (value: unknown) => unknown,
 ): Promise<CoreSuccess<unknown>> {
-  try {
-    return request.protocol === "license"
-      ? await sendLicenseRequestOnce(request, config, transport, options)
-      : await sendJsonApiRequestOnce(request, config, transport, options);
-  } catch (error) {
-    if (!sanitizeErrorDetail || !isLemonSqueezyError(error)) throw error;
-
-    throw new LemonSqueezyError(error.message, error.code, {
-      statusCode: error.statusCode,
-      responseBody: sanitizeErrorDetail(error.responseBody),
-      apiErrors:
-        error.apiErrors === undefined
-          ? undefined
-          : (sanitizeErrorDetail(error.apiErrors) as readonly JSONAPIError[]),
-      cause:
-        error.cause === undefined
-          ? undefined
-          : sanitizeErrorDetail(error.cause),
-    });
-  }
+  return request.protocol === "license"
+    ? await sendLicenseRequestOnce(request, config, transport, options)
+    : await sendJsonApiRequestOnce(request, config, transport, options);
 }
 
 async function sendLicenseRequestOnce(

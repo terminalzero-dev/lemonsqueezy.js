@@ -196,6 +196,14 @@ _Avoid_: Resource service, endpoint folder, second implementation
 The reviewed executable contract for one Explicit Client method, combining its public arguments, protocol request compilation, success shape, and evidence. Explicit Client and Compatibility facade calls share it.
 _Avoid_: Passive endpoint metadata, generic request, response schema
 
+**Resource Runtime**:
+The single internal execution boundary shared by all Namespace Modules and the Compatibility facade. It applies operation-specific success and failure policy while keeping protocol differences private.
+_Avoid_: Protocol runtime, second request implementation, public runtime
+
+**HTTP Core**:
+The internal transport boundary shared by Authenticated API and License API operations. It owns protocol dispatch and generic request outcomes without operation-specific policy.
+_Avoid_: Resource Runtime, public transport, generic request API
+
 **v5 beta operation set**:
 The complete Explicit Client surface for the currently documented Lemon Squeezy API: 21 namespaces and 61 methods, including the `customers.archive` convenience. It excludes undocumented CRUD, automatic pagination, bulk helpers, and generic requests.
 _Avoid_: Partial beta surface, inferred endpoint set, every possible convenience
