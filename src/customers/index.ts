@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   archiveCustomerOperation,
   createCustomerOperation,
@@ -44,9 +43,7 @@ export function createCustomer(
     readonly [CreateCustomerInput],
     CustomerResponse,
     Customer
-  >(createCustomerOperation, [{ ...customer, storeId }]) as Promise<
-    FetchResponse<Customer>
-  >;
+  >(createCustomerOperation, [{ ...customer, storeId }]);
 }
 
 /**
@@ -70,9 +67,7 @@ export function updateCustomer(
     readonly [string | number, UpdateCustomerInput],
     CustomerResponse,
     Customer
-  >(updateCustomerOperation, [customerId, customer]) as Promise<
-    FetchResponse<Customer>
-  >;
+  >(updateCustomerOperation, [customerId, customer]);
 }
 
 /**
@@ -86,7 +81,7 @@ export function archiveCustomer(customerId: string | number) {
     readonly [string | number],
     CustomerResponse,
     Customer
-  >(archiveCustomerOperation, [customerId]) as Promise<FetchResponse<Customer>>;
+  >(archiveCustomerOperation, [customerId]);
 }
 
 /**
@@ -105,9 +100,7 @@ export function getCustomer(
     readonly [string | number, CanonicalGetCustomerParams],
     CustomerResponse,
     Customer
-  >(getCustomerOperation, [customerId, params]) as Promise<
-    FetchResponse<Customer>
-  >;
+  >(getCustomerOperation, [customerId, params]);
 }
 
 /**
@@ -128,5 +121,5 @@ export function listCustomers(params: ListCustomersParams = {}) {
     readonly [CanonicalListCustomersParams],
     CustomerListResponse,
     ListCustomers
-  >(listCustomersOperation, [params]) as Promise<FetchResponse<ListCustomers>>;
+  >(listCustomersOperation, [params]);
 }

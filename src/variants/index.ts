@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   getVariantOperation,
   listVariantsOperation,
@@ -33,9 +32,7 @@ export function getVariant(
     readonly [number | string, CanonicalGetVariantParams],
     VariantResponse,
     Variant
-  >(getVariantOperation, [variantId, params]) as Promise<
-    FetchResponse<Variant>
-  >;
+  >(getVariantOperation, [variantId, params]);
 }
 
 /**
@@ -56,5 +53,5 @@ export function listVariants(params: ListVariantsParams = {}) {
     readonly [CanonicalListVariantsParams],
     VariantListResponse,
     ListVariants
-  >(listVariantsOperation, [params]) as Promise<FetchResponse<ListVariants>>;
+  >(listVariantsOperation, [params]);
 }

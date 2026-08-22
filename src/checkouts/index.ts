@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   createCheckoutOperation,
   getCheckoutOperation,
@@ -39,9 +38,7 @@ export function createCheckout(
     readonly [CreateCheckoutInput],
     CheckoutResponse,
     Checkout
-  >(createCheckoutOperation, [{ ...checkout, storeId, variantId }]) as Promise<
-    FetchResponse<Checkout>
-  >;
+  >(createCheckoutOperation, [{ ...checkout, storeId, variantId }]);
 }
 
 /**
@@ -60,9 +57,7 @@ export function getCheckout(
     readonly [number | string, CanonicalGetCheckoutParams],
     CheckoutResponse,
     Checkout
-  >(getCheckoutOperation, [checkoutId, params]) as Promise<
-    FetchResponse<Checkout>
-  >;
+  >(getCheckoutOperation, [checkoutId, params]);
 }
 
 /**
@@ -83,5 +78,5 @@ export function listCheckouts(params: ListCheckoutsParams = {}) {
     readonly [CanonicalListCheckoutsParams],
     CheckoutListResponse,
     ListCheckouts
-  >(listCheckoutsOperation, [params]) as Promise<FetchResponse<ListCheckouts>>;
+  >(listCheckoutsOperation, [params]);
 }

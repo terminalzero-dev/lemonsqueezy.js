@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   getStoreOperation,
   listStoresOperation,
@@ -33,7 +32,7 @@ export function getStore(
     readonly [number | string, CanonicalGetStoreParams],
     StoreResponse,
     Store
-  >(getStoreOperation, [storeId, params]) as Promise<FetchResponse<Store>>;
+  >(getStoreOperation, [storeId, params]);
 }
 
 /**
@@ -51,5 +50,5 @@ export function listStores(params: ListStoresParams = {}) {
     readonly [CanonicalListStoresParams],
     StoreListResponse,
     ListStores
-  >(listStoresOperation, [params]) as Promise<FetchResponse<ListStores>>;
+  >(listStoresOperation, [params]);
 }

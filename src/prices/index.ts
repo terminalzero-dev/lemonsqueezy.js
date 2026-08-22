@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   getPriceOperation,
   listPricesOperation,
@@ -33,7 +32,7 @@ export function getPrice(
     readonly [number | string, CanonicalGetPriceParams],
     PriceResponse,
     Price
-  >(getPriceOperation, [priceId, params]) as Promise<FetchResponse<Price>>;
+  >(getPriceOperation, [priceId, params]);
 }
 
 /**
@@ -53,5 +52,5 @@ export function listPrices(params: ListPricesParams = {}) {
     readonly [CanonicalListPricesParams],
     PriceListResponse,
     ListPrices
-  >(listPricesOperation, [params]) as Promise<FetchResponse<ListPrices>>;
+  >(listPricesOperation, [params]);
 }

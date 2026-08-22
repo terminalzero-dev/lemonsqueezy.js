@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   getOrderItemOperation,
   listOrderItemsOperation,
@@ -26,9 +25,7 @@ export function getOrderItem(
     readonly [number | string, CanonicalGetOrderItemParams],
     OrderItemResponse,
     OrderItem
-  >(getOrderItemOperation, [orderItemId, params]) as Promise<
-    FetchResponse<OrderItem>
-  >;
+  >(getOrderItemOperation, [orderItemId, params]);
 }
 
 /** List all order items. */
@@ -37,7 +34,5 @@ export function listOrderItems(params: ListOrderItemsParams = {}) {
     readonly [CanonicalListOrderItemsParams],
     OrderItemListResponse,
     ListOrderItems
-  >(listOrderItemsOperation, [params]) as Promise<
-    FetchResponse<ListOrderItems>
-  >;
+  >(listOrderItemsOperation, [params]);
 }

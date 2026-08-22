@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   getFileOperation,
   listFilesOperation,
@@ -25,7 +24,7 @@ export function getFile(fileId: number | string, params: GetFileParams = {}) {
     readonly [number | string, CanonicalGetFileParams],
     FileResponse,
     File
-  >(getFileOperation, [fileId, params]) as Promise<FetchResponse<File>>;
+  >(getFileOperation, [fileId, params]);
 }
 
 /**
@@ -45,5 +44,5 @@ export function listFiles(params: ListFilesParams = {}) {
     readonly [CanonicalListFilesParams],
     FileListResponse,
     ListFiles
-  >(listFilesOperation, [params]) as Promise<FetchResponse<ListFiles>>;
+  >(listFilesOperation, [params]);
 }
