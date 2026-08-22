@@ -419,30 +419,31 @@ confirm "Are account recovery materials available right now?" || {
 }
 
 stage "Promote, rollback, and restore dist-tags" 8
-DRILL_RESUME_ARGS=()
+DRILL_COMMAND=(
+  node scripts/exercise-dist-tags.mjs
+  --package "$PACKAGE_NAME"
+  --current-version "$CURRENT_VERSION"
+  --last-known-good-version "$LAST_KNOWN_GOOD_VERSION"
+  --source-commit "$SOURCE_COMMIT"
+  --artifact-sha256 "$ARTIFACT_SHA256"
+  --registry-release-run-id "$REGISTRY_RELEASE_RUN_ID"
+  --npm-actor "$NPM_ACCOUNT"
+  --account-recovery-confirmed
+  --registry "$REGISTRY_URL"
+  --npm-userconfig "$NPM_CONFIG_USERCONFIG"
+)
 if [[ -n "$RESUME_EVIDENCE_PATH" ]]; then
   say "The recorded promotion is complete. The drill will roll latest and beta back to $LAST_KNOWN_GOOD_VERSION, then restore both to $CURRENT_VERSION."
   warn "This resume changes public npm resolution four times in a controlled window."
-  DRILL_RESUME_ARGS=(--resume-evidence "$RESUME_EVIDENCE_PATH")
+  DRILL_COMMAND+=(--resume-evidence "$RESUME_EVIDENCE_PATH")
 else
   say "The drill will move latest to $CURRENT_VERSION, move latest and beta back to $LAST_KNOWN_GOOD_VERSION, then restore both to $CURRENT_VERSION."
   warn "This changes public npm resolution five times in a controlled window."
 fi
 confirm "Run the public dist-tag drill now?" || exit 1
 mkdir -p "$EVIDENCE_DIRECTORY"
-node scripts/exercise-dist-tags.mjs \
-  --package "$PACKAGE_NAME" \
-  --current-version "$CURRENT_VERSION" \
-  --last-known-good-version "$LAST_KNOWN_GOOD_VERSION" \
-  --source-commit "$SOURCE_COMMIT" \
-  --artifact-sha256 "$ARTIFACT_SHA256" \
-  --registry-release-run-id "$REGISTRY_RELEASE_RUN_ID" \
-  --npm-actor "$NPM_ACCOUNT" \
-  --account-recovery-confirmed \
-  --registry "$REGISTRY_URL" \
-  --npm-userconfig "$NPM_CONFIG_USERCONFIG" \
-  "${DRILL_RESUME_ARGS[@]}" \
-  --evidence "$EVIDENCE_PATH"
+DRILL_COMMAND+=(--evidence "$EVIDENCE_PATH")
+"${DRILL_COMMAND[@]}"
 
 stage "End the npm session" 1
 npm logout --registry="$REGISTRY_URL"

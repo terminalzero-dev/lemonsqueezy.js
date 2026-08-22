@@ -1288,7 +1288,16 @@ void test("recurring beta OIDC release remains Candidate-bound and recoverable",
     wizard,
     /dist-tag-interactive-failed-"\$REGISTRY_RELEASE_RUN_ID"-\*\.json/,
   );
-  assert.match(wizard, /DRILL_RESUME_ARGS=\(--resume-evidence/);
+  assert.doesNotMatch(wizard, /DRILL_RESUME_ARGS=\(\)/);
+  assert.match(
+    wizard,
+    /DRILL_COMMAND=\(\s*node scripts\/exercise-dist-tags\.mjs/,
+  );
+  assert.match(
+    wizard,
+    /DRILL_COMMAND\+=\(--resume-evidence "\$RESUME_EVIDENCE_PATH"\)/,
+  );
+  assert.match(wizard, /"\$\{DRILL_COMMAND\[@\]\}"/);
   assert.match(wizard, /Prior failed attempt retained for recovery audit/);
   assert.match(wizard, /validate-failed-dist-tag-evidence\.mjs/);
   assert.match(
