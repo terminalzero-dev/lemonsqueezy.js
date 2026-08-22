@@ -354,6 +354,48 @@ LAST_KNOWN_GOOD_VERSION=$(jq -r .registry.distTags.latest "$REGISTRY_EVIDENCE")
 [[ "$(jq -r .registry.provenance.verified "$REGISTRY_EVIDENCE")" == "true" ]]
 [[ "$(jq -r .registry.distTags.beta "$REGISTRY_EVIDENCE")" == "$CURRENT_VERSION" ]]
 [[ "$(jq -r .registry.distTags.latest "$REGISTRY_EVIDENCE")" == "$LAST_KNOWN_GOOD_VERSION" ]]
+HAS_COMPLETED_EVIDENCE=false
+if [[ -f "$EVIDENCE_PATH" ]] && jq -e \
+  --arg package "$PACKAGE_NAME" \
+  --arg current "$CURRENT_VERSION" \
+  --arg lkg "$LAST_KNOWN_GOOD_VERSION" \
+  --arg commit "$SOURCE_COMMIT" \
+  --arg sha256 "$ARTIFACT_SHA256" \
+  --arg runId "$REGISTRY_RELEASE_RUN_ID" \
+  '.schemaVersion == 1 and
+    .status == "completed" and
+    .package == $package and
+    .currentVersion == $current and
+    .lastKnownGoodVersion == $lkg and
+    .sourceCommit == $commit and
+    .artifactSha256 == $sha256 and
+    .registryReleaseRunId == $runId' \
+  "$EVIDENCE_PATH" >/dev/null; then
+  jq -e \
+    --arg current "$CURRENT_VERSION" \
+    --arg lkg "$LAST_KNOWN_GOOD_VERSION" \
+    '.auth == "interactive-npm-cli-2fa" and
+      .accountRecovery.confirmed == true and
+      [.states[] | {phase, beta, latest}] == [
+        {phase: "published", beta: $current, latest: $lkg},
+        {phase: "promoted", beta: $current, latest: $current},
+        {phase: "rolled-back", beta: $lkg, latest: $lkg},
+        {phase: "restored", beta: $current, latest: $current}
+      ] and
+      [.timeline[] | {tag, version}] == [
+        {tag: "latest", version: $current},
+        {tag: "latest", version: $lkg},
+        {tag: "beta", version: $lkg},
+        {tag: "beta", version: $current},
+        {tag: "latest", version: $current}
+      ]' "$EVIDENCE_PATH" >/dev/null || {
+    warn "Existing completed evidence is invalid for this Candidate."
+    exit 1
+  }
+  NPM_ACCOUNT=$(jq -r .npmActor "$EVIDENCE_PATH")
+  [[ "$NPM_ACCOUNT" =~ ^[A-Za-z0-9_-]+$ ]]
+  HAS_COMPLETED_EVIDENCE=true
+fi
 HAS_RESUMABLE_EVIDENCE=false
 if [[ -f "$EVIDENCE_PATH" && \
   "$(jq -r '.status // empty' "$EVIDENCE_PATH")" == "failed" ]]; then
@@ -384,7 +426,13 @@ if [[ -f "$EVIDENCE_PATH" && \
   }
   HAS_RESUMABLE_EVIDENCE=true
 fi
-if [[ "$HAS_RESUMABLE_EVIDENCE" == "true" ]]; then
+if [[ "$HAS_COMPLETED_EVIDENCE" == "true" ]]; then
+  wait_for_public_tags "$CURRENT_VERSION" "$CURRENT_VERSION" || {
+    warn "Public dist-tags do not match the completed drill evidence."
+    exit 1
+  }
+  note "The completed drill evidence will be reused without another npm session."
+elif [[ "$HAS_RESUMABLE_EVIDENCE" == "true" ]]; then
   wait_for_public_tags "$CURRENT_VERSION" "$CURRENT_VERSION" || {
     warn "Public dist-tags did not converge to the safely resumable state."
     exit 1
@@ -402,53 +450,71 @@ say "Verified $PACKAGE_NAME@$CURRENT_VERSION."
 note "Candidate: $SOURCE_COMMIT · SHA-256 $ARTIFACT_SHA256"
 
 stage "Sign in to npm with web authentication" 2
-say "npm Trusted Publishing cannot change dist-tags. This stage opens npm's interactive web login."
-warn "Do not paste a password, token, OTP, Passkey, or recovery code into this wizard."
-npm logout --registry="$REGISTRY_URL" >/dev/null 2>&1 || true
-npm login --auth-type=web --registry="$REGISTRY_URL"
-LOGGED_IN=true
-NPM_ACCOUNT=$(retry_command 3 npm whoami --registry="$REGISTRY_URL")
-say "Signed in as npm account: $NPM_ACCOUNT"
+if [[ "$HAS_COMPLETED_EVIDENCE" == "true" ]]; then
+  say "The completed drill evidence already records npm account $NPM_ACCOUNT."
+  note "No npm login is required to resume evidence publication."
+else
+  say "npm Trusted Publishing cannot change dist-tags. This stage opens npm's interactive web login."
+  warn "Do not paste a password, token, OTP, Passkey, or recovery code into this wizard."
+  npm logout --registry="$REGISTRY_URL" >/dev/null 2>&1 || true
+  npm login --auth-type=web --registry="$REGISTRY_URL"
+  LOGGED_IN=true
+  NPM_ACCOUNT=$(retry_command 3 npm whoami --registry="$REGISTRY_URL")
+  say "Signed in as npm account: $NPM_ACCOUNT"
+fi
 
 stage "Confirm account recovery availability" 1
-say "Confirm only that the maintainer account can be recovered."
-warn "Do not display or record any recovery material."
-confirm "Are account recovery materials available right now?" || {
-  warn "Recovery confirmation is required before registry mutation."
-  exit 1
-}
+if [[ "$HAS_COMPLETED_EVIDENCE" == "true" ]]; then
+  say "The completed evidence already contains the required recovery confirmation."
+else
+  say "Confirm only that the maintainer account can be recovered."
+  warn "Do not display or record any recovery material."
+  confirm "Are account recovery materials available right now?" || {
+    warn "Recovery confirmation is required before registry mutation."
+    exit 1
+  }
+fi
 
 stage "Promote, rollback, and restore dist-tags" 8
-DRILL_COMMAND=(
-  node scripts/exercise-dist-tags.mjs
-  --package "$PACKAGE_NAME"
-  --current-version "$CURRENT_VERSION"
-  --last-known-good-version "$LAST_KNOWN_GOOD_VERSION"
-  --source-commit "$SOURCE_COMMIT"
-  --artifact-sha256 "$ARTIFACT_SHA256"
-  --registry-release-run-id "$REGISTRY_RELEASE_RUN_ID"
-  --npm-actor "$NPM_ACCOUNT"
-  --account-recovery-confirmed
-  --registry "$REGISTRY_URL"
-  --npm-userconfig "$NPM_CONFIG_USERCONFIG"
-)
-if [[ -n "$RESUME_EVIDENCE_PATH" ]]; then
-  say "The recorded promotion is complete. The drill will roll latest and beta back to $LAST_KNOWN_GOOD_VERSION, then restore both to $CURRENT_VERSION."
-  warn "This resume changes public npm resolution four times in a controlled window."
-  DRILL_COMMAND+=(--resume-evidence "$RESUME_EVIDENCE_PATH")
+if [[ "$HAS_COMPLETED_EVIDENCE" == "true" ]]; then
+  say "The completed drill evidence will be reused."
+  note "No public npm dist-tag mutation will be repeated."
 else
-  say "The drill will move latest to $CURRENT_VERSION, move latest and beta back to $LAST_KNOWN_GOOD_VERSION, then restore both to $CURRENT_VERSION."
-  warn "This changes public npm resolution five times in a controlled window."
+  DRILL_COMMAND=(
+    node scripts/exercise-dist-tags.mjs
+    --package "$PACKAGE_NAME"
+    --current-version "$CURRENT_VERSION"
+    --last-known-good-version "$LAST_KNOWN_GOOD_VERSION"
+    --source-commit "$SOURCE_COMMIT"
+    --artifact-sha256 "$ARTIFACT_SHA256"
+    --registry-release-run-id "$REGISTRY_RELEASE_RUN_ID"
+    --npm-actor "$NPM_ACCOUNT"
+    --account-recovery-confirmed
+    --registry "$REGISTRY_URL"
+    --npm-userconfig "$NPM_CONFIG_USERCONFIG"
+  )
+  if [[ -n "$RESUME_EVIDENCE_PATH" ]]; then
+    say "The recorded promotion is complete. The drill will roll latest and beta back to $LAST_KNOWN_GOOD_VERSION, then restore both to $CURRENT_VERSION."
+    warn "This resume changes public npm resolution four times in a controlled window."
+    DRILL_COMMAND+=(--resume-evidence "$RESUME_EVIDENCE_PATH")
+  else
+    say "The drill will move latest to $CURRENT_VERSION, move latest and beta back to $LAST_KNOWN_GOOD_VERSION, then restore both to $CURRENT_VERSION."
+    warn "This changes public npm resolution five times in a controlled window."
+  fi
+  confirm "Run the public dist-tag drill now?" || exit 1
+  mkdir -p "$EVIDENCE_DIRECTORY"
+  DRILL_COMMAND+=(--evidence "$EVIDENCE_PATH")
+  "${DRILL_COMMAND[@]}"
 fi
-confirm "Run the public dist-tag drill now?" || exit 1
-mkdir -p "$EVIDENCE_DIRECTORY"
-DRILL_COMMAND+=(--evidence "$EVIDENCE_PATH")
-"${DRILL_COMMAND[@]}"
 
 stage "End the npm session" 1
-npm logout --registry="$REGISTRY_URL"
-LOGGED_IN=false
-say "The interactive npm session is closed."
+if [[ "$LOGGED_IN" == "true" ]]; then
+  npm logout --registry="$REGISTRY_URL"
+  LOGGED_IN=false
+  say "The interactive npm session is closed."
+else
+  say "No npm session was opened during this recovery run."
+fi
 wait_for_public_tags "$CURRENT_VERSION" "$CURRENT_VERSION" || {
   warn "Public dist-tags did not converge after the npm session closed."
   exit 1
@@ -461,12 +527,9 @@ BODY_PATH="$WIZARD_TEMP/issue-comment.md"
   printf '\x60\x60\x60json\n'
   cat "$EVIDENCE_PATH"
   printf '\x60\x60\x60\n'
-  shopt -s nullglob
-  FAILED_EVIDENCE_PATHS=(
-    "$EVIDENCE_DIRECTORY"/dist-tag-interactive-failed-"$REGISTRY_RELEASE_RUN_ID"-*.json
-  )
-  shopt -u nullglob
-  for failed_evidence_path in "${FAILED_EVIDENCE_PATHS[@]}"; do
+  for failed_evidence_path in \
+    "$EVIDENCE_DIRECTORY"/dist-tag-interactive-failed-"$REGISTRY_RELEASE_RUN_ID"-*.json; do
+    [[ -f "$failed_evidence_path" ]] || continue
     node scripts/validate-failed-dist-tag-evidence.mjs \
       --evidence "$failed_evidence_path" \
       --package "$PACKAGE_NAME" \

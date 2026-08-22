@@ -1300,6 +1300,19 @@ void test("recurring beta OIDC release remains Candidate-bound and recoverable",
   assert.match(wizard, /"\$\{DRILL_COMMAND\[@\]\}"/);
   assert.match(wizard, /Prior failed attempt retained for recovery audit/);
   assert.match(wizard, /validate-failed-dist-tag-evidence\.mjs/);
+  assert.doesNotMatch(wizard, /FAILED_EVIDENCE_PATHS=\(/);
+  assert.match(wizard, /for failed_evidence_path in \\/);
+  assert.match(
+    wizard,
+    /"\$EVIDENCE_DIRECTORY"\/dist-tag-interactive-failed-"\$REGISTRY_RELEASE_RUN_ID"-\*\.json/,
+  );
+  assert.match(wizard, /\[\[ -f "\$failed_evidence_path" \]\] \|\| continue/);
+  assert.match(wizard, /HAS_COMPLETED_EVIDENCE=false/);
+  assert.match(wizard, /\.status == "completed"/);
+  assert.match(
+    wizard,
+    /if \[\[ "\$HAS_COMPLETED_EVIDENCE" == "true" \]\]; then[\s\S]*The completed drill evidence will be reused/,
+  );
   assert.match(
     wizard,
     /cat "\$BODY_PATH"[\s\S]*confirm "Post this complete evidence chain to Issue #\$RELEASE_ISSUE_NUMBER\?"/,
