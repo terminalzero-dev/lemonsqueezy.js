@@ -1,6 +1,11 @@
 import sdk = require("@terminalzero/lemonsqueezy");
 import clientEntry = require("@terminalzero/lemonsqueezy/client");
+import compatibility = require("@terminalzero/lemonsqueezy/compat");
 import type { LemonSqueezyError, User } from "@terminalzero/lemonsqueezy";
+// @ts-expect-error FetchResponse remains package-private.
+import type { FetchResponse as RootFetchResponse } from "@terminalzero/lemonsqueezy";
+// @ts-expect-error FetchResponse remains package-private.
+import type { FetchResponse as CompatibilityFetchResponse } from "@terminalzero/lemonsqueezy/compat";
 import type {
   ListCustomersParams,
   UserResponse,
@@ -33,7 +38,7 @@ import type {
 type UserEnvelope =
   | {
       readonly statusCode: number;
-      readonly data: User | null;
+      readonly data: User;
       readonly error: null;
     }
   | {
@@ -43,6 +48,49 @@ type UserEnvelope =
     };
 
 const userPromise: Promise<UserEnvelope> = sdk.getAuthenticatedUser();
+const compatibilityUserPromise: Promise<UserEnvelope> =
+  compatibility.getAuthenticatedUser();
+type EmptyEnvelope =
+  | {
+      readonly statusCode: number;
+      readonly data: null;
+      readonly error: null;
+    }
+  | {
+      readonly statusCode: number | null;
+      readonly data: null;
+      readonly error: LemonSqueezyError;
+    };
+const emptyPromise: Promise<EmptyEnvelope> = sdk.deleteWebhook(1);
+const compatibilityEmptyPromise: Promise<EmptyEnvelope> =
+  compatibility.deleteWebhook(1);
+function narrowUserEnvelope(result: UserEnvelope) {
+  if (result.error === null) {
+    const user: User = result.data;
+    // @ts-expect-error Successful operations do not expose null data.
+    const missing: null = result.data;
+    return user;
+  }
+
+  const error: LemonSqueezyError = result.error;
+  const data: null = result.data;
+  // @ts-expect-error Failed operations do not expose business data.
+  const user: User = result.data;
+  void user;
+  return { data, error };
+}
+async function mutateRootUserEnvelope() {
+  const result = await sdk.getAuthenticatedUser();
+  result.statusCode = result.statusCode;
+  result.data = result.data;
+  result.error = result.error;
+}
+async function mutateCompatibilityUserEnvelope() {
+  const result = await compatibility.getAuthenticatedUser();
+  result.statusCode = result.statusCode;
+  result.data = result.data;
+  result.error = result.error;
+}
 const webhookInput: ParseWebhookEventInput = {
   secret: "signing-secret",
   rawBody: new Uint8Array([123, 125]),
@@ -140,6 +188,12 @@ const fullSubscriptionInvoiceRefundEnvelope =
   sdk.issueSubscriptionInvoiceRefund(1);
 
 void userPromise;
+void compatibilityUserPromise;
+void emptyPromise;
+void compatibilityEmptyPromise;
+void narrowUserEnvelope;
+void mutateRootUserEnvelope;
+void mutateCompatibilityUserEnvelope;
 void inboundWebhook;
 void narrowInboundWebhook;
 void directUser;

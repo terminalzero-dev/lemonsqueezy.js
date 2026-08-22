@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { CompatibilityResponse } from "../v5/default-client";
+
 type ApiVersion = "v1";
 
 export type JSONAPIError = {
@@ -18,17 +20,7 @@ export type JSONAPIError = {
   meta?: Record<string, any>;
 };
 
-export type FetchResponse<T> =
-  | {
-      statusCode: number;
-      data: T;
-      error: null;
-    }
-  | {
-      statusCode: number | null;
-      data: T | null;
-      error: Error;
-    };
+export type FetchResponse<T> = CompatibilityResponse<T>;
 
 export type FetchDataWithError = {
   errors?: JSONAPIError[];
