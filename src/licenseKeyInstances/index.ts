@@ -1,4 +1,3 @@
-import type { FetchResponse } from "../internal/fetch/types";
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
 import {
   getLicenseKeyInstanceOperation,
@@ -33,9 +32,7 @@ export function getLicenseKeyInstance(
     readonly [number | string, CanonicalGetLicenseKeyInstanceParams],
     LicenseKeyInstanceResponse,
     LicenseKeyInstance
-  >(getLicenseKeyInstanceOperation, [licenseKeyInstanceId, params]) as Promise<
-    FetchResponse<LicenseKeyInstance>
-  >;
+  >(getLicenseKeyInstanceOperation, [licenseKeyInstanceId, params]);
 }
 
 /**
@@ -57,7 +54,5 @@ export function listLicenseKeyInstances(
     readonly [CanonicalListLicenseKeyInstancesParams],
     LicenseKeyInstanceListResponse,
     ListLicenseKeyInstances
-  >(listLicenseKeyInstancesOperation, [params]) as Promise<
-    FetchResponse<ListLicenseKeyInstances>
-  >;
+  >(listLicenseKeyInstancesOperation, [params]);
 }

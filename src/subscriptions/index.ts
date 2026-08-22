@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   cancelSubscriptionOperation,
   getSubscriptionOperation,
@@ -37,9 +36,7 @@ export function getSubscription(
     readonly [number | string, CanonicalGetSubscriptionParams],
     SubscriptionResponse,
     Subscription
-  >(getSubscriptionOperation, [subscriptionId, params]) as Promise<
-    FetchResponse<Subscription>
-  >;
+  >(getSubscriptionOperation, [subscriptionId, params]);
 }
 
 /**
@@ -57,10 +54,7 @@ export function updateSubscription(
     readonly [number | string, UpdateSubscriptionInput],
     SubscriptionResponse,
     Subscription
-  >(updateSubscriptionOperation, [
-    subscriptionId,
-    updateSubscription,
-  ]) as Promise<FetchResponse<Subscription>>;
+  >(updateSubscriptionOperation, [subscriptionId, updateSubscription]);
 }
 
 /**
@@ -74,9 +68,7 @@ export function cancelSubscription(subscriptionId: string | number) {
     readonly [number | string],
     SubscriptionResponse,
     Subscription
-  >(cancelSubscriptionOperation, [subscriptionId]) as Promise<
-    FetchResponse<Subscription>
-  >;
+  >(cancelSubscriptionOperation, [subscriptionId]);
 }
 
 /**
@@ -101,7 +93,5 @@ export function listSubscriptions(params: ListSubscriptionsParams = {}) {
     readonly [CanonicalListSubscriptionsParams],
     SubscriptionListResponse,
     ListSubscriptions
-  >(listSubscriptionsOperation, [params]) as Promise<
-    FetchResponse<ListSubscriptions>
-  >;
+  >(listSubscriptionsOperation, [params]);
 }

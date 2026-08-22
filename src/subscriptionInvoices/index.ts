@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   generateSubscriptionInvoiceOperation,
   getSubscriptionInvoiceOperation,
@@ -40,10 +39,7 @@ export function getSubscriptionInvoice(
     readonly [number | string, CanonicalGetSubscriptionInvoiceParams],
     SubscriptionInvoiceResponse,
     SubscriptionInvoice
-  >(getSubscriptionInvoiceOperation, [
-    subscriptionInvoiceId,
-    params,
-  ]) as Promise<FetchResponse<SubscriptionInvoice>>;
+  >(getSubscriptionInvoiceOperation, [subscriptionInvoiceId, params]);
 }
 
 /**
@@ -68,9 +64,7 @@ export function listSubscriptionInvoices(
     readonly [CanonicalListSubscriptionInvoicesParams],
     SubscriptionInvoiceListResponse,
     ListSubscriptionInvoices
-  >(listSubscriptionInvoicesOperation, [params]) as Promise<
-    FetchResponse<ListSubscriptionInvoices>
-  >;
+  >(listSubscriptionInvoicesOperation, [params]);
 }
 
 /**
@@ -104,10 +98,7 @@ export function generateSubscriptionInvoice(
     readonly [number | string, GenerateSubscriptionInvoiceInput | undefined],
     GenerateSubscriptionInvoiceResponse,
     GenerateSubscriptionInvoice
-  >(generateSubscriptionInvoiceOperation, [
-    subscriptionInvoiceId,
-    input,
-  ]) as Promise<FetchResponse<GenerateSubscriptionInvoice>>;
+  >(generateSubscriptionInvoiceOperation, [subscriptionInvoiceId, input]);
 }
 
 /**
@@ -126,8 +117,5 @@ export function issueSubscriptionInvoiceRefund(
     readonly [number | string, RefundSubscriptionInvoiceInput | undefined],
     SubscriptionInvoiceResponse,
     SubscriptionInvoice
-  >(refundSubscriptionInvoiceOperation, [
-    subscriptionInvoiceId,
-    input,
-  ]) as Promise<FetchResponse<SubscriptionInvoice>>;
+  >(refundSubscriptionInvoiceOperation, [subscriptionInvoiceId, input]);
 }
