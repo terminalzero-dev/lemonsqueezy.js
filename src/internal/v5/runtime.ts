@@ -1,4 +1,5 @@
-import { LemonSqueezyError } from "../../client/error";
+import { isLemonSqueezyError, LemonSqueezyError } from "../../client/error";
+import type { JSONAPIError } from "../../types/jsonapi";
 import { sendRequest } from "./http";
 import type {
   OperationContract,
@@ -20,15 +21,12 @@ export function createResourceRuntime(
       options?: RequestOptions,
     ) {
       const compiled = operation.compile(args);
-      const result = await sendRequest(
-        compiled,
-        config,
-        transport,
-        options,
-        operation.sanitizeErrorDetail === undefined
-          ? undefined
-          : (value) => operation.sanitizeErrorDetail!(value, args),
-      );
+      let result;
+      try {
+        result = await sendRequest(compiled, config, transport, options);
+      } catch (error) {
+        throw sanitizeOperationError(error, operation, args);
+      }
 
       if (!isValidResponse(result.body, operation.success)) {
         throw new LemonSqueezyError(
@@ -45,6 +43,29 @@ export function createResourceRuntime(
 
       return { statusCode: result.statusCode, body: result.body as Result };
     },
+  });
+}
+
+function sanitizeOperationError<Args extends readonly unknown[]>(
+  error: unknown,
+  operation: OperationContract<Args, unknown>,
+  args: Args,
+): unknown {
+  const sanitizeErrorDetail = operation.sanitizeErrorDetail;
+  if (!sanitizeErrorDetail || !isLemonSqueezyError(error)) {
+    return error;
+  }
+
+  const sanitize = (value: unknown) => sanitizeErrorDetail(value, args);
+
+  return new LemonSqueezyError(error.message, error.code, {
+    statusCode: error.statusCode,
+    responseBody: sanitize(error.responseBody),
+    apiErrors:
+      error.apiErrors === undefined
+        ? undefined
+        : (sanitize(error.apiErrors) as readonly JSONAPIError[]),
+    cause: error.cause === undefined ? undefined : sanitize(error.cause),
   });
 }
 
