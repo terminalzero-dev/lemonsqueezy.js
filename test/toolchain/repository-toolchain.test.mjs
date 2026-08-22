@@ -461,6 +461,24 @@ void test("package installation is independent from the consumer runtime", () =>
   assert.match(packageSmoke, /prepareConsumer\("package-smoke"\)/);
 });
 
+void test("the legacy request and duplicate configuration stay contracted", () => {
+  for (const path of [
+    "src/internal/fetch/index.ts",
+    "src/internal/fetch/types.ts",
+    "src/internal/utils/index.ts",
+    "src/internal/utils/kv.ts",
+    "src/internal/v5/contract-catalog.ts",
+    "test/internal/configure.test.ts",
+    "test/internal/utils.test.ts",
+  ]) {
+    assert.equal(
+      existsSync(new URL(`../../${path}`, import.meta.url)),
+      false,
+      path,
+    );
+  }
+});
+
 void test("credentialed v4 tests have exactly one migrated destination", () => {
   for (const path of [
     "test/checkouts/index.test.ts",

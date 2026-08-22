@@ -12,6 +12,9 @@ const expected = JSON.parse(
     "utf8",
   ),
 );
+const closedRuntimePaths = JSON.parse(
+  readFileSync(new URL("./closed-runtime-paths.json", import.meta.url), "utf8"),
+);
 const expectedClient = [
   "LemonSqueezyError",
   "createClient",
@@ -610,15 +613,6 @@ const isClosedExportError = (error) =>
     error.code,
   );
 
-await assert.rejects(
-  import("@terminalzero/lemonsqueezy/types"),
-  isClosedExportError,
-);
-await assert.rejects(
-  import("@terminalzero/lemonsqueezy/internal"),
-  isClosedExportError,
-);
-await assert.rejects(
-  import("@terminalzero/lemonsqueezy/testing"),
-  isClosedExportError,
-);
+for (const packagePath of closedRuntimePaths) {
+  await assert.rejects(import(packagePath), isClosedExportError);
+}

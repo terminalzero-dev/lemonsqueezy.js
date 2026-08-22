@@ -1,6 +1,5 @@
 import { isLemonSqueezyError, LemonSqueezyError } from "../../client/error";
 import type { JSONAPIError } from "../../types/jsonapi";
-import { API_BASE_URL } from "../utils";
 import type {
   AbortSignal as PublicAbortSignal,
   CoreRequest,
@@ -9,6 +8,8 @@ import type {
   RuntimeConfig,
   TransportAdapter,
 } from "./types";
+
+const API_BASE_URL = "https://api.lemonsqueezy.com";
 
 export async function sendRequest(
   request: CoreRequest,

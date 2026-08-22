@@ -5,8 +5,6 @@ export default defineConfig({
     environment: "node",
     include: [
       "test/index.test.ts",
-      "test/internal/configure.test.ts",
-      "test/internal/utils.test.ts",
       "test/v5/**/*.test.ts",
       "src/namespaces/**/*.test.ts",
     ],

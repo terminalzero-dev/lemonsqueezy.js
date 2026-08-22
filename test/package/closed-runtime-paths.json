@@ -1,0 +1,9 @@
+[
+  "@terminalzero/lemonsqueezy/types",
+  "@terminalzero/lemonsqueezy/internal",
+  "@terminalzero/lemonsqueezy/internal/v5/request",
+  "@terminalzero/lemonsqueezy/internal/v5/http",
+  "@terminalzero/lemonsqueezy/namespaces/orders/contract",
+  "@terminalzero/lemonsqueezy/internal/testing",
+  "@terminalzero/lemonsqueezy/testing"
+]

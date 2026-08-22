@@ -12,6 +12,9 @@ const expected = JSON.parse(
     "utf8",
   ),
 );
+const closedRuntimePaths = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "closed-runtime-paths.json"), "utf8"),
+);
 const expectedClient = [
   "LemonSqueezyError",
   "createClient",
@@ -175,15 +178,6 @@ for (const namespace of [
 const isClosedExportError = (error) =>
   ["ERR_PACKAGE_PATH_NOT_EXPORTED", "MODULE_NOT_FOUND"].includes(error.code);
 
-assert.throws(
-  () => require("@terminalzero/lemonsqueezy/types"),
-  isClosedExportError,
-);
-assert.throws(
-  () => require("@terminalzero/lemonsqueezy/internal"),
-  isClosedExportError,
-);
-assert.throws(
-  () => require("@terminalzero/lemonsqueezy/testing"),
-  isClosedExportError,
-);
+for (const packagePath of closedRuntimePaths) {
+  assert.throws(() => require(packagePath), isClosedExportError);
+}
