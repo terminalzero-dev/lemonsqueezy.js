@@ -16,15 +16,15 @@ and TypeScript 5.4 and later.
 Install and deploy the current verified v5 beta as an exact version.
 
 ```sh
-pnpm add --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.2
+pnpm add --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.3
 ```
 
 ```sh
-npm install --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.2
+npm install --save-exact @terminalzero/lemonsqueezy@5.0.0-beta.3
 ```
 
 ```sh
-bun add --exact @terminalzero/lemonsqueezy@5.0.0-beta.2
+bun add --exact @terminalzero/lemonsqueezy@5.0.0-beta.3
 ```
 
 Existing v4 applications should follow
