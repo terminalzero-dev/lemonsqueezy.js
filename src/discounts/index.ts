@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   createDiscountOperation,
   deleteDiscountOperation,
@@ -33,7 +32,7 @@ export function createDiscount(discount: NewDiscount) {
     readonly [CreateDiscountInput],
     DiscountResponse,
     Discount
-  >(createDiscountOperation, [input]) as Promise<FetchResponse<Discount>>;
+  >(createDiscountOperation, [input]);
 }
 
 /**
@@ -53,7 +52,7 @@ export function listDiscounts(params: ListDiscountsParams = {}) {
     readonly [CanonicalListDiscountsParams],
     DiscountListResponse,
     ListDiscounts
-  >(listDiscountsOperation, [params]) as Promise<FetchResponse<ListDiscounts>>;
+  >(listDiscountsOperation, [params]);
 }
 
 /**
@@ -72,9 +71,7 @@ export function getDiscount(
     readonly [number | string, CanonicalGetDiscountParams],
     DiscountResponse,
     Discount
-  >(getDiscountOperation, [discountId, params]) as Promise<
-    FetchResponse<Discount>
-  >;
+  >(getDiscountOperation, [discountId, params]);
 }
 
 /**
@@ -87,5 +84,5 @@ export function deleteDiscount(discountId: string | number) {
   return invokeDefaultCompatibility<readonly [number | string], void, null>(
     deleteDiscountOperation,
     [discountId],
-  ) as Promise<FetchResponse<null>>;
+  );
 }

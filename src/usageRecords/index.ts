@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   createUsageRecordOperation,
   getUsageRecordOperation,
@@ -36,9 +35,7 @@ export function getUsageRecord(
     readonly [number | string, CanonicalGetUsageRecordParams],
     UsageRecordResponse,
     UsageRecord
-  >(getUsageRecordOperation, [usageRecordId, params]) as Promise<
-    FetchResponse<UsageRecord>
-  >;
+  >(getUsageRecordOperation, [usageRecordId, params]);
 }
 
 /**
@@ -58,9 +55,7 @@ export function listUsageRecords(params: ListUsageRecordsParams = {}) {
     readonly [CanonicalListUsageRecordsParams],
     UsageRecordListResponse,
     ListUsageRecords
-  >(listUsageRecordsOperation, [params]) as Promise<
-    FetchResponse<ListUsageRecords>
-  >;
+  >(listUsageRecordsOperation, [params]);
 }
 
 /**
@@ -78,5 +73,5 @@ export function createUsageRecord(usageRecord: NewUsageRecord) {
     readonly [CreateUsageRecordInput],
     UsageRecordResponse,
     UsageRecord
-  >(createUsageRecordOperation, [input]) as Promise<FetchResponse<UsageRecord>>;
+  >(createUsageRecordOperation, [input]);
 }

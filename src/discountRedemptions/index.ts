@@ -1,4 +1,3 @@
-import type { FetchResponse } from "../internal/fetch/types";
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
 import {
   getDiscountRedemptionOperation,
@@ -33,9 +32,7 @@ export function getDiscountRedemption(
     readonly [number | string, CanonicalGetDiscountRedemptionParams],
     DiscountRedemptionResponse,
     DiscountRedemption
-  >(getDiscountRedemptionOperation, [discountRedemptionId, params]) as Promise<
-    FetchResponse<DiscountRedemption>
-  >;
+  >(getDiscountRedemptionOperation, [discountRedemptionId, params]);
 }
 
 /**
@@ -58,7 +55,5 @@ export function listDiscountRedemptions(
     readonly [CanonicalListDiscountRedemptionsParams],
     DiscountRedemptionListResponse,
     ListDiscountRedemptions
-  >(listDiscountRedemptionsOperation, [params]) as Promise<
-    FetchResponse<ListDiscountRedemptions>
-  >;
+  >(listDiscountRedemptionsOperation, [params]);
 }

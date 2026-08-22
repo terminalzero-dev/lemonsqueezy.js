@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   getSubscriptionItemCurrentUsageOperation,
   getSubscriptionItemOperation,
@@ -40,9 +39,7 @@ export function getSubscriptionItem(
     readonly [number | string, CanonicalGetSubscriptionItemParams],
     SubscriptionItemResponse,
     SubscriptionItem
-  >(getSubscriptionItemOperation, [subscriptionItemId, params]) as Promise<
-    FetchResponse<SubscriptionItem>
-  >;
+  >(getSubscriptionItemOperation, [subscriptionItemId, params]);
 }
 
 /**
@@ -60,9 +57,7 @@ export function getSubscriptionItemCurrentUsage(
     readonly [number | string],
     SubscriptionItemCurrentUsageResponse,
     SubscriptionItemCurrentUsage
-  >(getSubscriptionItemCurrentUsageOperation, [subscriptionItemId]) as Promise<
-    FetchResponse<SubscriptionItemCurrentUsage>
-  >;
+  >(getSubscriptionItemCurrentUsageOperation, [subscriptionItemId]);
 }
 
 /**
@@ -84,9 +79,7 @@ export function listSubscriptionItems(
     readonly [CanonicalListSubscriptionItemsParams],
     SubscriptionItemListResponse,
     ListSubscriptionItems
-  >(listSubscriptionItemsOperation, [params]) as Promise<
-    FetchResponse<ListSubscriptionItems>
-  >;
+  >(listSubscriptionItemsOperation, [params]);
 }
 
 /**
@@ -146,7 +139,5 @@ async function _updateSubscriptionItem(
     readonly [number | string, UpdateSubscriptionItemInput],
     SubscriptionItemResponse,
     SubscriptionItem
-  >(updateSubscriptionItemOperation, [subscriptionItemId, input]) as Promise<
-    FetchResponse<SubscriptionItem>
-  >;
+  >(updateSubscriptionItemOperation, [subscriptionItemId, input]);
 }
