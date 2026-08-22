@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   generateOrderInvoiceOperation,
   getOrderOperation,
@@ -33,7 +32,7 @@ export function getOrder(
     readonly [number | string, CanonicalGetOrderParams],
     OrderResponse,
     Order
-  >(getOrderOperation, [orderId, params]) as Promise<FetchResponse<Order>>;
+  >(getOrderOperation, [orderId, params]);
 }
 
 /** List all orders. */
@@ -42,7 +41,7 @@ export function listOrders(params: ListOrdersParams = {}) {
     readonly [CanonicalListOrdersParams],
     OrderListResponse,
     ListOrders
-  >(listOrdersOperation, [params]) as Promise<FetchResponse<ListOrders>>;
+  >(listOrdersOperation, [params]);
 }
 
 /** Generate an order invoice. */
@@ -61,9 +60,7 @@ export function generateOrderInvoice(
     readonly [number | string, GenerateOrderInvoiceInput | undefined],
     GenerateOrderInvoiceResponse,
     OrderInvoice
-  >(generateOrderInvoiceOperation, [orderId, input]) as Promise<
-    FetchResponse<OrderInvoice>
-  >;
+  >(generateOrderInvoiceOperation, [orderId, input]);
 }
 
 /** Issue a full or partial order refund. */
@@ -74,5 +71,5 @@ export function issueOrderRefund(orderId: number | string, amount?: number) {
     readonly [number | string, RefundOrderInput | undefined],
     OrderResponse,
     Order
-  >(refundOrderOperation, [orderId, input]) as Promise<FetchResponse<Order>>;
+  >(refundOrderOperation, [orderId, input]);
 }

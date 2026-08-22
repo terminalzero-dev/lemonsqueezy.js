@@ -1,5 +1,4 @@
 import { invokeDefaultCompatibility } from "../internal/v5/default-client";
-import type { FetchResponse } from "../internal/fetch/types";
 import {
   getProductOperation,
   listProductsOperation,
@@ -33,9 +32,7 @@ export function getProduct(
     readonly [number | string, CanonicalGetProductParams],
     ProductResponse,
     Product
-  >(getProductOperation, [productId, params]) as Promise<
-    FetchResponse<Product>
-  >;
+  >(getProductOperation, [productId, params]);
 }
 
 /**
@@ -55,5 +52,5 @@ export function listProducts(params: ListProductsParams = {}) {
     readonly [CanonicalListProductsParams],
     ProductListResponse,
     ListProducts
-  >(listProductsOperation, [params]) as Promise<FetchResponse<ListProducts>>;
+  >(listProductsOperation, [params]);
 }
